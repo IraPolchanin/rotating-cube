@@ -405,6 +405,17 @@ the agent was not visible in the session that created it (`Agent type
 1–4 below must be run in a new session; the status changes to Implemented only
 after they pass.
 
+**Second attempt (2026-10-19, later session):** criterion 4 failed again — the
+Agent tool still answered `Agent type 'spec-reviewer' not found` (available:
+`claude`, `claude-code-guide`, `Explore`, `general-purpose`, `Plan`,
+`statusline-setup`). Criteria 1–3 could not be run and no other agent was
+substituted. The cause is **undetermined**: the file has valid frontmatter (`name`,
+`description`, `tools`, `model`), LF endings and is committed, but it is not known
+whether that session was a genuinely fresh Claude Code process. Next step: start
+Claude Code from a new terminal, check that `/agents` lists `spec-reviewer`, then
+repeat criteria 1–4. If it is still missing, investigate the agent file format
+for the installed Claude Code version.
+
 A read-only subagent that compares a diff against the acceptance criteria in
 `docs/spec.md` and the rules in `CLAUDE.md`. It covers controls that tooling
 cannot enforce (spec §7.5: "Cube mesh rotates (not camera) — agent instruction +
@@ -506,5 +517,5 @@ named in the first column). Open items:
 | Permission guardrail (§5) | Each pattern probed separately; controls not blocked | **Passed.** Open: known gaps listed in §5 (other global git options, `git config core.hooksPath`, hook-file edits) |
 | Stop hook (§6) | Prototype; dry-run matrix; direct runs; live block and halt; no `--dry-run` in settings | **Passed** |
 | ESLint block for `scripts/*.mjs` | `--print-config` shows Node globals; seeded errors fail `npm run lint` | **Passed** |
-| spec-reviewer (§7) | Clean diff clean; camera rotation / OrbitControls flagged; edit attempt impossible; agent visible | **Not run** — agent not visible in the creating session; repeat in a new session |
+| spec-reviewer (§7) | Clean diff clean; camera rotation / OrbitControls flagged; edit attempt impossible; agent visible | **Not verified** — agent not visible in two sessions (`Agent type 'spec-reviewer' not found`); cause undetermined; criteria 1–3 not run |
 | CI (§4) | — | Out of scope for Phase 2 (Phase 3) |
