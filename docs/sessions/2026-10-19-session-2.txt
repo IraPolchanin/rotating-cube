@@ -1,0 +1,2902 @@
+ ▐▛███▛█   Claude Code v2.1.303
+▝▜██████▀  Sonnet 5.5 · Claude Pro
+ ▝▝   ▝▝   ~\Projects\rotating-cube
+
+  Opus 5.5 is now your default model and it draws down usage faster than Sonnet 5. Switch anytime with /model.
+
+❯ /model                                                                        
+  ⎿  Set model to Sonnet 5.5 and saved as your default for new sessions
+
+❯ Read CLAUDE.md and docs/quality-gates.md. Propose a minimal addition to       
+  CLAUDE.md describing a general Phase workflow:                                
+                                                                                
+  Read the relevant project documentation before starting a phase.              
+                                                                                
+  Propose a plan and wait for explicit human approval before implementation.    
+                                                                                
+  Implement the approved plan and verify each new enforcement mechanism with a  
+  deliberate failure where appropriate.                                         
+                                                                                
+  Revert temporary test changes, preserve pre-existing user changes, and keep   
+  the working tree clean of experiment artifacts.                               
+                                                                                
+  Update docs/quality-gates.md statuses only after practical verification.      
+                                                                                
+  Prefer the simplest reliable solution and explain material trade-offs.        
+                                                                                
+  Show the proposed diff before applying any changes.                           
+                                                                                
+  Keep CLAUDE.md under approximately 80 lines; shorten existing content or move 
+  details to docs/ if needed.                                                   
+                                                                                
+  Plan only. Do not modify files until I approve the proposal.                  
+
+● Спочатку прочитаю docs/quality-gates.md.
+
+  Read 1 file (ctrl+o to expand)
+
+● Updated plan
+  ⎿  /plan to preview
+  ⎿  User rejected Claude's plan:
+     ╭─────────────────────────────────────────────────────────────────────────╮
+     │ Plan: Phase workflow in CLAUDE.md                                       │
+     │                                                                         │
+     │ Context                                                                 │
+     │                                                                         │
+     │ CLAUDE.md (73 lines) has a task-level Workflow but no rules for         │
+     │ multi-step "phases"                                                     │
+     │ (e.g. hook, pre-commit, CI). Phases in docs/quality-gates.md need       │
+     │ deliberate-failure                                                      │
+     │ verification and status updates only after verification. Limit: ~80     │
+     │ lines.                                                                  │
+     │                                                                         │
+     │ Proposed diff (CLAUDE.md only)                                          │
+     │                                                                         │
+     │ 1. Workflow: drop steps 1-2 (read spec / propose plan) — now covered by │
+     │    Phase Workflow; renumber 3-7 -> 1-5. (-4 lines)                      │
+     │ 2. Commit examples: keep 5 of 10 (feat cube, feat reset, test unit,     │
+     │    build, ci). (-5 lines)                                               │
+     │ 3. Add after "Rules":                                                   │
+     │                                                                         │
+     │ ## Phase Workflow                                                       │
+     │                                                                         │
+     │ For any multi-step phase (hooks, CI, scaffolding, features):            │
+     │                                                                         │
+     │ 1. Read the relevant docs (`docs/spec.md`, `docs/quality-gates.md`)     │
+     │ first.                                                                  │
+     │ 2. Propose a plan and the diff of intended changes; wait for explicit   │
+     │ approval.                                                               │
+     │ 3. Implement the approved plan. Verify each new enforcement mechanism   │
+     │ with a                                                                  │
+     │    deliberate failure where appropriate.                                │
+     │ 4. Revert temporary test changes, preserve pre-existing user changes,   │
+     │ and leave                                                               │
+     │    no experiment artifacts in the working tree.                         │
+     │ 5. Update `docs/quality-gates.md` statuses only after practical         │
+     │ verification.                                                           │
+     │ 6. Prefer the simplest reliable solution; explain material trade-offs.  │
+     │ Net: 73 - 9 + ~11 = ~75 lines (< 80). No other files touched.           │
+     │                                                                         │
+     │ Trade-offs                                                              │
+     │                                                                         │
+     │ - Alternative: move details to docs/ — unnecessary, the budget fits.    │
+     │ - Phase rules overlap with the task Workflow, so steps 1-2 of Workflow  │
+     │   are removed to avoid duplication.                                     │
+     │                                                                         │
+     │ Verification                                                            │
+     │                                                                         │
+     │ wc -l CLAUDE.md <= 80; git diff shows only the above; npm run check not │
+     │ needed (docs only).                                                     │
+     ╰─────────────────────────────────────────────────────────────────────────╯
+
+● Updated plan
+  ⎿  /plan to preview
+
+● User approved Claude's plan
+  ⎿  Plan saved to: 
+     ~\.claude\plans\pasted-content-id-3cd8-read-claude-md-prancy-stonebraker.md
+     · /plan to edit
+     Plan: Phase workflow in CLAUDE.md (revised)
+
+     Context
+
+     CLAUDE.md (73 lines) has a task-level Workflow (applies to every task) but
+     no
+     phase-specific rules. Add only those, keep file under ~80 lines.
+
+     Proposed diff (CLAUDE.md only)
+
+     1. Workflow: unchanged (steps 1-2 stay).
+     2. Commit examples: trim 10 -> 5, keeping AC IDs:
+        - keep feat(cube): rotate cube mesh on pointer drag (AC-4, AC-5)
+        - keep feat(cube): clamp X rotation to [-90, 90] degrees (AC-12)
+        - keep feat(reset): restore initial orientation on button click (AC-9)
+        - keep test(e2e): add pointer drag and reset tests (AC-4, AC-5, AC-9)
+        - keep build: scaffold Vite + React + TypeScript project
+        - remove: render mesh, expose data-cube-r*, test(unit), chore(eslint),
+          ci
+     3. Add after "Rules":
+
+     ## Phase Workflow
+
+     For multi-step phases (hooks, CI, tooling), in addition to the Workflow
+     above:
+
+     - Verify each new enforcement mechanism with a deliberate failure where
+     appropriate.
+     - Revert temporary test changes, preserve pre-existing user changes, and
+     leave no
+       experiment artifacts in the working tree.
+     - Update `docs/quality-gates.md` statuses only after practical
+     verification.
+     - Prefer the simplest reliable solution; explain material trade-offs.
+     Net: ~73 + 9 - 5 = ~77 lines.
+
+     Verification
+
+     wc -l CLAUDE.md <= 80; git diff shows only the above (reviewed after
+     applying); docs-only, no npm run check needed.
+
+● Застосовую затверджений план: спершу скорочую приклади комітів, потім додаю
+  секцію Phase Workflow.
+
+● Update(CLAUDE.md)
+  ⎿  Removed 5 lines
+      52  
+      53  Examples:
+      54  
+      55 -- `feat(cube): render Three.js cube mesh in React canvas compon
+         -ent`                                                           
+      55  - `feat(cube): rotate cube mesh on pointer drag (AC-4, AC-5)`
+      56  - `feat(cube): clamp X rotation to [-90, 90] degrees (AC-12)`
+      58 -- `feat(cube): expose data-cube-r* rotation attributes (AC-3)` 
+      57  - `feat(reset): restore initial orientation on button click (AC
+          -9)`
+      60 -- `test(unit): add rotation delta and clamp calculations (AC-12
+         -)`                                                             
+      58  - `test(e2e): add pointer drag and reset tests (AC-4, AC-5, AC-
+          9)`
+      59  - `build: scaffold Vite + React + TypeScript project`
+      63 -- `chore(eslint): add no-restricted-imports rule for OrbitContr
+         -ols (NFR-8)`                                                   
+      64 -- `ci: add GitHub Actions workflow running npm run check`      
+      60  
+      61  ## Quality Gate Command
+      62  
+
+● Update(CLAUDE.md)
+  ⎿  Added 10 lines
+      44  - Do not use `// @ts-ignore`, unconstrained `any` casts, `eslin
+          t-disable`, or
+      45    `--no-verify` to bypass quality checks.
+      46  
+      47 +## Phase Workflow                                              
+      48 +                                                               
+      49 +For multi-step phases (hooks, CI, tooling), in addition to the 
+         +Workflow above:                                                
+      50 +                                                               
+      51 +- Verify each new enforcement mechanism with a deliberate failu
+         +re where appropriate.                                          
+      52 +- Revert temporary test changes, preserve pre-existing user cha
+         +nges, and leave no                                             
+      53 +  experiment artifacts in the working tree.                    
+      54 +- Update `docs/quality-gates.md` statuses only after practical 
+         +verification.                                                  
+      55 +- Prefer the simplest reliable solution; explain material trade
+         +-offs.                                                         
+      56 +                                                               
+      57  ## Commit Message Convention
+      58  
+      59  Format: `<type>(<scope>): <description>`
+
+● Bash(wc -l CLAUDE.md && git diff --stat)
+  ⎿  78 CLAUDE.md
+     warning: in the working copy of 'CLAUDE.md', LF will be replaced by CR
+     LF the next time Git touches it
+     … +2 lines (ctrl+o to expand)
+
+● Готово. Змінено лише CLAUDE.md, тепер у ньому 78 рядків.
+
+  - Додано секцію "Phase Workflow". Вона містить лише фазові правила:
+    - перевірка кожного нового механізму навмисною помилкою;
+    - відкат тимчасових змін і збереження наявних змін користувача, без
+      артефактів експериментів у робочому дереві;
+    - оновлення статусів у docs/quality-gates.md лише після практичної
+      перевірки;
+    - вибір найпростішого надійного рішення з поясненням компромісів.
+  - Скорочено приклади комітів з 10 до 5. Лишилися ті, що мають ID критеріїв
+    (AC), плюс build.
+  - Workflow не змінено. Кроки 1–2 (прочитати специфікацію, запропонувати план)
+    залишилися.
+
+  Перевіряти npm run check не потрібно, бо зміни тільки в документації.
+  Попередження git про LF→CRLF — стандартне для Windows. Нічого не закомічено —
+  скажіть, якщо треба.
+
+✻ Worked for 43s · done 6:05 PM
+
+❯ commit this                                                                   
+
+● Bash(git add CLAUDE.md && git commit -m "$(cat <<'EOF'
+      docs(claude): add Phase Workflow section and trim commit examples…)
+  ⎿  warning: in the working copy of 'CLAUDE.md', LF will be replaced by CR
+     LF the next time Git touches it
+     [main 3bfd374] docs(claude): add Phase Workflow section and trim commi
+     … +4 lines (ctrl+o to expand)
+  ⎿  PostToolUse:Bash says: Tip: Run /ultrareview before you push to catch bugs 
+     with a cloud-based multi-agent review — 3 free reviews left.
+
+● Закомічено: 3bfd374 — docs(claude): add Phase Workflow section and trim commit
+  examples. Робоче дерево чисте.
+
+✻ Cogitated for 5s · done 6:07 PM
+
+❯ Plan Phase 2 as described in docs/quality-gates.md: implement and verify the  
+  planned enforcement mechanisms, including the PostToolUse hook, pre-commit    
+  hook, --no-verify permission guardrail, Stop hook, and read-only              
+  spec-reviewer subagent.                                                       
+                                                                                
+  Follow the Phase Workflow in CLAUDE.md.                                       
+                                                                                
+  Plan only. Do not create or modify files, run experiments, commit changes, or 
+  launch subagents or background agents until I approve the plan.               
+                                                                                
+  Present the proposed file list, implementation approach, verification         
+  strategy, significant risks or limitations, and how the mechanisms will work  
+  together with the existing project workflow and quality gates.                
+
+  Searched for 1 pattern, read 2 files (ctrl+o to expand)
+
+● Bash(ls -a . .claude scripts .githooks 2>&1; cat .gitignore; git config
+      core.hooksPath; git ls-files | head -50)
+  ⎿  ls: cannot access 'scripts': No such file or directory
+     ls: cannot access '.githooks': No such file or directory
+     .:
+     … +52 lines (ctrl+o to expand)
+
+  Searched for 1 pattern, read 3 files (ctrl+o to expand)
+
+● Updated plan
+  ⎿  /plan to preview  ⎿  User rejected Claude's plan:
+     ╭─────────────────────────────────────────────────────────────────────────╮
+     │ Plan: Phase workflow in CLAUDE.md (revised)                             │
+     │                                                                         │
+     │ Context                                                                 │
+     │                                                                         │
+     │ CLAUDE.md (73 lines) has a task-level Workflow (applies to every task)  │
+     │ but no                                                                  │
+     │ phase-specific rules. Add only those, keep file under ~80 lines.        │
+     │                                                                         │
+     │ Proposed diff (CLAUDE.md only)                                          │
+     │                                                                         │
+     │ 1. Workflow: unchanged (steps 1-2 stay).                                │
+     │ 2. Commit examples: trim 10 -> 5, keeping AC IDs:                       │
+     │    - keep feat(cube): rotate cube mesh on pointer drag (AC-4, AC-5)     │
+     │    - keep feat(cube): clamp X rotation to [-90, 90] degrees (AC-12)     │
+     │    - keep feat(reset): restore initial orientation on button click      │
+     │      (AC-9)                                                             │
+     │    - keep test(e2e): add pointer drag and reset tests (AC-4, AC-5,      │
+     │      AC-9)                                                              │
+     │    - keep build: scaffold Vite + React + TypeScript project             │
+     │    - remove: render mesh, expose data-cube-r*, test(unit),              │
+     │      chore(eslint), ci                                                  │
+     │ 3. Add after "Rules":                                                   │
+     │                                                                         │
+     │ ## Phase Workflow                                                       │
+     │                                                                         │
+     │ For multi-step phases (hooks, CI, tooling), in addition to the Workflow │
+     │ above:                                                                  │
+     │                                                                         │
+     │ - Verify each new enforcement mechanism with a deliberate failure where │
+     │ appropriate.                                                            │
+     │ - Revert temporary test changes, preserve pre-existing user changes,    │
+     │ and leave no                                                            │
+     │   experiment artifacts in the working tree.                             │
+     │ - Update `docs/quality-gates.md` statuses only after practical          │
+     │ verification.                                                           │
+     │ - Prefer the simplest reliable solution; explain material trade-offs.   │
+     │ Net: ~73 + 9 - 5 = ~77 lines.                                           │
+     │                                                                         │
+     │ Verification                                                            │
+     │                                                                         │
+     │ wc -l CLAUDE.md <= 80; git diff shows only the above (reviewed after    │
+     │ applying); docs-only, no npm run check needed.                          │
+     ╰─────────────────────────────────────────────────────────────────────────╯
+
+● Updated plan
+  ⎿  /plan to preview
+  ⎿  User rejected Claude's plan:
+     ╭─────────────────────────────────────────────────────────────────────────╮
+     │ План: Phase 2 — механізми примусового контролю                          │
+     │                                                                         │
+     │ Контекст                                                                │
+     │                                                                         │
+     │ docs/quality-gates.md має 5 механізмів зі статусом PLANNED (§1          │
+     │ PostToolUse, §2 pre-commit,                                             │
+     │ §4 CI, §5 guardrail). Phase 2 = §1, §2, §5 + два нових: Stop hook і     │
+     │ spec-reviewer subagent.                                                 │
+     │ CI (§4) — поза Phase 2 (лишається PLANNED).                             │
+     │                                                                         │
+     │ Розбіжність: Stop hook і spec-reviewer не описані у                     │
+     │ docs/quality-gates.md (є лише у                                         │
+     │ transcript сесії 1). Тож у плані вони додаються в документ як нові      │
+     │ розділи PLANNED до реалізації.                                          │
+     │ docs/spec.md не змінюється (рядок §7.5 «Cube mesh rotates (not camera)  │
+     │ — agent instruction + code review»                                      │
+     │ якраз покривається spec-reviewer).                                      │
+     │                                                                         │
+     │ Стан зараз (перевірено)                                                 │
+     │                                                                         │
+     │ - Існують: package.json зі скриптами + prepare, eslint.config.js,       │
+     │   .claude/settings.local.json                                           │
+     │   (gitignored, лише allow-правила — не чіпаємо).                        │
+     │ - Відсутні: scripts/, .githooks/, .claude/settings.json,                │
+     │   .claude/agents/.                                                      │
+     │ - git config core.hooksPath порожній → prepare ще не виконувався;       │
+     │   потрібен npm run prepare.                                             │
+     │ - package.json має "type": "module" → .mjs ок; ESLint не застосовує     │
+     │   TS-правила до .mjs.                                                   │
+     │                                                                         │
+     │ Файли                                                                   │
+     │                                                                         │
+     │ ┌─────────────────────────────────┬──────────────────────────────────── │
+     │ ────┐                                                                   │
+     │ │              Файл               │                  Дія                │
+     │    │                                                                    │
+     │ ├─────────────────────────────────┼──────────────────────────────────── │
+     │ ────┤                                                                   │
+     │ │ scripts/agent-hook-check.mjs    │ новий: PostToolUse —                │
+     │ typecheck+lint,   │                                                     │
+     │ │                                 │ exit 2 при помилці                  │
+     │    │                                                                    │
+     │ ├─────────────────────────────────┼──────────────────────────────────── │
+     │ ────┤                                                                   │
+     │ │ scripts/agent-stop-check.mjs    │ новий: Stop — npm run check, exit 2 │
+     │    │                                                                    │
+     │ │                                 │ при помилці                         │
+     │    │                                                                    │
+     │ ├─────────────────────────────────┼──────────────────────────────────── │
+     │ ────┤                                                                   │
+     │ │ .claude/settings.json           │ новий (tracked): hooks              │
+     │    │                                                                    │
+     │ │                                 │ PostToolUse+Stop, permissions.deny  │
+     │    │                                                                    │
+     │ ├─────────────────────────────────┼──────────────────────────────────── │
+     │ ────┤                                                                   │
+     │ │ .githooks/pre-commit            │ новий: npm run typecheck && npm run │
+     │    │                                                                    │
+     │ │                                 │ lint && npm run test, +x у git      │
+     │    │                                                                    │
+     │ ├─────────────────────────────────┼──────────────────────────────────── │
+     │ ────┤                                                                   │
+     │ │ .claude/agents/spec-reviewer.md │ новий: read-only субагент (tools:   │
+     │    │                                                                    │
+     │ │                                 │ Read, Grep, Glob)                   │
+     │    │                                                                    │
+     │ ├─────────────────────────────────┼──────────────────────────────────── │
+     │ ────┤                                                                   │
+     │ │                                 │ розділи Stop hook / spec-reviewer;  │
+     │    │                                                                    │
+     │ │ docs/quality-gates.md           │ статуси → Implemented лише після    │
+     │    │                                                                    │
+     │ │                                 │ перевірки                           │
+     │    │                                                                    │
+     │ ├─────────────────────────────────┼──────────────────────────────────── │
+     │ ────┤                                                                   │
+     │ │                                 │ (опційно) 1 фраза в Workflow кроці  │
+     │ 6:  │                                                                   │
+     │ │ CLAUDE.md                       │ «викликати spec-reviewer на diff»;  │
+     │ ≤80 │                                                                   │
+     │ │                                 │  рядків                             │
+     │    │                                                                    │
+     │ └─────────────────────────────────┴──────────────────────────────────── │
+     │ ────┘                                                                   │
+     │                                                                         │
+     │ Реалізація (по механізмах)                                              │
+     │                                                                         │
+     │ 1. PostToolUse (Edit|Write): скрипт за §1 — skip з exit 0, якщо немає   │
+     │    package.json/node_modules;                                           │
+     │    інакше spawnSync('npm', ['run', …], {shell: true}) (щоб працювало на │
+     │    Windows і Linux), діагностика у stderr,                              │
+     │    exit 2. Команда в settings: node                                     │
+     │    "$CLAUDE_PROJECT_DIR/scripts/agent-hook-check.mjs" (не залежить від  │
+     │    cwd).                                                                │
+     │ 2. Pre-commit: .githooks/pre-commit за §2; git add --chmod=+x;          │
+     │    активація npm run prepare                                            │
+     │    (змінює лише локальний .git/config).                                 │
+     │ 3. Guardrail: permissions.deny: ["Bash(git commit --no-verify*)"].      │
+     │    Додатково (дрібне відхилення від §5,                                 │
+     │    відобразити в docs): Bash(git commit * --no-verify*), Bash(git       │
+     │    commit -n*) — закривають згадані в §5 обхідні варіанти.              │
+     │ 4. Stop hook: читає JSON зі stdin; якщо stop_hook_active: true → exit 0 │
+     │    (захист від нескінченного циклу).                                    │
+     │    Запускається лише коли git status --porcelain показує зміни поза     │
+     │    docs/ і *.md (пропуск для чисто                                      │
+     │    планових/документальних ходів). Далі npm run check; помилка → stderr │
+     │    + exit 2.                                                            │
+     │ 5. spec-reviewer: markdown з frontmatter (name, description, tools:     │
+     │    Read, Grep, Glob, model: sonnet).                                    │
+     │    Перевіряє diff (передається в prompt) проти AC з docs/spec.md і      │
+     │    правил CLAUDE.md                                                     │
+     │    (mesh а не camera, без OrbitControls, AC ID у тестах). Лише звіт,    │
+     │    без правок.                                                          │
+     │                                                                         │
+     │ Порядок і коміти (один логічний крок = один коміт)                      │
+     │                                                                         │
+     │ 0. Базова лінія: npm run check (read-only крім gitignored               │
+     │    test-results/) — переконатися, що старт зелений.                     │
+     │ 1. docs: describe Stop hook and spec-reviewer in quality gates (статус  │
+     │    PLANNED).                                                            │
+     │ 2. chore(hooks): add PostToolUse typecheck and lint hook → перевірка →  │
+     │    статус §1.                                                           │
+     │ 3. chore(githooks): add pre-commit hook → перевірка → статус §2.        │
+     │ 4. chore(claude): deny git commit --no-verify → перевірка → статус §5.  │
+     │ 5. chore(hooks): add Stop hook running npm run check → перевірка.       │
+     │ 6. chore(agents): add read-only spec-reviewer subagent → перевірка.     │
+     │ 7. docs: mark Phase 2 mechanisms as implemented (статуси + §9). Пп. 3–7 │
+     │    вже проходять через власний pre-commit.                              │
+     │                                                                         │
+     │ Верифікація (навмисні збої; кожен тимчасовий артефакт відкочується)     │
+     │                                                                         │
+     │ - PostToolUse: створити src/__experiment__.ts з TS-помилкою → hook дає  │
+     │   exit 2 і діагностику агенту;                                          │
+     │   виправити → exit 0. Також lint-помилка (any) і прямий запуск скрипта  │
+     │   в стані «не scaffolded» (напр. з тимчасовим env/cwd) — exit 0.        │
+     │ - Pre-commit: застейджити файл з TS-помилкою → git commit блокується;   │
+     │   unstage/відкат → коміт проходить                                      │
+     │   (реальні коміти Phase 2 — це позитивний тест).                        │
+     │ - Guardrail: спробувати git commit --no-verify (без staged-змін, тож    │
+     │   нешкідливо навіть при збої правила) та -n → Claude Code блокує        │
+     │   виклик.                                                               │
+     │ - Stop hook: (а) пряма перевірка скрипта: echo                          │
+     │   '{"stop_hook_active":true}' | node … → exit 0;                        │
+     │   з false і зламаним станом → exit 2; (б) один живий прогін: завершити  │
+     │   хід із навмисною TS-помилкою → хід блокується                         │
+     │   з діагностикою; виправити; другий кінець ходу проходить.              │
+     │ - spec-reviewer: запустити на тимчасовому файлі, що крутить camera      │
+     │   замість mesh / імпортує OrbitControls → має позначити                 │
+     │   порушення; попросити його зробити Edit → недоступно (немає            │
+     │   інструмента).                                                         │
+     │ - Фінал: npm run check зелений, git status чистий, git diff перевірено. │
+     │                                                                         │
+     │ Ризики й обмеження                                                      │
+     │                                                                         │
+     │ - Перезавантаження конфігурації: hooks/agents/permissions з нового      │
+     │   .claude/settings.json та .claude/agents/ можуть                       │
+     │   не підхопитися до /hooks review або перезапуску сесії — тоді          │
+     │   верифікацію живих механізмів доведеться продовжити в новій сесії.     │
+     │ - Швидкість Stop hook: повний check (build + e2e Chromium+Firefox) на   │
+     │   кожен кінець ходу з код-змінами — повільно;                           │
+     │   і поки e2e червоні, він блокуватиме кожен хід. Компроміс: guard       │
+     │   stop_hook_active + пропуск doc-only змін.                             │
+     │ - guardrail не абсолютний (§5): людина або інші форми команди (git -c … │
+     │   commit -n) обходять; це agent-level захист.                           │
+     │ - Windows: shell: true для npm; шляхи у лапках; .githooks/pre-commit    │
+     │   має LF-закінчення (попередження git про CRLF —                        │
+     │   можлива поломка shebang, потрібен .gitattributes/перевірка eol=lf для │
+     │   .githooks/*).                                                         │
+     │ - PostToolUse спрацьовує на кожен Edit/Write (~секунди); проміжний      │
+     │   «зламаний» стан між двома правками одного завдання                    │
+     │   даватиме шум — приймаємо, як у §1.                                    │
+     │ - Підтвердження користувача (за CLAUDE.md): видалення тимчасових файлів │
+     │   експериментів і будь-який відкат (git checkout/reset)                 │
+     │   — лише з вашого підтвердження; тимчасові файли краще створювати нові, │
+     │   а не правити наявні.                                                  │
+     │ - Pre-existing зміни: .claude/settings.local.json та gitignored dist/,  │
+     │   test-results/ не чіпаємо.                                             │
+     │                                                                         │
+     │ Як механізми працюють разом                                             │
+     │                                                                         │
+     │ правка файлу → PostToolUse (typecheck+lint, миттєво) → git commit →     │
+     │ pre-commit (+ test) та guardrail (немає --no-verify)                    │
+     │ → кінець ходу → Stop (повний check) → перед «завдання виконано» агент   │
+     │ викликає spec-reviewer (AC/правила) →                                   │
+     │ CI (Phase 3) дублює повний check на сервері. Швидкі перевірки ближче до │
+     │ правки, повільні — ближче до завершення.                                │
+     │                                                                         │
+     │ Рішення, яких потребую від вас                                          │
+     │                                                                         │
+     │ 1. Stop hook: повний npm run check (рекомендовано, з guard-ами) чи      │
+     │    полегшений (без e2e)?                                                │
+     │ 2. Додати розширені deny-патерни (-n, перестановка аргументів) — так/ні │
+     │    (рекомендовано: так)?                                                │
+     │ 3. Додати фразу про spec-reviewer у CLAUDE.md (рекомендовано: так, без  │
+     │    збільшення довжини понад 80)?                                        │
+     ╰─────────────────────────────────────────────────────────────────────────╯
+
+● Updated plan
+  ⎿  /plan to preview
+
+● Updated plan
+  ⎿  /plan to preview
+
+● Updated plan
+  ⎿  /plan to preview
+
+● Updated plan
+  ⎿  /plan to preview
+
+● Updated plan
+  ⎿  /plan to preview
+
+● Updated plan
+  ⎿  /plan to preview
+
+● Updated plan
+  ⎿  /plan to preview
+
+● Updated plan
+  ⎿  /plan to preview
+
+● Updated plan
+  ⎿  /plan to preview
+
+● User approved Claude's plan
+  ⎿  Plan saved to: 
+     ~\.claude\plans\pasted-content-id-3cd8-read-claude-md-prancy-stonebraker.md
+     · /plan to edit
+     План (v3): Phase 2 — механізми примусового контролю
+
+     Контекст
+
+     docs/quality-gates.md має PLANNED: §1 PostToolUse, §2 pre-commit, §5
+     guardrail (+ §4 CI — поза Phase 2).
+     Stop hook і spec-reviewer у документі відсутні — додаються як нові розділи
+     до реалізації. docs/spec.md не змінюється
+     (§7.5 «mesh, not camera — agent instruction + code review» покривається
+     spec-reviewer).
+     Стан: є package.json-скрипти + prepare, eslint.config.js, gitignored
+     .claude/settings.local.json (не чіпаємо).
+     Немає: scripts/, .githooks/, .gitattributes, .claude/settings.json,
+     .claude/agents/; core.hooksPath не встановлено.
+
+     Файли
+
+     ┌─────────────────────────────────┬────────────────────────────────────────
+     ┐
+     │              Файл               │                  Дія
+     │
+     ├─────────────────────────────────┼────────────────────────────────────────
+     ┤
+     │ .gitattributes                  │ новий: .githooks/* text eol=lf,
+     │
+     │                                 │ scripts/* text eol=lf
+     │
+     ├─────────────────────────────────┼────────────────────────────────────────
+     ┤
+     │                                 │ + блок files: ['scripts/*.mjs'],
+     │
+     │ eslint.config.js                │ js.configs.recommended, sourceType: 
+     │
+     │                                 │ 'module', globals.node
+     │
+     ├─────────────────────────────────┼────────────────────────────────────────
+     ┤
+     │                                 │ новий: читання stdin JSON, запуск npm 
+     │
+     │ scripts/hook-utils.mjs          │ run (spawnSync, shell: true), фільтр
+     │
+     │                                 │ розширень
+     │
+     ├─────────────────────────────────┼────────────────────────────────────────
+     ┤
+     │ scripts/agent-hook-check.mjs    │ новий: PostToolUse
+     │
+     ├─────────────────────────────────┼────────────────────────────────────────
+     ┤
+     │ scripts/agent-stop-check.mjs    │ новий: Stop
+     │
+     ├─────────────────────────────────┼────────────────────────────────────────
+     ┤
+     │ .claude/settings.json           │ новий (tracked): hooks (PostToolUse,
+     │
+     │                                 │ Stop з timeout), permissions.deny
+     │
+     ├─────────────────────────────────┼────────────────────────────────────────
+     ┤
+     │ .githooks/pre-commit            │ новий, +x у git
+     │
+     ├─────────────────────────────────┼────────────────────────────────────────
+     ┤
+     │ .claude/agents/spec-reviewer.md │ новий: tools: Read, Grep, Glob, model:
+     │
+     │                                 │  sonnet
+     │
+     ├─────────────────────────────────┼────────────────────────────────────────
+     ┤
+     │ docs/quality-gates.md           │ див. «Документація»
+     │
+     ├─────────────────────────────────┼────────────────────────────────────────
+     ┤
+     │ CLAUDE.md                       │ правило виклику spec-reviewer (≤80
+     │
+     │                                 │ рядків)
+     │
+     └─────────────────────────────────┴────────────────────────────────────────
+     ┘
+
+     Реалізація
+
+     1. PostToolUse (Edit|Write). Читає stdin JSON → tool_input.file_path.
+     Розширення не з {.ts,.tsx,.js,.mjs,.json} → exit 0
+     без перевірок (docs-only правки нічого не запускають). Немає file_path/JSON
+     не парситься → fail-safe: запускати перевірки.
+     Далі як §1: немає package.json/node_modules → skip exit 0; інакше
+     typecheck+lint, діагностика у stderr, exit 2.
+     Команда: node "$CLAUDE_PROJECT_DIR/scripts/agent-hook-check.mjs"; timeout: 
+     120.
+
+     2. Pre-commit. npm run typecheck && npm run lint && npm run test; git add 
+     --chmod=+x; активація npm run prepare
+     (лише локальний .git/config).
+
+     3. Guardrail (permissions.deny), кожен патерн перевіряється окремо:
+     Bash(git commit --no-verify*), Bash(git commit * --no-verify*), Bash(git 
+     commit -n*), Bash(git commit * -n), Bash(git commit * -n *).
+     Відомі прогалини (git -c core.hooksPath=… commit, складені команди a && git
+     commit --no-verify) — зондуються й
+     документуються як обмеження, а не ховаються.
+
+     4. Stop hook. Повний npm run check (включно з e2e), timeout: 600.
+     - Без відбитків/стампів. Вирішальний фільтр — git status --porcelain=v1 -z 
+       --untracked-files=all: relevant = будь-який шлях
+       зміни, що не під docs/ і не *.md. Охоплює staged, unstaged, untracked
+       (кожен файл окремо), deleted (D) і renamed/copied
+       (R/C: у -z це два токени — обидва шляхи перевіряються, relevant якщо хоч
+       один relevant). Джерельний код, тести, конфіги,
+       scripts/, .githooks/, .claude/settings.json, package*.json — relevant;
+       .md (вкл. CLAUDE.md, .claude/agents/*.md) і docs/** — ні.
+       Нерелевантні/порожні зміни, а також відсутні package.json/node_modules →
+       exit 0.
+     - Trade-off (документувати в §6): після коміту дерево чисте → Stop не
+       запускає check. Закомічений код уже пройшов
+       typecheck+lint+test у pre-commit; build та e2e для нього гарантує лише CI
+       (Phase 3) і правило CLAUDE.md «npm run check перед
+       завершенням». Тож Stop — страховка для незакомічених змін, а не повна
+       гарантія e2e на кожен хід. Виграш: нуль стану, нуль
+       хибних пропусків через відбиток, e2e не ганяється на Q&A/doc-ходах.
+     - Допоміжний прапор AGENT_STOP_CHECK_DRY_RUN=1: друкує рішення (run/skip +
+       причина) і виходить з 0 без запуску check —
+       лише для швидкої перевірки фільтра.
+     - Pass → exit 0.
+     - Fail, stop_hook_active=false → діагностика (хвіст виводу провалених
+       кроків) у stderr, exit 2: агент змушений виправляти.
+     - Fail, stop_hook_active=true (повторний збій після спроби виправлення) →
+       не exit 0 «мовчки», а
+       {"continue": false, "stopReason": "npm run check still failing after 
+       retry: <підсумок>"} + exit 0: сесія зупиняється
+       з видимим повідомленням людині (Failure Protocol, крок 7). Дерево
+       лишається зміненим → наступний хід перевіряє знову.
+     - Обґрунтування: exit 2 без обмеження = нескінченний цикл; exit 0 при
+       stop_hook_active = тиха «готово» з червоним check.
+       Гучна зупинка з поясненням — єдиний варіант, що не має жодного з двох
+       дефектів, без стану-лічильника.
+     - Припущення, яке перевіряється першим (перед рештою роботи над Stop): що
+       continue:false + stopReason у Stop hook справді
+       зупиняє сесію з видимим повідомленням (мінімальний тимчасовий прототип із
+       навмисним збоєм). Якщо ні — зупиняюсь і приношу
+       вам запасні варіанти (напр. лічильник спроб у gitignored-файлі) на окреме
+       погодження; без вашого рішення стан не додаю.
+
+     5. spec-reviewer. Лише Read, Grep, Glob (без Bash/Edit/Write). Отримує в
+     prompt список змінених файлів і diff; звіряє з AC у
+     docs/spec.md та правилами CLAUDE.md (mesh, не camera; без OrbitControls; AC
+     ID у назвах тестів; англійська). Видає звіт
+     file:line — порушення — AC/правило; нічого не змінює.
+
+     Політика виклику (узгодження з правилом «субагенти лише за запитом»).
+     Затвердження цього плану й додане правило в CLAUDE.md —
+     це явне постійне дозвіл, лише для spec-reviewer. Формулювання в Workflow,
+     крок 6 (рядки не більше 80; за потреби стискаю
+     дубльований текст у розділі «Quality Gate Command»):
+
+     ▎ After npm run check passes, if the task changed src/ or e2e/, invoke the 
+     ▎ spec-reviewer subagent once on the diff
+     ▎ (standing user authorization for this subagent only; no other subagents 
+     ▎ unless asked). Fix or report each finding; the review is
+     ▎ advisory and does not replace check.
+     ▎ Для docs/tooling-завдань (як Phase 2) — лише за запитом. Повторний виклик
+     ▎ — максимум один, після суттєвих виправлень.
+
+     Документація (docs/quality-gates.md)
+
+     Усі п'ять механізмів документовані з описом, критеріями верифікації й
+     статусом:
+     1. PostToolUse §1 (оновити: фільтр розширень, file_path зі stdin,
+        fail-safe). 2. Pre-commit §2 (+ .gitattributes, fresh-checkout).
+     2. Guardrail §5 (список патернів + обмеження). 4. Новий §6 Stop hook
+        (фільтр git status, stop_hook_active/continue:false,
+        dry-run прапор, чітко описаний trade-off «після коміту Stop не запускає
+        check; pre-commit дав typecheck+lint+test, e2e — CI Phase 3»).
+        У §2 додати примітку: LF/режим перевірені через git ls-files --eol/-s,
+        активація на свіжому клоні не тестувалась.
+     3. Новий §7 spec-reviewer (інструменти, політика виклику). Старі §6–9 →
+        §8–11 (внутрішніх посилань на них немає; §1–§5 не перенумеровуються).
+        Також: таблиця «Implementation Status» (+ рядки для .gitattributes,
+        ESLint-блок scripts, Stop-скрипт, агент), «Resolved Decisions»
+        (поведінка Stop при повторному збої, fail-safe PostToolUse),
+        «Verification Required» (критерії для всіх п'яти).
+        Статуси: спершу PLANNED; перехід у Implemented — лише в окремому
+        фінальному коміті після практичної перевірки відповідного
+        механізму. Якщо перевірку не вдалося завершити (напр. потрібен
+        перезапуск сесії) — лишається PLANNED з приміткою.
+
+     Порядок і коміти (один логічний крок = один коміт)
+
+     0. Базова лінія npm run check (зелений?).
+     1. docs: describe Stop hook and spec-reviewer in quality gates (усе
+        PLANNED).
+     2. build: enforce LF line endings for hooks and scripts (.gitattributes).
+     3. chore(eslint): lint scripts/*.mjs with Node globals.
+     4. chore(hooks): add PostToolUse typecheck and lint hook.
+     5. chore(githooks): add pre-commit hook → npm run prepare.
+     6. chore(claude): deny git commit --no-verify variants.
+     7. chore(hooks): add Stop hook running npm run check.
+     8. chore(agents): add read-only spec-reviewer subagent + правило в
+        CLAUDE.md.
+     9. docs: mark verified Phase 2 mechanisms as implemented.
+        Коміти 5–9 проходять через власний pre-commit (позитивний тест).
+
+     Верифікація (навмисні збої; тимчасове відкочується)
+
+     - ESLint scripts: npx eslint --print-config scripts/agent-hook-check.mjs
+       показує globals.node і правила; тимчасовий
+       scripts/__experiment__.mjs (невикористана змінна, невизначений
+       ідентифікатор) → npm run lint падає; process не скаржиться;
+       після видалення → зелений.
+     - PostToolUse: (а) src/__experiment__.ts з TS-помилкою → exit 2 +
+       діагностика агенту; виправити → exit 0; (б) lint-помилка (any);
+       (в) правка .md/docs/ → хук нічого не запускає (відсутні перевірки в
+       логах/часі); (г) .json правка запускає; (д) прямий
+       запуск скрипта зі stdin без file_path → перевірки запущені; (е)
+       skip-гілка «не scaffolded».
+     - Pre-commit: staged TS-помилка → git commit блокується, виправлення →
+       проходить.
+       LF і режим (без клону): після коміту git ls-files --eol 
+       .githooks/pre-commit scripts/* → i/lf w/lf attr/text eol=lf
+       (index і working tree — LF, атрибут із .gitattributes), та git ls-files 
+       -s .githooks/pre-commit → 100755.
+       Обмеження: це не заміна справжнього fresh-checkout тесту. Активація хука
+       через npm ci/prepare на свіжому клоні
+       не перевіряється в Phase 2: активація перевіряється лише в цій робочій
+       копії (npm run prepare → core.hooksPath=.githooks →
+       блокування коміту). У docs/quality-gates.md §2 це явно зазначено як
+       неперевірений пункт (опційна ручна перевірка людиною:
+       git clone → npm ci → тестовий коміт з помилкою).
+     - Guardrail: на чистому tracked-дереві й порожньому індексі (щоб -a
+       варіанти були нешкідливі навіть при збої) виконати кожен
+       варіант: --no-verify -m x; -m x --no-verify; -n -m x; -m x -n; -nm x; -am
+       x -n; контроль git commit -m x (має
+       пройти до pre-commit, «nothing to commit»); проби прогалин. Фіксується
+       блоковано/ні для кожного окремо; невдалі патерни виправляються й
+       перевіряються знову; решта — у документацію як обмеження.
+     - Stop hook: (0) спочатку прототип: підтвердити, що
+       continue:false+stopReason зупиняє сесію видимо;
+       (а) фільтр через AGENT_STOP_CHECK_DRY_RUN=1 на реальних станах git: чисте
+       дерево → skip; лише docs/x.md / CLAUDE.md → skip;
+       staged .ts → run; unstaged .ts → run; untracked .ts та .mjs → run;
+       deleted tracked файл (.ts) → run; rename .ts→.ts
+       (git mv) → run; rename .ts→docs/…/.md та .md→.ts → run (обидва кінці
+       перевіряються); шлях із пробілом → коректно;
+       (б) прямі запуски зі stdin (реальний check): зелений → 0; червоний +
+       active:false → 2 з діагностикою;
+       червоний + active:true → JSON continue:false, exit 0; (в) живий прогін:
+       завершити хід із навмисною TS-помилкою → хід
+       блокується; не виправляти → повторний стоп зупиняє сесію з stopReason;
+       виправити → стоп проходить.
+     - spec-reviewer (до 3 запусків, дозволені схваленням плану): (а) чистий
+       diff → без порушень; (б) тимчасовий файл із rotation camera /
+       імпортом OrbitControls → порушення позначено; (в) прохання зробити Edit →
+       недоступно. Перевірити, що /agents/сесія бачить агента.
+     - Фінал: npm run check зелений, git status чистий (крім gitignored), git 
+       diff переглянуто, wc -l CLAUDE.md ≤ 80.
+
+     Підтвердження видалення (CLAUDE.md: не видаляти без підтвердження)
+
+     Схвалення плану = підтвердження видалення лише цих тимчасових артефактів:
+     src/__experiment__.ts, scripts/__experiment__.mjs,
+     тимчасовий файл для spec-reviewer та тимчасові файли/git mv-перейменування
+     для перевірки фільтра Stop (перейменування
+     повертаються назад; нові файли видаляються). Усе інше (відкат
+     tracked-файлів через git checkout/reset) — окремо питаю.
+     Pre-existing: .claude/settings.local.json, gitignored dist/, test-results/
+     не чіпаю.
+
+     Ризики й обмеження
+
+     - Hooks/permissions/agents з нового .claude/settings.json та
+       .claude/agents/ можуть не підхопитися до /hooks-review або
+       перезапуску сесії → частина живих перевірок перейде в нову сесію;
+       відповідні статуси лишаться PLANNED.
+     - Stop з e2e (Chromium+Firefox) повільний: кожен хід з релевантними
+       незакомічено змінами коштує повного check. Нестабільний
+       e2e зупинятиме сесію (гучно, за дизайном). Після коміту Stop мовчить —
+       e2e/build гарантують лише CI (Phase 3) і правило
+       CLAUDE.md; до появи CI це прогалина для закомічених змін (документується
+       в §6).
+     - Фільтр git status не бачить gitignored файлів (за дизайном) і залежить
+       від коректного парсингу -z для rename/пробілів
+       (перевіряється dry-run матрицею).
+     - Guardrail — agent-level, не межа безпеки; зовнішнє -c core.hooksPath та
+       складені команди можуть обходити (залежно від проб).
+     - Windows: shell: true для npm, шляхи в лапках, LF-хуки (.gitattributes);
+       +x не діє на Windows, але критичний на Linux/macOS.
+     - PostToolUse на .json/.js також запускає повний typecheck+lint (кілька
+       секунд на правку); проміжні «зламані» стани дають шум.
+     - Скрипти .mjs лінтуються, але не типізуються (tsc не бачить JS) —
+       прийнятно для малих скриптів.
+
+     Як це працює разом
+
+     правка → PostToolUse (лише код, typecheck+lint) → git commit → pre-commit
+     (+test) і guardrail (немає --no-verify) →
+     кінець ходу → Stop (повний check, лише якщо git status показує релевантні
+     незакомічені зміни поза docs/ і *.md) → перед «готово» для змін src//e2e/
+     spec-reviewer (AC/правила) → CI (Phase 3, не зараз) повторює check на
+     сервері. Швидке — ближче до правки, повільне — до завершення.
+
+● Auto mode lets Claude handle permission prompts automatically — Claude
+  checks each tool call for risky actions and prompt injection before 
+  executing. Actions Claude identifies as safe are executed, while 
+  actions Claude identifies as risky are blocked and Claude may try a 
+  different approach. Ideal for long-running tasks. Claude can make 
+  mistakes that allow harmful commands to run, it's recommended to only 
+  use in isolated environments. Shift+Tab to change mode.
+
+● Починаю з кроку 0: базова лінія npm run check (змін у файлах немає, лише
+  gitignored test-results//dist/).
+
+● Bash(npm run check 2>&1 | tail -40; echo "EXIT=${PIPESTATUS[0]}"; git status
+      --short)
+  ⎿  > rotating-cube@0.0.1 lint
+     > eslint . --max-warnings 0
+     … +38 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+❯ Approved. One change: replace the AGENT_STOP_CHECK_DRY_RUN=1 environment      
+  variable with a --dry-run command-line flag for manual testing only. The      
+  configured Stop hook must never invoke the script in dry-run mode and must    
+  always perform the real check when the filter indicates relevant changes.     
+  Ensure the hook invocation cannot accidentally inherit or pass the dry-run    
+  flag.                                                                         
+
+● Базова лінія зелена, дерево чисте — враховую зміну: замість env-змінної буде
+  прапор --dry-run у CLI лише для ручних тестів, скрипт читатиме тільки
+  process.argv. Тепер документую всі п'ять механізмів у docs/quality-gates.md зі
+  статусом PLANNED. · summary
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 10 lines, removed 3 lines
+      34  
+      35  ### Hook script: `scripts/agent-hook-check.mjs`
+      36  
+      37 -A cross-platform Node.js ESM script with the following behaviou
+         -r:                                                             
+      37 +A cross-platform Node.js ESM script (shared helpers in `scripts
+         +/hook-utils.mjs`)                                              
+      38 +with the following behaviour:                                  
+      39  
+      39 -1. Checks whether `package.json` and `node_modules/` exist in t
+         -he project root.                                               
+      40 +1. Reads the hook input JSON from stdin and extracts `tool_inpu
+         +t.file_path`.                                                  
+      41 +   - If the extension is not one of `.ts`, `.tsx`, `.js`, `.mjs
+         +`, `.json`: exits                                              
+      42 +     with code **0** without running any check, so documentatio
+         +n-only edits never                                             
+      43 +     trigger checks.                                           
+      44 +   - If `file_path` is missing or the input cannot be parsed: f
+         +ail-safe — the                                                 
+      45 +     checks run.                                               
+      46 +2. Checks whether `package.json` and `node_modules/` exist in t
+         +he project root.                                               
+      47     - If either is absent: prints
+      48       `[hook] Skipping checks — project not yet scaffolded.` to 
+          stdout and exits
+      49       with code **0**, so project scaffolding is not blocked.
+      43 -2. Once both exist: runs `npm run typecheck` and `npm run lint`
+         - as child                                                      
+      50 +3. Once both exist: runs `npm run typecheck` and `npm run lint`
+         + as child                                                      
+      51     processes, captures their output, writes any failure diagnos
+          tics to **stderr**,
+      52     and exits with code **2** if either check fails.
+      53  
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 2 lines, removed 1 line
+      69          "hooks": [
+      70            {
+      71              "type": "command",
+      72 -            "command": "node scripts/agent-hook-check.mjs"     
+      72 +            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/agen
+         +t-hook-check.mjs\"",                                           
+      73 +            "timeout": 120                                     
+      74            }
+      75          ]
+      76        }
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 3 lines
+       93     agent.
+       94  3. Fixing the error.
+       95  4. Confirming the hook exits with code 0.
+       96 +5. Repeating with a lint-only error (e.g. an explicit `any`). 
+       97 +6. Confirming that an edit to a `.md` file or a file under `do
+          +cs/` runs no check,                                           
+       98 +   that a `.json` edit does, and that input without `file_path
+          +` runs the checks.                                            
+       99  
+      100  The hook remains marked **PLANNED** until this verification ha
+           s been completed.
+      101  
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 15 lines
+      138  - `npm` must be on the system PATH, which it is after a standa
+           rd Node.js install.
+      139  - The executable bit must be set and tracked in Git:
+      140    `git add --chmod=+x .githooks/pre-commit`
+      141 +- `.gitattributes` forces LF line endings for `.githooks/*` an
+          +d `scripts/*`                                                 
+      142 +  (`text eol=lf`), so a CRLF checkout (e.g. `core.autocrlf=tru
+          +e` on Windows)                                                
+      143 +  cannot break the shebang line.                              
+      144  
+      145 +### Verification criteria                                     
+      146 +                                                              
+      147 +1. A staged TypeScript error blocks `git commit`; after the fi
+          +x the commit passes.                                          
+      148 +2. `git ls-files --eol .githooks/pre-commit` reports `i/lf w/l
+          +f attr/text eol=lf`.                                          
+      149 +3. `git ls-files -s .githooks/pre-commit` reports mode `100755
+          +`.                                                            
+      150 +                                                              
+      151 +**Known gap:** items 2–3 do not replace a real fresh-checkout 
+          +test. Hook activation                                         
+      152 +through `npm ci` → `prepare` on a fresh clone is **not verifie
+          +d**; activation is                                            
+      153 +verified only in the working copy (`npm run prepare` → `core.h
+          +ooksPath=.githooks`                                           
+      154 +→ commit blocked). Optional manual check: `git clone`, `npm ci
+          +`, then attempt a                                             
+      155 +commit containing a TypeScript error.                         
+      156 +                                                              
+      157  ---
+      158  
+      159  ## 3. Full Gate — Before Reporting a Task Complete
+
+● Update(docs\quality-gates.md)  ⎿  Added 3 lines
+      165  small edit; fast feedback during implementation is provided by
+            the PostToolUse
+      166  hook (§1) and the pre-commit hook (§2).
+      167  
+      168 +For tasks that change `src/` or `e2e/`, the `spec-reviewer` su
+          +bagent (§7) is                                                
+      169 +invoked once on the diff after `npm run check` passes.        
+      170 +                                                              
+      171  ---
+      172  
+      173  ## 4. CI — GitHub Actions
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 7 lines, removed 1 line
+      213  ```json
+      214  {
+      215    "permissions": {
+      216 -    "deny": ["Bash(git commit --no-verify*)"]                 
+      216 +    "deny": [                                                 
+      217 +      "Bash(git commit --no-verify*)",                        
+      218 +      "Bash(git commit * --no-verify*)",                      
+      219 +      "Bash(git commit -n*)",                                 
+      220 +      "Bash(git commit * -n)",                                
+      221 +      "Bash(git commit * -n *)"                               
+      222 +    ]                                                         
+      223    },
+      224    "hooks": { "...": "..." }
+      225  }
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 127 lines, removed 4 lines
+      236  The guardrail covers the most likely accidental bypass path an
+           d is not intended
+      237  as an exhaustive filter.
+      238  
+      239 -**Verification:** once `.claude/settings.json` is created with
+          - this rule, verify                                            
+      240 -by having the agent attempt `Bash(git commit --no-verify ...)`
+          - and confirming                                               
+      241 -the tool call is blocked by Claude Code.                      
+      239 +**Verification:** once `.claude/settings.json` is created with
+          + these rules, verify                                          
+      240 +each pattern separately — wildcard matching is not assumed. On
+          + a clean tracked                                              
+      241 +tree with an empty index (so even a missed block is harmless),
+          + the agent attempts:                                          
+      242 +`git commit --no-verify -m x`, `git commit -m x --no-verify`, 
+      243 +`git commit -n -m x`, `git commit -m x -n`, `git commit -nm x`
+          +,                                                             
+      244 +`git commit -am x -n`, plus a control `git commit -m x` (must 
+          +not be blocked by                                             
+      245 +the deny rules). The blocked/not-blocked result is recorded pe
+          +r command. A pattern                                          
+      246 +that fails to block is corrected and re-tested; remaining bypa
+          +sses (for example                                             
+      247 +`git -c core.hooksPath=… commit`, or compound commands such as
+      248 +`a && git commit --no-verify`) are documented here as known li
+          +mitations.                                                    
+      249  
+      250  ---
+      251  
+      245 -## 6. Failure Protocol                                        
+      252 +## 6. Stop Hook — End-of-Turn Full Check                      
+      253  
+      254 +**Status: PLANNED** — `scripts/agent-stop-check.mjs` and its `
+          +.claude/settings.json`                                        
+      255 +entry do not yet exist.                                       
+      256 +                                                              
+      257 +**Scope:** runs when the agent finishes responding. Blocks the
+          + end of the turn if                                           
+      258 +`npm run check` (typecheck, lint, test, build, e2e) fails.    
+      259 +                                                              
+      260 +### Hook script: `scripts/agent-stop-check.mjs`               
+      261 +                                                              
+      262 +1. Reads the hook input JSON from stdin (`stop_hook_active`). 
+      263 +2. If `package.json` or `node_modules/` is absent: exits **0**
+          + (not scaffolded).                                            
+      264 +3. Runs `git status --porcelain=v1 -z --untracked-files=all`. 
+          +A change is                                                   
+      265 +   **relevant** if any of its paths (both paths for renames/co
+          +pies) is neither                                              
+      266 +   under `docs/` nor a `*.md` file. Staged, unstaged, untracke
+          +d, deleted and                                                
+      267 +   renamed entries are all covered. If no change is relevant: 
+          +exits **0**.                                                  
+      268 +4. Otherwise runs the real `npm run check`.                   
+      269 +   - Pass: exits **0**.                                       
+      270 +   - Fail with `stop_hook_active=false`: writes diagnostics (t
+          +ail of the failing                                            
+      271 +     step output) to **stderr** and exits **2**; the agent mus
+          +t fix the root cause.                                         
+      272 +   - Fail with `stop_hook_active=true` (the failure persisted 
+          +after a fix                                                   
+      273 +     attempt): prints `{"continue": false, "stopReason": "..."
+          +}` and exits **0**.                                           
+      274 +     The session halts with a visible message for the human (F
+          +ailure Protocol,                                              
+      275 +     step 7).                                                 
+      276 +                                                              
+      277 +**Loop prevention without silent success:** exit 2 on every fa
+          +ilure would loop                                              
+      278 +forever; exit 0 on `stop_hook_active` would let the task finis
+          +h with a red check.                                           
+      279 +Stopping loudly with an explanation avoids both, and needs no 
+          +state between runs.                                           
+      280 +The tree stays modified, so the next turn runs the check again
+          +.                                                             
+      281 +                                                              
+      282 +**Dry-run (manual testing only):** `node scripts/agent-stop-ch
+          +eck.mjs --dry-run`                                            
+      283 +prints the filter decision (run/skip and why) and exits **0** 
+          +without running the                                           
+      284 +check. It is a command-line flag only — no environment variabl
+          +e enables it — and                                            
+      285 +the configured hook command never passes it.                  
+      286 +                                                              
+      287 +### Trade-off                                                 
+      288 +                                                              
+      289 +After a commit the tree is clean, so the Stop hook does **not*
+          +* run `check`.                                                
+      290 +Committed code has already passed `typecheck` + `lint` + `test
+          +` in the pre-commit                                           
+      291 +hook; `build` and `e2e` for committed code are guaranteed only
+          + by CI (Phase 3) and                                          
+      292 +by the `npm run check` rule in `CLAUDE.md`. The Stop hook is a
+          + safety net for                                               
+      293 +**uncommitted** changes, not a guarantee that e2e runs every t
+          +urn. The cost of the                                          
+      294 +alternative (a state file or fingerprint) was judged higher th
+          +an this gap.                                                  
+      295 +                                                              
+      296 +### Configuration (`.claude/settings.json`)                   
+      297 +                                                              
+      298 +```json                                                       
+      299 +{                                                             
+      300 +  "hooks": {                                                  
+      301 +    "Stop": [                                                 
+      302 +      {                                                       
+      303 +        "hooks": [                                            
+      304 +          {                                                   
+      305 +            "type": "command",                                
+      306 +            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/age
+          +nt-stop-check.mjs\"",                                         
+      307 +            "timeout": 600                                    
+      308 +          }                                                   
+      309 +        ]                                                     
+      310 +      }                                                       
+      311 +    ]                                                         
+      312 +  }                                                           
+      313 +}                                                             
+      314 +```                                                           
+      315 +                                                              
+      316 +### Verification criteria                                     
+      317 +                                                              
+      318 +1. Prototype first: confirm that `continue: false` + `stopReas
+          +on` from a Stop hook                                          
+      319 +   halts the session with a visible message.                  
+      320 +2. With `--dry-run`, check the filter on real git states: clea
+          +n tree → skip;                                                
+      321 +   only `docs/x.md` or `CLAUDE.md` changed → skip; staged, uns
+          +taged and untracked                                           
+      322 +   `.ts`/`.mjs` → run; deleted `.ts` → run; `.ts`→`.ts` rename
+          + → run;                                                       
+      323 +   `.ts`→`.md` and `.md`→`.ts` renames → run; a path containin
+          +g a space → handled.                                          
+      324 +3. Direct runs with stdin input (real check): green → 0; red w
+          +ith                                                           
+      325 +   `stop_hook_active=false` → 2 with diagnostics; red with `st
+          +op_hook_active=true`                                          
+      326 +   → `continue:false` JSON, exit 0.                           
+      327 +4. Live run: end a turn with a deliberate TypeScript error → t
+          +he turn is blocked;                                           
+      328 +   leave it unfixed → the next stop halts the session with `st
+          +opReason`; fix it →                                           
+      329 +   the stop passes.                                           
+      330 +5. The hook command in `.claude/settings.json` contains no `--
+          +dry-run`.                                                     
+      331 +                                                              
+      332 +---                                                           
+      333 +                                                              
+      334 +## 7. spec-reviewer Subagent                                  
+      335 +                                                              
+      336 +**Status: PLANNED** — `.claude/agents/spec-reviewer.md` does n
+          +ot yet exist.                                                 
+      337 +                                                              
+      338 +A read-only subagent that compares a diff against the acceptan
+          +ce criteria in                                                
+      339 +`docs/spec.md` and the rules in `CLAUDE.md`. It covers control
+          +s that tooling                                                
+      340 +cannot enforce (spec §7.5: "Cube mesh rotates (not camera) — a
+          +gent instruction +                                            
+      341 +code review").                                                
+      342 +                                                              
+      343 +- **Tools:** `Read`, `Grep`, `Glob` only — no `Bash`, `Edit` o
+          +r `Write`, so it                                              
+      344 +  cannot modify the repository. The invoking agent passes the 
+          +changed file list and                                         
+      345 +  the diff in the prompt.                                     
+      346 +- **Checks:** mesh (not camera) rotation, no OrbitControls, AC
+          + IDs in test names,                                           
+      347 +  English-only project files, behaviour matching the relevant 
+          +AC.                                                           
+      348 +- **Output:** findings as `file:line — violation — AC/rule`; a
+          +dvisory only.                                                 
+      349 +                                                              
+      350 +### Invocation policy                                         
+      351 +                                                              
+      352 +`CLAUDE.md` otherwise restricts subagents to explicit user req
+          +uests. The rule in                                            
+      353 +`CLAUDE.md` Workflow step 6 is the user's standing authorizati
+          +on for this                                                   
+      354 +subagent only: after `npm run check` passes, if the task chang
+          +ed `src/` or `e2e/`,                                          
+      355 +invoke `spec-reviewer` once on the diff; fix or report each fi
+          +nding. A second                                               
+      356 +invocation is allowed only after substantial fixes. For docume
+          +ntation- or                                                   
+      357 +tooling-only tasks it is used on request. The review does not 
+          +replace `check`.                                              
+      358 +                                                              
+      359 +### Verification criteria                                     
+      360 +                                                              
+      361 +1. A clean diff produces no findings.                         
+      362 +2. A temporary file that rotates the camera or imports OrbitCo
+          +ntrols is flagged.                                            
+      363 +3. Asked to edit a file, the subagent cannot (no write tools).
+      364 +4. The subagent is visible to the session (a new session may b
+          +e required).                                                  
+      365 +                                                              
+      366 +---                                                           
+      367 +                                                              
+      368 +## 8. Failure Protocol                                        
+      369 +                                                              
+      370  When any check fails, the agent must:
+      371  
+      372  1. Read the full error output before attempting a fix.
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      381  
+      382  ---
+      383  
+      384 -## 7. Implementation Status                                   
+      384 +## 9. Implementation Status                                   
+      385  
+      386  | Mechanism | Artifact | Status |
+      387  |-----------|----------|--------|
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 6 lines, removed 2 lines
+      390  | Quality gate definitions | `docs/quality-gates.md` | **Imple
+           mented** |
+      391  | Node.js version pin | `.nvmrc` | **Implemented** |
+      392  | `package.json` scripts + `prepare` | `package.json` | **Impl
+           emented** |
+      393 -| PostToolUse hook script | `scripts/agent-hook-check.mjs` | *
+          -*Planned** |                                                  
+      394 -| PostToolUse hook + permission guardrail | `.claude/settings.
+          -json` | **Planned** |                                         
+      393 +| PostToolUse hook script | `scripts/agent-hook-check.mjs` + `
+          +scripts/hook-utils.mjs` | **Planned** |                       
+      394 +| Stop hook script | `scripts/agent-stop-check.mjs` | **Planne
+          +d** |                                                         
+      395 +| PostToolUse + Stop hooks + permission guardrail | `.claude/s
+          +ettings.json` | **Planned** |                                 
+      396 +| spec-reviewer subagent | `.claude/agents/spec-reviewer.md` |
+          + **Planned** |                                                
+      397 +| LF line endings for hooks and scripts | `.gitattributes` | *
+          +*Planned** |                                                  
+      398 +| ESLint block for `scripts/*.mjs` | `eslint.config.js` | **Pl
+          +anned** |                                                     
+      399  | ESLint flat config + `no-restricted-imports` | `eslint.confi
+           g.js` | **Implemented** |
+      400  | TypeScript strict config | `tsconfig.json` | **Implemented**
+            |
+      401  | Vitest config | `vitest.config.ts` | **Implemented** |
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      405  
+      406  ---
+      407  
+      408 -## 8. Resolved Decisions                                      
+      408 +## 10. Resolved Decisions                                     
+      409  
+      410  | Decision | Resolution |
+      411  |----------|------------|
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 6 lines
+      415  | Default branch | `main` |
+      416  | CI runner | `ubuntu-latest` |
+      417  | PostToolUse hook matcher | `Edit\|Write` (`MultiEdit` not su
+           pported in the Claude Code version used at project setup) |
+      418 +| PostToolUse file filter | Only `.ts`, `.tsx`, `.js`, `.mjs`,
+          + `.json` edits run checks; missing `file_path` fails safe (che
+          +cks run) |                                                    
+      419 +| Stop hook scope | Full `npm run check`, only when `git statu
+          +s` shows relevant changes outside `docs/` and `*.md`; no state
+          + file |                                                       
+      420 +| Stop hook repeated failure | `stop_hook_active=true` + faili
+          +ng check → `continue:false` with `stopReason`; never a silent 
+          +pass |                                                        
+      421 +| Stop hook dry-run | `--dry-run` CLI flag for manual testing 
+          +only; no env var; never used by the configured hook |         
+      422 +| spec-reviewer invocation | Standing authorization in `CLAUDE
+          +.md` for this subagent only, for tasks changing `src/` or `e2e
+          +/` |                                                          
+      423 +| Guardrail patterns | Five `git commit` deny patterns (§5), e
+          +ach verified separately |                                     
+      424  
+      425  ---
+      426  
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      424  
+      425  ---
+      426  
+      427 -## 9. Verification Required After Implementation              
+      427 +## 11. Verification Required After Implementation             
+      428  
+      429  These items are in a defined state but require post-implementa
+           tion testing before
+      430  they can be marked as implemented:
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 5 lines, removed 2 lines
+      431  
+      432  | Item | Verification steps |
+      433  |------|-------------------|
+      434 -| PostToolUse hook (§1) | Introduce a deliberate TypeScript er
+          -ror; confirm hook exits with code 2 and surfaces diagnostics; 
+          -fix the error; confirm hook exits with code 0. |              
+      435 -| Permission guardrail (§5) | Attempt `Bash(git commit --no-ve
+          -rify ...)` through the agent; confirm the tool call is blocked
+          - by Claude Code. |                                            
+      434 +| PostToolUse hook (§1) | Introduce a deliberate TypeScript er
+          +ror; confirm hook exits with code 2 and surfaces diagnostics; 
+          +fix the error; confirm hook exits with code 0. Also lint-only 
+          +error, docs-only edit (no check), `.json` edit (check), missin
+          +g `file_path` (check). |                                      
+      435 +| Pre-commit hook (§2) | Staged TypeScript error blocks `git c
+          +ommit`; fix passes. `git ls-files --eol` shows LF, `git ls-fil
+          +es -s` shows `100755`. Fresh-clone activation via `npm ci` is 
+          +a known unverified gap. |                                     
+      436 +| Permission guardrail (§5) | Attempt each deny-pattern varian
+          +t separately through the agent; record blocked/not blocked per
+          + command; document remaining bypasses. |                      
+      437 +| Stop hook (§6) | Prototype `continue:false`; `--dry-run` fil
+          +ter matrix; direct runs with `stop_hook_active` true/false; li
+          +ve blocked turn and halt; confirm no `--dry-run` in settings. 
+          +|                                                             
+      438 +| spec-reviewer (§7) | Clean diff has no findings; camera rota
+          +tion / OrbitControls flagged; edit attempt impossible; agent v
+          +isible to the session. |                                      
+
+● Документ оновлено. Комічу крок 1.
+
+● Bash(git add docs/quality-gates.md && git commit -m "$(cat <<'EOF'
+      docs: describe Stop hook and spec-reviewer in quality gates…)
+  ⎿  warning: in the working copy of 'docs/quality-gates.md', LF will be re
+     placed by CRLF the next time Git touches it
+     [main fd1d00a] docs: describe Stop hook and spec-reviewer in quality g
+     … +3 lines (ctrl+o to expand)
+
+● Крок 2: .gitattributes з LF для .githooks/* і scripts/*.
+
+● Write(.gitattributes)
+  ⎿  Wrote 2 lines to .gitattributes
+      1 .githooks/* text eol=lf
+      2 scripts/* text eol=lf
+
+● Bash(git add .gitattributes && git commit -m "$(cat <<'EOF'
+      build: enforce LF line endings for hooks and scripts…)
+  ⎿  warning: in the working copy of '.gitattributes', LF will be replaced
+     by CRLF the next time Git touches it
+     [main 029a199] build: enforce LF line endings for hooks and scripts
+     … +3 lines (ctrl+o to expand)
+
+● Крок 3: блок ESLint для scripts/*.mjs.
+
+● Update(eslint.config.js)
+  ⎿  Added 9 lines
+      38        ],
+      39      },
+      40    },
+      41 +  {                                                            
+      42 +    extends: [js.configs.recommended],                         
+      43 +    files: ['scripts/*.mjs'],                                  
+      44 +    languageOptions: {                                         
+      45 +      ecmaVersion: 2022,                                       
+      46 +      sourceType: 'module',                                    
+      47 +      globals: globals.node,                                   
+      48 +    },                                                         
+      49 +  },                                                           
+      50  )
+
+● Bash(mkdir -p scripts && printf 'const unused = 1\nconsole.log(process.argv,
+      undefinedThing)\n' > scripts/__experiment__.mjs && npx eslint
+      --print-config scripts/__e…)
+  ⎿      "no-undef": [
+         "no-unused-vars": [
+           "console": false,
+     … +16 lines (ctrl+o to expand)
+
+● Лінт успішно зловив обидві навмисні помилки, а на process/console скарг немає.
+  Видаляю тимчасовий файл і перевіряю, що лінт знову проходить без помилок. 
+  · summary
+
+● Bash(rm scripts/__experiment__.mjs && rmdir scripts && npm run lint 2>&1 |
+      tail -4; echo "EXIT=${PIPESTATUS[0]}"; git status --short)
+  ⎿  > rotating-cube@0.0.1 lint
+     > eslint . --max-warnings 0
+     … +2 lines (ctrl+o to expand)
+
+● Bash(git add eslint.config.js && git commit -m "$(cat <<'EOF'
+      chore(eslint): lint scripts/*.mjs with Node globals…)
+  ⎿  warning: in the working copy of 'eslint.config.js', LF will be replace
+     d by CRLF the next time Git touches it
+     [main b4a1e1b] chore(eslint): lint scripts/*.mjs with Node globals
+     … +2 lines (ctrl+o to expand)
+
+● Крок 4: PostToolUse. Спочатку скрипти (спільний hook-utils.mjs +
+  agent-hook-check.mjs), потім settings.json.
+
+● Write(scripts\hook-utils.mjs)
+  ⎿  Wrote 40 lines to scripts\hook-utils.mjs
+       1 import { spawnSync } from 'node:child_process'
+       2 import { existsSync, readFileSync } from 'node:fs'
+       3 import { resolve } from 'node:path'
+       4 import { fileURLToPath } from 'node:url'
+       5 
+         ta.url))
+       7 
+       8 export function isScaffolded() {
+       9   return (
+      10     existsSync(resolve(projectRoot, 'package.json')) &&
+     … +32 lines (ctrl+o to expand)
+
+● Write(scripts\agent-hook-check.mjs)
+  ⎿  Wrote 29 lines to scripts\agent-hook-check.mjs
+       1 import { extname } from 'node:path'
+       2 import { isScaffolded, lastLines, readStdinJson, runNpm } from '
+       3 
+       4 const CHECKED_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs'
+         , '.json'])
+       6 // A missing or unparsable file_path falls through to the checks
+          (fail-safe).
+       7 const filePath = readStdinJson()?.tool_input?.file_path
+       9   typeof filePath === 'string' &&
+      10   !CHECKED_EXTENSIONS.has(extname(filePath).toLowerCase())
+     … +24 lines (ctrl+o to expand)
+● Write(.claude\settings.json)
+  ⎿  Wrote 16 lines to .claude\settings.json
+       1 {
+       2   "hooks": {
+       3     "PostToolUse": [
+       4       {
+       5         "matcher": "Edit|Write",
+       7           {
+       8             "type": "command",
+       9             "command": "node \"$CLAUDE_PROJECT_DIR/scripts/agent
+         -hook-check.mjs\"",
+      10             "timeout": 120
+     … +7 lines (ctrl+o to expand)
+
+● Скрипти створено. Тепер запускаю прямі перевірки зі stdin у зеленому стані:
+  .md (пропуск), .json, без file_path та невалідний JSON. · summary
+
+● Bash(run() { printf '%s' "$2" | node scripts/agent-hook-check.mjs; echo "  ->
+      [$1] exit=$?"; }
+      run md '{"tool_input":{"file_path":"docs/x.md"}}'…)
+  ⎿  [hook] Skipping checks — not a code or config file.
+       -> [md] exit=0
+       -> [docs-md-upper] exit=0
+     … +4 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● Скрипт не виводить повідомлення при успішному виконанні, тож додаю
+  повідомлення про успіх і розбираюсь, чому другий кейс (CLAUDE.MD) не показав
+  пропуск. · summary
+
+● Update(scripts\agent-hook-check.mjs)
+  ⎿  Added 1 line
+      26      console.error(`[hook] npm run ${script} failed:\n${lastLine
+          s(output)}\n`)
+      27    }
+      28  }
+      29 +if (!failed) console.log('[hook] typecheck and lint passed.')  
+      30  process.exit(failed ? 2 : 0)
+
+● Bash(run() { printf '%s' "$2" | node scripts/agent-hook-check.mjs; echo "  ->
+      [$1] exit=$?"; }
+      run md-upper-win '{"tool_input":{"file_path":"C:\\p\\CLAUDE.MD"}}'…)
+  ⎿  [hook] typecheck and lint passed.
+       -> [md-upper-win] exit=0
+     [hook] Skipping checks — not a code or config file.
+     … +2 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● Bash(printf '%s' '{"tool_input":{"file_path":"C:\\p\\CLAUDE.MD"}}' | od -c |
+      head -5; printf '%s' '{"tool_input":{"file_path":"C:\\p\\CLAUDE.MD"}}' |
+      node -e "const…)
+  ⎿  0000000   {   "   t   o   o   l   _   i   n   p   u   t   "   :   {
+     "
+     0000020   f   i   l   e   _   p   a   t   h   "   :   "   C   :   \
+     … +5 lines (ctrl+o to expand)
+
+● Це була помилка мого тестового вводу — shell з'їв подвійні слеші, JSON став
+  невалідним, спрацював fail-safe. Повторюю тест із JSON, згенерованим через
+  Node. · summary
+
+● Bash(gen() { node -e "process.stdout.write(JSON.stringify({tool_input:{file_pa
+      th:process.argv[1]}}))" -- "$1"; }
+      for p in 'C:\p\CLAUDE.MD' 'C:\Users\x\docs\spec.md'…)
+  ⎿  == C:\p\CLAUDE.MD
+     [hook] Skipping checks — not a code or config file.
+       exit=0
+     … +12 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● Створюю тимчасовий файл src/__experiment__.ts з помилкою типів для навмисного
+  збою — якщо хук уже активний, сам Write має показати діагностику. · summary
+
+● Write(src\__experiment__.ts)
+  ⎿  Wrote 1 line to src\__experiment__.ts
+      1 export const experiment: number = 'not a number'
+  ⎿  PostToolUse:Write hook returned blocking error
+  ⎿  [node "$CLAUDE_PROJECT_DIR/scripts/agent-hook-check.mjs"]: [hook] npm run 
+     typecheck failed:
+
+     > rotating-cube@0.0.1 typecheck
+     > tsc --noEmit
+
+     src/__experiment__.ts(1,14): error TS2322: Type 'string' is not assignable 
+     to type 'number'.
+
+● Хук працює наживо: exit 2 з діагностикою TS2322. Тепер помилка лише для лінту
+  (явний any), типи валідні.
+
+● Write(src\__experiment__.ts)
+  ⎿  Added 1 line, removed 1 line
+      1 -export const experiment: number = 'not a number'                
+      1 +export const experiment: any = 1                                
+  ⎿  PostToolUse:Write hook returned blocking error
+  ⎿  [node "$CLAUDE_PROJECT_DIR/scripts/agent-hook-check.mjs"]: [hook] npm run 
+     lint failed:
+
+     > rotating-cube@0.0.1 lint
+     > eslint . --max-warnings 0
+
+
+     C:\Users\IrynaPolchaninova\Projects\rotating-cube\src\__experiment__.ts
+       1:26  error  Unexpected any. Specify a different type  
+     @typescript-eslint/no-explicit-any
+
+     ✖ 1 problem (1 error, 0 warnings)
+
+● Лінт-збій теж ловиться (typecheck не скаржився). Виправляю причину, щоб
+  побачити exit 0.
+
+● Write(src\__experiment__.ts)
+  ⎿  Added 1 line, removed 1 line
+      1 -export const experiment: any = 1                                
+      1 +export const experiment: number = 1                             
+
+● Хук пройшов успішно (без блокування). Тепер перевірю фільтр розширень на
+  живому прикладі: залишаю в дереві помилку типів, тестую запис .md (не має
+  спрацювати) та .json (має спрацювати). · summary
+
+● Write(src\__experiment__.ts)
+  ⎿  Added 1 line, removed 1 line
+      1 -export const experiment: number = 1                             
+      1 +export const experiment: number = 'broken'                      
+  ⎿  PostToolUse:Write hook returned blocking error
+  ⎿  [node "$CLAUDE_PROJECT_DIR/scripts/agent-hook-check.mjs"]: [hook] npm run 
+     typecheck failed:
+
+     > rotating-cube@0.0.1 typecheck
+     > tsc --noEmit
+
+     src/__experiment__.ts(1,14): error TS2322: Type 'string' is not assignable 
+     to type 'number'.
+
+● Помилка тепер у дереві. Пишу .md (очікую тишу) і .json (очікую блокування).
+
+● Write(docs\__experiment__.md)
+  ⎿  Wrote 1 line to docs\__experiment__.md
+      1 temporary experiment file
+
+● Write(src\__experiment__.json)
+  ⎿  Wrote 1 line to src\__experiment__.json
+      1 {}
+  ⎿  PostToolUse:Write hook returned blocking error
+  ⎿  [node "$CLAUDE_PROJECT_DIR/scripts/agent-hook-check.mjs"]: [hook] npm run 
+     typecheck failed:
+
+     > rotating-cube@0.0.1 typecheck
+     > tsc --noEmit
+
+     src/__experiment__.ts(1,14): error TS2322: Type 'string' is not assignable 
+     to type 'number'.
+
+● Підтвердив: .md перевірки не запускає, .json — запускає. Видаляю три тимчасові
+  файли і перевіряю «не scaffolded» гілку на копії скриптів у scratchpad без
+  package.json. · summary
+
+● Bash(rm src/__experiment__.ts src/__experiment__.json docs/__experiment__.md
+      SP="C:/Users/IRYNAP~1/AppData/Local/Temp/claude/C--Users-IrynaPolchaninova
+      -Projects-rota…)
+  ⎿  [hook] Skipping checks — project not yet scaffolded.
+     not-scaffolded exit=0
+     --- tree:
+     … +5 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● PostToolUse повністю перевірено (виправлення → зелений, фільтр, fail-safe,
+  skip). Комічу крок 4.
+● Bash(git add scripts/hook-utils.mjs scripts/agent-hook-check.mjs
+      .claude/settings.json && git status --short && git commit -m "$(cat
+      <<'EOF'
+      chore(hooks): add PostTo…)
+  ⎿  warning: in the working copy of '.claude/settings.json', LF will be re
+     placed by CRLF the next time Git touches it
+     A  .claude/settings.json
+     … +8 lines (ctrl+o to expand)
+
+● Створюю pre-commit хук, встановлюю прапорець виконання в індексі та активую
+  його через npm run prepare (локально). Далі перевірю на навмисному збої. 
+  · summary
+
+● Write(.githooks\pre-commit)
+  ⎿  Wrote 2 lines to .githooks\pre-commit
+      1 #!/bin/sh
+      2 npm run typecheck && npm run lint && npm run test
+
+● Bash(git add --chmod=+x .githooks/pre-commit && npm run prepare 2>&1 | tail
+      -2; echo "hooksPath=$(git config core.hooksPath)"; git ls-files -s
+      .githooks/pre-commit;…)
+  ⎿  > git config core.hooksPath .githooks
+
+     hooksPath=.githooks
+     … +4 lines (ctrl+o to expand)
+
+● Режим 100755, LF в індексі та робочій копії, core.hooksPath=.githooks
+  підтверджено. Тепер перевірю навмисний збій: застейджена помилка типів має
+  заблокувати коміт. · summary
+
+● Write(src\__experiment__.ts)
+  ⎿  Wrote 1 line to src\__experiment__.ts
+      1 export const experiment: number = 'broken'
+  ⎿  PostToolUse:Write hook returned blocking error
+  ⎿  [node "$CLAUDE_PROJECT_DIR/scripts/agent-hook-check.mjs"]: [hook] npm run 
+     typecheck failed:
+
+     > rotating-cube@0.0.1 typecheck
+     > tsc --noEmit
+
+     src/__experiment__.ts(1,14): error TS2322: Type 'string' is not assignable 
+     to type 'number'.
+
+● Bash(git add src/__experiment__.ts && git commit -m "test: deliberately
+      failing commit (must be blocked)" 2>&1 | tail -12; echo
+      "COMMIT_EXIT=${PIPESTATUS[0]}"; git l…)
+  ⎿  warning: in the working copy of 'src/__experiment__.ts', LF will be re
+     placed by CRLF the next time Git touches it
+     … +7 lines (ctrl+o to expand)
+
+● Коміт заблоковано (exit 1, HEAD не змінився) — хук спрацював як позитивний
+  тест. Тепер прибираю експеримент: розстейджую й видаляю файл. · summary
+
+● Bash(git rm -q --cached src/__experiment__.ts && rm src/__experiment__.ts &&
+      git status --short && git commit -m "$(cat <<'EOF'
+      chore(githooks): add pre-commit hook…)
+  ⎿  A  .githooks/pre-commit
+      Test Files  1 passed (1)
+           Tests  1 passed (1)
+     … +9 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● Позитивний тест пройшов — хук запустив typecheck, lint і test, коміт 77a5052
+  створено. Переходжу до кроку 6: додаю п'ять deny-патернів у settings.json для
+  guardrail. · summary
+
+● Update(.claude\settings.json)
+  ⎿  Added 9 lines
+       1  {
+       2 +  "permissions": {                                             
+       3 +    "deny": [                                                  
+       4 +      "Bash(git commit --no-verify*)",                         
+       5 +      "Bash(git commit * --no-verify*)",                       
+       6 +      "Bash(git commit -n*)",                                  
+       7 +      "Bash(git commit * -n)",                                 
+       8 +      "Bash(git commit * -n *)"                                
+       9 +    ]                                                          
+      10 +  },                                                           
+      11    "hooks": {
+      12      "PostToolUse": [
+      13        {
+
+● Bash(git add .claude/settings.json && git commit -m "chore(claude): deny
+      pre-commit bypass in agent permissions" 2>&1 | tail -3; git log --oneline
+      -1; git status --s…)
+  ⎿  warning: in the working copy of '.claude/settings.json', LF will be re
+     placed by CRLF the next time Git touches it
+     … +4 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● Дерево чисте й індекс порожній, тож навіть якщо правило не спрацює, зайвого
+  коміту не буде. Запускаю всі варіанти окремо та паралельно, разом із
+  контрольними пробами. · summary
+
+● Bash(git commit --no-verify -m x)
+  ⎿  Error: Permission to use Bash with command git commit --no-verify -m x has 
+     been denied.
+
+● Bash(git commit -m x --no-verify)
+  ⎿  Error: Permission to use Bash with command git commit -m x --no-verify has 
+     been denied.
+
+● Bash(git commit -n -m x)
+  ⎿  Error: Permission to use Bash with command git commit -n -m x has been 
+     denied.
+
+● Bash(git commit -m x -n)
+  ⎿  Error: Permission to use Bash with command git commit -m x -n has been 
+     denied.
+
+● Bash(git commit -nm x)
+  ⎿  Error: Permission to use Bash with command git commit -nm x has been 
+     denied.
+
+● Bash(git commit -am x -n)
+  ⎿  Error: Permission to use Bash with command git commit -am x -n has been 
+     denied.
+
+● Bash(git commit -m x)
+  ⎿  Error: Exit code 1
+
+     > rotating-cube@0.0.1 typecheck
+     > tsc --noEmit
+
+
+     > rotating-cube@0.0.1 lint
+     > eslint . --max-warnings 0
+
+
+     … +14 lines (ctrl+o to expand)
+
+● Bash(git status --short && git commit --no-verify -m x)
+  ⎿  Error: Permission to use Bash with command git status --short && git commit
+     --no-verify -m x has been denied.
+
+● Bash(git -c core.hooksPath=/nonexistent commit -m x)
+  ⎿  Error: Exit code 1
+     On branch main
+     nothing to commit, working tree clean
+● Варіанти 1–6 заблоковано, контрольна команда не заблокована (хук запрацював,
+  «nothing to commit»), а git -c core.hooksPath=… commit пройшов — це
+  підтверджена прогалина. Додаю окремий кейс для патерну з -n та ще дві проби
+  прогалин для точнішої атрибуції. · summary
+
+● Bash(git commit -m x -n -q)
+  ⎿  Error: Permission to use Bash with command git commit -m x -n -q has been 
+     denied.
+
+● Bash(git -C . commit --no-verify -m x)
+  ⎿  Error: Exit code 1
+     On branch main
+     nothing to commit, working tree clean
+
+● Bash(git commit --amend --no-edit --no-verify)
+  ⎿  Error: Permission to use Bash with command git commit --amend --no-edit 
+     --no-verify has been denied.
+
+● Усі п'ять патернів заблоковано, прогалини зафіксую в документації на
+  фінальному кроці. Тепер переходжу до кроку 7 — перевіряю припущення про
+  continue:false + stopReason за допомогою мінімального тимчасового прототипу
+  Stop-хука, який лише друкує JSON без перевірок (зміна в settings.json ще не
+  закомічена). · summary
+
+● Update(.claude\settings.json)
+  ⎿  Added 10 lines
+       9      ]
+      10    },
+      11    "hooks": {
+      12 +    "Stop": [                                                  
+      13 +      {                                                        
+      14 +        "hooks": [                                             
+      15 +          {                                                    
+      16 +            "type": "command",                                 
+      17 +            "command": "node -e \"console.log(JSON.stringify({c
+         +ontinue:false,stopReason:'PROTOTYPE: continue:false from Stop h
+         +ook works'}))\""                                               
+      18 +          }                                                    
+      19 +        ]                                                      
+      20 +      }                                                        
+      21 +    ],                                                         
+      22      "PostToolUse": [
+      23        {
+      24          "matcher": "Edit|Write",
+
+● Кроки 1–6 виконано й перевірено. Зараз іде перевірка припущення про Stop-хук,
+  тож цей хід має зупинитися з повідомленням PROTOTYPE: continue:false from Stop
+  hook works. Якщо воно з'явилося, напишіть «continue», і я приберу прототип та
+  реалізую справжній Stop-скрипт. Якщо хід завершився без повідомлення,
+  припущення не підтвердилось: напишіть мені про це, і я запропоную запасні
+  варіанти.
+
+  Зроблено (коміти):
+  - fd1d00a: документація Stop hook і spec-reviewer у docs/quality-gates.md.
+  - 029a199: .gitattributes з LF для .githooks/* і scripts/*.
+  - b4a1e1b: ESLint-блок для scripts/*.mjs. Лінт ловить навмисні помилки, а
+    process і console не скаржаться.
+  - 4ed6f34: PostToolUse-хук. Живі тести підтвердили:
+    - помилка типів дає exit 2 з діагностикою, а помилка лише лінту ловиться
+      окремо;
+    - правка .md нічого не запускає, а .json запускає;
+    - відсутній file_path або невалідний JSON дає перевірки (fail-safe);
+    - у гілці «не scaffolded» хук пропускає перевірки.
+  - 77a5052: pre-commit-хук.
+    - Коміт зі застейдженою помилкою заблоковано.
+    - Сам цей коміт пройшов через хук.
+    - В індексі 100755 і LF.
+    - Активація на свіжому клоні не перевірялась (задокументую як відомий
+      пропуск).
+  - 49e36b9: guardrail. Усі п'ять deny-патернів заблокували свої контрольні
+    команди. Складена команда з && теж заблокована.
+
+  Прогалини guardrail (не заблоковано):
+  - git -c core.hooksPath=… commit;
+  - git -C . commit --no-verify ….
+
+  Додати патерни для них?
+
+  Одна проба (git commit --amend --no-edit --no-verify) була ризикованою, бо в
+  разі збою правила вона перезаписала б HEAD. Правило її заблокувало, і більше
+  таких проб я не робитиму.
+
+  Статуси в docs/quality-gates.md змінюю лише на кроці 9, після всіх перевірок.
+  Заплановані файли .claude/agents/spec-reviewer.md,
+  scripts/agent-stop-check.mjs і правило в CLAUDE.md ще не створені.
+
+● Ran 1 stop hook (ctrl+o to expand)
+  ⎿  PROTOTYPE: continue:false from Stop hook works
+
+✻ Brewed for 9m 36s · done 8:06 PM
+
+❯ continue                                                                      
+                                                                                
+  Close the two identified guardrail gaps by adding deny rules for git -c * and 
+  git -C *. The agent works from the repository root and does not need these    
+  options.                                                                      
+                                                                                
+  Verify that both rules block the relevant command forms, and document any     
+  remaining limitations. Use only safe probes that cannot modify repository     
+  history or create commits. Do not run any --amend probes.                     
+                                                                                
+  Then continue with the approved Stop hook implementation and its verification 
+  plan.                                                                         
+
+● Прототип спрацював: сесію зупинено з повідомленням stopReason, тож припущення
+  підтверджено. Прибираю прототип зі settings.json і додаю два нові
+  deny-правила.
+
+● Update(.claude\settings.json)
+  ⎿  Removed 10 lines
+       9      ]
+      10    },
+      11    "hooks": {
+      12 -    "Stop": [                                                  
+      13 -      {                                                        
+      14 -        "hooks": [                                             
+      15 -          {                                                    
+      16 -            "type": "command",                                 
+      17 -            "command": "node -e \"console.log(JSON.stringify({c
+         -ontinue:false,stopReason:'PROTOTYPE: continue:false from Stop h
+         -ook works'}))\""                                               
+      18 -          }                                                    
+      19 -        ]                                                      
+      20 -      }                                                        
+      21 -    ],                                                         
+      12      "PostToolUse": [
+      13        {
+      14          "matcher": "Edit|Write",
+
+● Update(.claude\settings.json)
+  ⎿  Added 3 lines, removed 1 line
+       5        "Bash(git commit * --no-verify*)",
+       6        "Bash(git commit -n*)",
+       7        "Bash(git commit * -n)",
+       8 -      "Bash(git commit * -n *)"                                
+       8 +      "Bash(git commit * -n *)",                               
+       9 +      "Bash(git -c *)",                                        
+      10 +      "Bash(git -C *)"                                         
+      11      ]
+      12    },
+      13    "hooks": {
+
+● Bash(git diff --stat; git diff .claude/settings.json)
+  ⎿  warning: in the working copy of '.claude/settings.json', LF will be re
+     placed by CRLF the next time Git touches it
+      .claude/settings.json | 4 +++-
+     … +18 lines (ctrl+o to expand)
+
+● Прототип прибрано, у диффі залишились лише два нові правила. Тепер запущу
+  безпечні перевірки, що не можуть створити коміт: status, log -1, commit 
+  --dry-run та контролі без -c/-C. · summary
+
+● Bash(git -c core.hooksPath=/nonexistent status --short)
+  ⎿  Error: Permission to use Bash with command git -c 
+     core.hooksPath=/nonexistent status --short has been denied.
+
+● Bash(git -c core.hooksPath=/nonexistent commit --dry-run -m x)
+  ⎿  Error: Permission to use Bash with command git -c 
+     core.hooksPath=/nonexistent commit --dry-run -m x has been denied.
+
+● Bash(git -c user.name=x log -1 --oneline)
+  ⎿  Error: Permission to use Bash with command git -c user.name=x log -1 
+     --oneline has been denied.
+
+● Bash(git -C . status --short)
+  ⎿  Error: Permission to use Bash with command git -C . status --short has been
+     denied.
+
+● Bash(git -C . commit --dry-run -m x)
+  ⎿  Error: Permission to use Bash with command git -C . commit --dry-run -m x 
+     has been denied.
+
+● Bash(git -C src log -1 --oneline)
+  ⎿  Error: Permission to use Bash with command git -C src log -1 --oneline has 
+     been denied.
+
+● Bash(git status --short && git log -1 --oneline)
+  ⎿   M .claude/settings.json
+     49e36b9 chore(claude): deny pre-commit bypass in agent permissions
+
+● Bash(git commit --dry-run -m x)
+  ⎿  Error: Exit code 1
+     On branch main
+     Changes not staged for commit:
+       (use "git add <file>..." to update what will be committed)
+       (use "git restore <file>..." to discard changes in working directory)
+             modified:   .claude/settings.json
+
+     no changes added to commit (use "git add" and/or "git commit -a")
+
+● Шість проб заблоковано, контролі дозволені — для повноти перевірю ще три
+  безпечні форми обходу, усі з --dry-run, тож комітів не буде. · summary
+● Bash(git --no-pager commit --dry-run --no-verify -m x)
+  ⎿  Error: Exit code 1
+     On branch main
+     Changes not staged for commit:
+       (use "git add <file>..." to update what will be committed)
+       (use "git restore <file>..." to discard changes in working directory)
+             modified:   .claude/settings.json
+
+     no changes added to commit (use "git add" and/or "git commit -a")
+
+● Bash(git --git-dir=.git commit --dry-run -n -m x)
+  ⎿  Error: Exit code 1
+     On branch main
+     Changes not staged for commit:
+       (use "git add <file>..." to update what will be committed)
+       (use "git restore <file>..." to discard changes in working directory)
+             modified:   .claude/settings.json
+
+     no changes added to commit (use "git add" and/or "git commit -a")
+
+● Bash(FOO=1 git commit --dry-run -n -m x)
+  ⎿  Error: Permission to use Bash with command FOO=1 git commit --dry-run -n -m
+     x has been denied.
+
+● Знайшов ще дві прогалини: глобальні опції перед commit (наприклад, --no-pager,
+  --git-dir=…) не блокуються, хоча префікс змінної середовища блокується
+  коректно. Задокументую їх як відомі обмеження і закомічу оновлення guardrail. 
+  · summary
+
+● Bash(git add .claude/settings.json && git commit -m "$(cat <<'EOF'
+      chore(claude): deny git global config and directory options…)
+  ⎿  warning: in the working copy of '.claude/settings.json', LF will be re
+     placed by CRLF the next time Git touches it
+     … +4 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● Крок 7: реалізую справжній Stop-скрипт. --dry-run читається лише з
+  process.argv, змінні середовища ігноруються.
+
+● Write(scripts\agent-stop-check.mjs)
+  ⎿  Wrote 76 lines to scripts\agent-stop-check.mjs
+       1 import { spawnSync } from 'node:child_process'
+         nNpm } from './hook-utils.mjs'
+       3 
+       4 // --dry-run is for manual testing only: it prints the decision 
+       5 // It is read from the command line alone; the configured hook n
+         ever passes it.
+       7 
+       8 function isRelevant(path) {
+       9   const normalized = path.replaceAll('\\', '/')
+         ase().endsWith('.md')
+     … +82 lines (ctrl+o to expand)
+
+● Скрипт готовий, перевірки typecheck і lint пройшли успішно. Тепер запущу
+  --dry-run спершу для untracked файлів, потім для staged. · summary
+
+● Bash(echo "== untracked script:"; node scripts/agent-stop-check.mjs --dry-run;
+      echo "exit=$?"
+      git add scripts/agent-stop-check.mjs…)
+  ⎿  == untracked script:
+     [stop-hook] Dry run — would run npm run check (relevant changes: scrip
+     ts/agent-stop-check.mjs).
+     … +6 lines (ctrl+o to expand)
+
+● Untracked і staged файли вже дають «run». Зараз закомічу сам скрипт (ще без
+  підключення до settings.json), щоб перевіряти фільтр далі на чистому дереві. 
+  · summary
+
+● Bash(git commit -m "$(cat <<'EOF'
+      chore(hooks): add Stop hook script…)
+  ⎿  [main e4856d7] chore(hooks): add Stop hook script
+      1 file changed, 76 insertions(+)
+      create mode 100644 scripts/agent-stop-check.mjs
+     … +5 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● Фільтр на чистому дереві спрацював правильно (skip). Тепер перевірю повну
+  матрицю на реальних станах git, усі зміни зроблю оборотними: копіюю файл,
+  повертаю через git mv, а git restore використовую лише для вже закомічених
+  файлів. · summary
+
+● Bash(t() { printf '%-34s ' "$1"; node scripts/agent-stop-check.mjs --dry-run |
+      sed -e 's/\[stop-hook\] //'; }
+      BK=$(mktemp -d)…)
+  ⎿  -- docs/markdown only (expect Skipping)
+     untracked docs/__exp__.md          Skipping check — no relevant change
+     s outside docs/ and *.md.
+     … +23 lines (ctrl+o to expand)
+
+● Матриця пройшла успішно: усі 14 станів дали очікуваний результат, а
+  перейменування .ts↔.md коректно зараховано. Тепер запущу прямі тести з
+  реальним check і stdin для зеленого, червоного (active=false) та червоного
+  (active=true) сценаріїв. · summary
+
+● Bash(cd "$(git rev-parse --show-toplevel)"
+      printf 'export const experiment: number = 1\n' > src/__experiment__.ts…)
+  ⎿  === (1) green, env var AGENT_STOP_CHECK_DRY_RUN=1 must NOT matter
+     [stop-hook] npm run check passed.
+     exit=0
+     … +36 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Три з чотирьох випадків пройшли, а (3) впав лише через розбіжність шляху /tmp
+  між Git Bash і Node. Повторю цей тест без промiжних файлів, передаючи дані
+  через пайп. · summary
+
+● Bash(printf "export const experiment: number = 'broken'\n" >
+      src/__experiment__.ts
+      node scripts/agent-stop-check.mjs <<< '{"stop_hook_active":true}'
+      2>/dev/null | no…)
+  ⎿  continue = false
+     npm run check is still failing after a retry; human guidance required.
+     … +8 lines (ctrl+o to expand)
+
+● Прямі перевірки підтвердили очікувану поведінку: зелений статус — 0, червоний
+  з active=false — 2 з діагностикою, червоний з active=true — continue:false і
+  stopReason, exit 0, а --dry-run взагалі не запускає перевірку. Тепер підключаю
+  Stop-хук у settings.json без --dry-run з таймаутом 600. · summary
+
+● Update(.claude\settings.json)
+  ⎿  Added 11 lines
+      11      ]
+      12    },
+      13    "hooks": {
+      14 +    "Stop": [                                                  
+      15 +      {                                                        
+      16 +        "hooks": [                                             
+      17 +          {                                                    
+      18 +            "type": "command",                                 
+      19 +            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/agen
+         +t-stop-check.mjs\"",                                           
+      20 +            "timeout": 600                                     
+      21 +          }                                                    
+      22 +        ]                                                      
+      23 +      }                                                        
+      24 +    ],                                                         
+      25      "PostToolUse": [
+      26        {
+      27          "matcher": "Edit|Write",
+
+● Bash(echo "dry-run occurrences in settings.json: $(grep -c -e '--dry-run'
+      .claude/settings.json)"; node -e
+      "JSON.parse(require('fs').readFileSync('.claude/settings.j…)
+  ⎿  dry-run occurrences in settings.json: 0
+     settings.json valid JSON
+      M .claude/settings.json
+
+● Хук активний — зараз у дереві є релевантна зміна (settings.json), тож спершу
+  закомічу її, а потім проведу контрольований живий тест. · summary
+
+● Bash(git add .claude/settings.json && git commit -m "$(cat <<'EOF'
+      chore(hooks): run Stop hook full check on code changes…)
+  ⎿  warning: in the working copy of '.claude/settings.json', LF will be re
+     placed by CRLF the next time Git touches it
+     … +3 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● Запускаю живий тест Stop-хука, залишивши навмисну помилку типів у
+  src/__experiment__.ts, і завершую хід — очікую блокування з діагностикою, а за
+  повторного стопу без виправлення — зупинку сесії з stopReason. · summary
+
+● Bash(printf "export const experiment: number = 'broken'\n" >
+      src/__experiment__.ts && git status --short)
+  ⎿  ?? src/__experiment__.ts
+
+● Завершую хід із помилкою в дереві (live-тест Stop-хука, спроба 1).
+
+  Стан:
+  - Guardrail: додано Bash(git -c *) і Bash(git -C *). Шість проб заблоковано,
+    контролі без -c/-C дозволені, комітів проби не створювали. Лишаються три
+    нові обмеження: git --no-pager commit … і git --git-dir=… commit … не
+    блокуються, а git config core.hooksPath … не покрито правилами (це лише
+    аналіз, не проба). Занесу в документацію.
+  - Stop-скрипт: фільтр перевірено на 14 реальних станах git, прямі запуски з
+    stdin пройшли, у settings.json немає --dry-run.
+  - Коміти: ebc96c7 (guardrail), e4856d7 (Stop-скрипт), e3bfcf6 (підключення).
+
+● Ran 1 stop hook (ctrl+o to expand)
+  ⎿  Stop hook error: [node
+  "$CLAUDE_PROJECT_DIR/scripts/agent-stop-check.mjs"]: [stop-hook] npm
+  run check failed:
+
+  > rotating-cube@0.0.1 check
+  > npm run typecheck && npm run lint && npm run test && npm run build
+  && npm run e2e
+
+
+  > rotating-cube@0.0.1 typecheck
+  > tsc --noEmit
+
+  src/__experiment__.ts(1,14): error TS2322: Type 'string' is not
+  assignable to type 'number'.
+
+● Крок live-тесту 1 пройшов: Stop-хук заблокував кінець ходу й передав
+  діагностику TS2322. Помилку навмисно не виправляю. Завершую хід ще раз, і
+  тепер (stop_hook_active=true) очікую зупинку сесії з stopReason.
+
+● Ran 1 stop hook (ctrl+o to expand)
+  ⎿  npm run check is still failing after a retry; human guidance
+  required.
+
+  > rotating-cube@0.0.1 check
+  > npm run typecheck && npm run lint && npm run test && npm run build
+  && npm run e2e
+
+
+  > rotating-cube@0.0.1 typecheck
+  > tsc --noEmit
+
+  src/__experiment__.ts(1,14): error TS2322: Type 'string' is not
+  assignable to type 'number'.
+
+✻ Brewed for 3m 39s · done 8:12 PM
+
+※ recap: Мета: реалізувати Phase 2 (хуки, guardrail, spec-reviewer) з перевіркою кожного механізму. Зараз іде живий тест Stop-хука з навмисною помилкою в `src/__experiment__.ts`. Далі завершити хід без виправлення, щоб побачити зупинку сесії, потім видалити файл. (disable recaps in /config)
+
+❯ I observed the second Stop-hook invocation halt the session with the npm run  
+  check is still failing after a retry; human guidance required message, and    
+  the agent did not continue. The live test passed.                             
+                                                                                
+  Remove the temporary src/__experiment__.ts file, then run npm run check and   
+  report the result.                                                            
+                                                                                
+  If the check passes, continue with step 8 (spec-reviewer and the CLAUDE.md    
+  rule), then step 9 (update documentation statuses based on actual             
+  verification results).                                                        
+                                                                                
+  Before finishing, inspect git status --short and the final diffs. Do not      
+  revert or modify unrelated files. Clearly document any remaining limitations, 
+  including guardrail gaps and the unverified fresh-clone hook activation.      
+
+● Підтверджено: другий стоп зупинив сесію. Видаляю тимчасовий файл (дозволений
+  планом) і запускаю npm run check.
+
+● Bash(rm src/__experiment__.ts; git status --short; npm run check 2>&1 | tail
+      -25; echo "CHECK_EXIT=${PIPESTATUS[0]}")
+  ⎿  > rotating-cube@0.0.1 build
+     > vite build
+     … +21 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Check зелений, дерево чисте. Крок 8: спочатку агент spec-reviewer, потім
+  правило в CLAUDE.md. Дивлюсь точний текст Workflow.
+
+  Read 1 file (ctrl+o to expand)
+
+● Write(.claude\agents\spec-reviewer.md)
+  ⎿  Wrote 33 lines to .claude\agents\spec-reviewer.md
+      1 ---
+      2 name: spec-reviewer
+        he acceptance criteria in docs/spec.md and the rules in CLAUDE.md
+        . Use after `npm run check` passes on tasks that change src/ or e
+        2e/. Pass the changed file list and the diff in the prompt.
+      5 model: sonnet
+      6 ---
+      7 
+        You cannot edit
+      9 files or run commands; you only report findings.
+     … +34 lines (ctrl+o to expand)
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(CLAUDE.md)
+  ⎿  Added 3 lines, removed 1 line
+      28  5. Before each commit, ensure the pre-commit checks pass
+      29     (`typecheck` + `lint` + `test`).
+      30  6. Before reporting a task complete, run `npm run check` and co
+          nfirm all five
+      31 -   checks pass.                                                
+      31 +   checks pass. If `src/` or `e2e/` changed, also invoke the `s
+         +pec-reviewer`                                                  
+      32 +   subagent once on the diff (standing authorization for it alo
+         +ne) and fix or                                                 
+      33 +   report each finding.                                        
+      34  7. Summarise what changed; reference AC IDs where applicable.
+      35  
+      36  ## Rules
+
+● Update(CLAUDE.md)
+  ⎿  Added 1 line, removed 2 lines
+      76  npm run check
+      77  ```
+      78  
+      79 -Full suite: `typecheck` → `lint` → `test` → `build` → `e2e`.   
+      80 -Run before reporting any task complete. See `docs/quality-gates
+         -.md` for details.                                              
+      79 +Full suite: `typecheck` → `lint` → `test` → `build` → `e2e`. Se
+         +e `docs/quality-gates.md`.                                     
+
+● Bash(wc -l CLAUDE.md; git status --short)
+  ⎿  79 CLAUDE.md
+      M CLAUDE.md
+     ?? .claude/agents/
+
+● CLAUDE.md тепер складає 79 рядків. Для перевірки spec-reviewer створюю
+  тимчасовий файл із порушеннями (обертання камери + OrbitControls) — очікую, що
+  PostToolUse-хук поверне lint-помилку, і це нормально. · summary
+
+● Write(src\__experiment__.ts)
+  ⎿  Wrote 8 lines to src\__experiment__.ts
+      1 import { OrbitControls } from 'three/examples/jsm/controls/OrbitC
+        ontrols.js'
+      2 import type { PerspectiveCamera } from 'three'
+      3 
+      4 export function spin(camera: PerspectiveCamera, dx: number): void
+         {
+      5   camera.rotation.y += dx * 0.01
+      6 }
+      7 
+      8 export { OrbitControls }
+  ⎿  PostToolUse:Write hook returned blocking error
+  ⎿  [node "$CLAUDE_PROJECT_DIR/scripts/agent-hook-check.mjs"]: [hook] npm run 
+     lint failed:
+
+     > rotating-cube@0.0.1 lint
+     > eslint . --max-warnings 0
+
+
+     C:\Users\IrynaPolchaninova\Projects\rotating-cube\src\__experiment__.ts
+       1:1  error  'three/examples/jsm/controls/OrbitControls.js' import is 
+     restricted from being used by a pattern. OrbitControls must not be used. 
+     Rotate the cube mesh directly (NFR-8)  no-restricted-imports
+
+     ✖ 1 problem (1 error, 0 warnings)
+
+● Правило NFR-8 також пройшло лінтинг. Тепер запускаю spec-reviewer на трьох
+  дозволених сценаріях: чистий diff, порушення та спроба правки. · summary
+
+● 3 spec-reviewer agents finished (ctrl+o to expand)
+   ├ Review clean diff · 0 tool uses
+   │ ⎿  Done
+   ├ Review violating file · 0 tool uses
+   │ ⎿  Done
+   └ Test reviewer cannot edit · 0 tool uses
+     ⎿  Done
+
+● Спроба не вдалася, бо агенти завантажуються на старті сесії, тож новостворений
+  spec-reviewer у цій сесії невидимий — підміняти його іншим агентом не можна,
+  бо це не перевірить обмеження інструментів. Залишаю статус PLANNED з
+  приміткою, прибираю тимчасовий файл і комічу крок 8. · summary
+
+● Bash(rm src/__experiment__.ts; git status --short; git add
+      .claude/agents/spec-reviewer.md CLAUDE.md && git commit -m "$(cat <<'EOF'
+      chore(agents): add read-only spe…)
+  ⎿   M CLAUDE.md
+     ?? .claude/agents/
+     warning: in the working copy of 'CLAUDE.md', LF will be replaced by CR
+     … +9 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+  Read 1 file (ctrl+o to expand)
+
+● Крок 9: оновлюю документацію за фактичними результатами. Читаю потрібні
+  фрагменти для точних замін.
+
+  Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+● Бачу всі потрібні фрагменти. Вношу правки в документацію — змінюю статуси лише
+  там, де є практична перевірка, а для spec-reviewer залишаю PLANNED з
+  поясненням. · summary
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 2 lines
+      24  
+      25  ## 1. After Each File Edit — Claude Code PostToolUse Hook
+      26  
+      27 -**Status: PLANNED** — `scripts/agent-hook-check.mjs`, `.claude/
+         -settings.json`,                                                
+      28 -and `package.json` scripts do not yet exist.                   
+      27 +**Status: Implemented** — verified 2026-10-19 (see "Verificatio
+         +n" below).                                                     
+      28  
+      29  **Scope:** runs automatically after every `Edit` or `Write` too
+          l call by the agent.
+      30  
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      57  
+      58  ### Hook configuration
+      59  
+      60 -**Planned** (`.claude/settings.json`):                         
+      60 +**Configured** in `.claude/settings.json`:                     
+      61  
+      62  ```json
+      63  {
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 2 lines
+      84  file-modifying tool calls. If a `MultiEdit` tool is introduced 
+          in a later version,
+      85  the matcher should be updated.
+      86  
+      87 -**Verification plan (after implementation):** once `.claude/set
+         -tings.json` and                                                
+      88 -`scripts/agent-hook-check.mjs` are created, verify by:         
+      87 +**Verification** (completed 2026-10-19):                       
+      88  
+      89  1. Deliberately introducing a TypeScript error in a source file
+          .
+      90  2. Confirming the hook exits with code 2 and surfaces useful di
+          agnostics to the
+
+● Update(docs\quality-gates.md)  ⎿  Added 6 lines, removed 1 line
+       95  6. Confirming that an edit to a `.md` file or a file under `do
+           cs/` runs no check,
+       96     that a `.json` edit does, and that input without `file_path
+           ` runs the checks.
+       97  
+       98 -The hook remains marked **PLANNED** until this verification ha
+          -s been completed.                                             
+       98 +**Results:** all six steps passed in live Claude Code edits. A
+          + type error produced                                          
+       99 +exit 2 with the `TS2322` diagnostic; a lint-only `any` produce
+          +d a lint failure;                                             
+      100 +the fix passed. With a type error left in the tree, writing a 
+          +`.md` file ran no                                             
+      101 +check while writing a `.json` file did. Direct runs confirmed 
+          +the fail-safe for                                             
+      102 +missing `file_path`, invalid JSON and empty stdin, and the "no
+          +t yet scaffolded"                                             
+      103 +skip.                                                         
+      104  
+      105  ---
+      106  
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 2 lines, removed 2 lines
+      106  
+      107  ## 2. Before Commit — Git Pre-Commit Hook
+      108  
+      109 -**Status: PLANNED** — `.githooks/` does not yet exist; `.git/h
+          -ooks/` contains                                               
+      110 -only sample files.                                            
+      109 +**Status: Implemented** — verified 2026-10-19 in the working c
+          +opy; activation on a                                          
+      110 +fresh clone is **not verified** (see "Known gap" below).      
+      111  
+      112  **Scope:** blocks `git commit` if any check fails.
+      113  
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      126  `npm install` and `npm ci` both execute `prepare` automaticall
+           y. This keeps the
+      127  hook directory version-controlled and requires no third-party 
+           tool.
+      128  
+      129 -### Planned hook script (`.githooks/pre-commit`)              
+      129 +### Hook script (`.githooks/pre-commit`)                      
+      130  
+      131  ```sh
+      132  #!/bin/sh
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 6 lines
+      151  2. `git ls-files --eol .githooks/pre-commit` reports `i/lf w/l
+           f attr/text eol=lf`.
+      152  3. `git ls-files -s .githooks/pre-commit` reports mode `100755
+           `.
+      153  
+      154 +**Results (2026-10-19):** a staged TypeScript error blocked `g
+          +it commit` (exit 1,                                           
+      155 +HEAD unchanged); every later commit in Phase 2 passed through 
+          +the hook                                                      
+      156 +(`typecheck`, `lint`, `test`). `git ls-files --eol` reported  
+      157 +`i/lf w/lf attr/text eol=lf` for `.githooks/pre-commit` and th
+          +e `scripts/*.mjs`                                             
+      158 +files, and `git ls-files -s` reported `100755`.               
+      159 +                                                              
+      160  **Known gap:** items 2–3 do not replace a real fresh-checkout 
+           test. Hook activation
+      161  through `npm ci` → `prepare` on a fresh clone is **not verifie
+           d**; activation is
+      162  verified only in the working copy (`npm run prepare` → `core.h
+           ooksPath=.githooks`
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 2 lines, removed 1 line
+      167  
+      168  ## 3. Full Gate — Before Reporting a Task Complete
+      169  
+      170 -**Status: PLANNED** — requires `package.json` scripts (not yet
+          - created).                                                    
+      170 +**Status: Implemented** — `package.json` scripts exist; `npm r
+          +un check` was run                                             
+      171 +and passed (2026-10-19). The reviewer step is tracked in §7.  
+      172  
+      173  The agent must run `npm run check` and confirm all five steps 
+           pass before
+      174  reporting any implementation task as complete. This is not req
+           uired after every
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 6 lines, removed 4 lines
+      212  
+      213  ## 5. Agent Permission Guardrail
+      214  
+      215 -**Status: PLANNED** — `.claude/settings.json` does not yet exi
+          -st.                                                           
+      215 +**Status: Implemented** — verified 2026-10-19; known gaps list
+          +ed below.                                                     
+      216  
+      217 -A deny rule prevents the agent from bypassing the pre-commit h
+          -ook with                                                      
+      218 -`git commit --no-verify`.                                     
+      217 +Deny rules prevent the agent from bypassing the pre-commit hoo
+          +k with                                                        
+      218 +`git commit --no-verify` (or `-n`), or from altering hook reso
+          +lution through                                                
+      219 +`git -c …` / `git -C …`, which the agent has no need for when 
+          +working from the                                              
+      220 +repository root.                                              
+      221  
+      220 -**Planned configuration** (`.claude/settings.json`, same file 
+          -as the hook                                                   
+      222 +**Configuration** (`.claude/settings.json`, same file as the h
+          +ook                                                           
+      223  configuration in §1):
+      224  
+      225  ```json
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 3 lines, removed 1 line
+      230        "Bash(git commit * --no-verify*)",
+      231        "Bash(git commit -n*)",
+      232        "Bash(git commit * -n)",
+      233 -      "Bash(git commit * -n *)"                               
+      233 +      "Bash(git commit * -n *)",                              
+      234 +      "Bash(git -c *)",                                       
+      235 +      "Bash(git -C *)"                                        
+      236      ]
+      237    },
+      238    "hooks": { "...": "..." }
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 2 lines, removed 2 lines
+      244  
+      245  - A human operator can still run `git commit --no-verify` dire
+           ctly in the
+      246    terminal.
+      247 -- Prefix-based permission matching may not block argument-orde
+          -r variants such as                                            
+      248 -  `git commit -m "message" --no-verify` or the short flag `git
+          - commit -n`.                                                  
+      247 +- Permission matching is pattern-based, so only the forms list
+          +ed in the results                                             
+      248 +  below are covered (see "Known gaps").                       
+      249  
+      250  The guardrail covers the most likely accidental bypass path an
+           d is not intended
+      251  as an exhaustive filter.
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 34 lines, removed 3 lines
+      257  `git commit -n -m x`, `git commit -m x -n`, `git commit -nm x`
+           ,
+      258  `git commit -am x -n`, plus a control `git commit -m x` (must 
+           not be blocked by
+      259  the deny rules). The blocked/not-blocked result is recorded pe
+           r command. A pattern
+      260 -that fails to block is corrected and re-tested; remaining bypa
+          -sses (for example                                             
+      261 -`git -c core.hooksPath=… commit`, or compound commands such as
+      262 -`a && git commit --no-verify`) are documented here as known li
+          -mitations.                                                    
+      260 +that fails to block is corrected and re-tested; remaining bypa
+          +sses are documented                                           
+      261 +here as known limitations.                                    
+      262  
+      263 +**Results (2026-10-19).** Each probe ran on a clean tree with 
+          +an empty index. A                                             
+      264 +probe named after a pattern is a command that only that patter
+          +n can match.                                                  
+      265 +                                                              
+      266 +| Command | Exercises | Result |                              
+      267 +|---------|-----------|--------|                              
+      268 +| `git commit --no-verify -m x` | `git commit --no-verify*` | 
+          +blocked |                                                     
+      269 +| `git commit -m x --no-verify` | `git commit * --no-verify*` 
+          +| blocked |                                                   
+      270 +| `git commit --amend --no-edit --no-verify` | `git commit * -
+          +-no-verify*` | blocked |                                      
+      271 +| `git commit -n -m x`, `git commit -nm x` | `git commit -n*` 
+          +| blocked |                                                   
+      272 +| `git commit -m x -n`, `git commit -am x -n` | `git commit * 
+          +-n` | blocked |                                               
+      273 +| `git commit -m x -n -q` | `git commit * -n *` | blocked |   
+      274 +| `git status --short && git commit --no-verify -m x` | compou
+          +nd command | blocked |                                        
+      275 +| `FOO=1 git commit --dry-run -n -m x` | env-var prefix | bloc
+          +ked |                                                         
+      276 +| `git -c core.hooksPath=… status`, `… commit --dry-run -m x`,
+          + `git -c user.name=x log -1` | `git -c *` | blocked |         
+      277 +| `git -C . status`, `git -C . commit --dry-run -m x`, `git -C
+          + src log -1` | `git -C *` | blocked |                         
+      278 +| `git commit -m x`, `git commit --dry-run -m x`, `git status`
+          +, `git log -1` | controls | not blocked |                     
+      279 +                                                              
+      280 +Note: the `--amend` probe was a mistake in hindsight, since a 
+          +missed block would have                                       
+      281 +rewritten history; later probes used `--dry-run` or read-only 
+          +commands only.                                                
+      282 +                                                              
+      283 +### Known gaps                                                
+      284 +                                                              
+      285 +- Other global options before `commit` are **not blocked**; pr
+          +obed and confirmed:                                           
+      286 +  `git --no-pager commit --dry-run --no-verify -m x` and      
+      287 +  `git --git-dir=.git commit --dry-run -n -m x` both ran.     
+      288 +- Not probed (by pattern analysis they are not covered): `git 
+          +config core.hooksPath …`                                      
+      289 +  followed by a commit; editing or removing `.githooks/pre-com
+          +mit` with the file                                            
+      290 +  tools; `GIT_*` environment variables set inside a wrapper sc
+          +ript.                                                         
+      291 +- The rules bind the agent only. A human operator can bypass t
+          +he hook directly.                                             
+      292 +- Rule changes in `.claude/settings.json` took effect in the s
+          +ame session in which                                          
+      293 +  they were committed (observed), but this depends on the Clau
+          +de Code version.                                              
+      294 +                                                              
+      295  ---
+      296  
+      297  ## 6. Stop Hook — End-of-Turn Full Check
+
+● Далі §6, §7 та підсумкові таблиці.
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 2 lines, removed 2 lines
+      250  The guardrail covers the most likely accidental bypass path an
+           d is not intended
+      251  as an exhaustive filter.
+      252  
+      253 -**Verification:** once `.claude/settings.json` is created with
+          - these rules, verify                                          
+      254 -each pattern separately — wildcard matching is not assumed. On
+          - a clean tracked                                              
+      253 +**Verification:** each pattern is verified separately — wildca
+          +rd matching is not                                            
+      254 +assumed. On a clean tracked                                   
+      255  tree with an empty index (so even a missed block is harmless),
+            the agent attempts:
+      256  `git commit --no-verify -m x`, `git commit -m x --no-verify`,
+      257  `git commit -n -m x`, `git commit -m x -n`, `git commit -nm x`
+           ,
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 2 lines
+      296  
+      297  ## 6. Stop Hook — End-of-Turn Full Check
+      298  
+      299 -**Status: PLANNED** — `scripts/agent-stop-check.mjs` and its `
+          -.claude/settings.json`                                        
+      300 -entry do not yet exist.                                       
+      299 +**Status: Implemented** — verified 2026-10-19 (see "Verificati
+          +on criteria" below).                                          
+      300  
+      301  **Scope:** runs when the agent finishes responding. Blocks the
+            end of the turn if
+      302  `npm run check` (typecheck, lint, test, build, e2e) fails.
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 2 lines, removed 1 line
+      308  3. Runs `git status --porcelain=v1 -z --untracked-files=all`. 
+           A change is
+      309     **relevant** if any of its paths (both paths for renames/co
+           pies) is neither
+      310     under `docs/` nor a `*.md` file. Staged, unstaged, untracke
+           d, deleted and
+      311 -   renamed entries are all covered. If no change is relevant: 
+          -exits **0**.                                                  
+      311 +   renamed entries are all covered. If no change is relevant: 
+          +exits **0**. If                                               
+      312 +   `git status` itself fails, the state is treated as relevant
+          + (fail-safe).                                                 
+      313  4. Otherwise runs the real `npm run check`.
+      314     - Pass: exits **0**.
+      315     - Fail with `stop_hook_active=false`: writes diagnostics (t
+           ail of the failing
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 20 lines
+      374     the stop passes.
+      375  5. The hook command in `.claude/settings.json` contains no `--
+           dry-run`.
+      376  
+      377 +**Results (2026-10-19):**                                     
+      378 +                                                              
+      379 +1. The prototype confirmed that `continue: false` + `stopReaso
+          +n` from a Stop hook                                           
+      380 +   halts the session with a visible message.                  
+      381 +2. The `--dry-run` matrix gave the expected decision in all 14
+          + real git states:                                             
+      382 +   skip for an untracked `docs/*.md`, an unstaged `CLAUDE.md`,
+          + a `.md`→`.md`                                                
+      383 +   rename, a deleted `docs/*.md`, an untracked `docs/my file.m
+          +d` and a clean tree;                                          
+      384 +   run for an unstaged, a staged and an untracked `.ts`, an un
+          +tracked `.mjs`, a path                                        
+      385 +   with a space, a deleted tracked `.mjs`, a `.tsx`→`.tsx` ren
+          +ame, a `.ts`→`docs/*.md`                                      
+      386 +   rename and a `.md`→`.ts` rename (both paths of a rename are
+          + examined).                                                   
+      387 +3. Direct runs: green → exit 0 (an `AGENT_STOP_CHECK_DRY_RUN=1
+          +` variable in the                                             
+      388 +   environment had no effect); red + `stop_hook_active=false` 
+          +→ exit 2 with the                                             
+      389 +   `TS2322` diagnostic on stderr; red + `stop_hook_active=true
+          +` → `continue:false`                                          
+      390 +   JSON, exit 0; `--dry-run` never ran the check.             
+      391 +4. Live: with a deliberate type error in the tree, the first e
+          +nd of turn was                                                
+      392 +   blocked with the diagnostic; the second end of turn halted 
+          +the session with                                              
+      393 +   `npm run check is still failing after a retry; human guidan
+          +ce required`, and the                                         
+      394 +   agent did not continue (observed by the human operator).   
+      395 +5. `.claude/settings.json` contains no `--dry-run`.           
+      396 +                                                              
+      397  ---
+      398  
+      399  ## 7. spec-reviewer Subagent
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 6 lines, removed 1 line
+      398  
+      399  ## 7. spec-reviewer Subagent
+      400  
+      401 -**Status: PLANNED** — `.claude/agents/spec-reviewer.md` does n
+          -ot yet exist.                                                 
+      401 +**Status: PLANNED** — `.claude/agents/spec-reviewer.md` and th
+          +e `CLAUDE.md`                                                 
+      402 +Workflow step 6 rule exist, but verification is **not complete
+          +d**. On 2026-10-19                                            
+      403 +the agent was not visible in the session that created it (`Age
+          +nt type                                                       
+      404 +'spec-reviewer' not found`): custom agents are loaded at sessi
+          +on start. Criteria                                            
+      405 +1–4 below must be run in a new session; the status changes to 
+          +Implemented only                                              
+      406 +after they pass.                                              
+      407  
+      408  A read-only subagent that compares a diff against the acceptan
+           ce criteria in
+      409  `docs/spec.md` and the rules in `CLAUDE.md`. It covers control
+           s that tooling
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 6 lines, removed 6 lines
+      460  | Quality gate definitions | `docs/quality-gates.md` | **Imple
+           mented** |
+      461  | Node.js version pin | `.nvmrc` | **Implemented** |
+      462  | `package.json` scripts + `prepare` | `package.json` | **Impl
+           emented** |
+      463 -| PostToolUse hook script | `scripts/agent-hook-check.mjs` + `
+          -scripts/hook-utils.mjs` | **Planned** |                       
+      464 -| Stop hook script | `scripts/agent-stop-check.mjs` | **Planne
+          -d** |                                                         
+      465 -| PostToolUse + Stop hooks + permission guardrail | `.claude/s
+          -ettings.json` | **Planned** |                                 
+      466 -| spec-reviewer subagent | `.claude/agents/spec-reviewer.md` |
+          - **Planned** |                                                
+      467 -| LF line endings for hooks and scripts | `.gitattributes` | *
+          -*Planned** |                                                  
+      468 -| ESLint block for `scripts/*.mjs` | `eslint.config.js` | **Pl
+          -anned** |                                                     
+      463 +| PostToolUse hook script | `scripts/agent-hook-check.mjs` + `
+          +scripts/hook-utils.mjs` | **Implemented** |                   
+      464 +| Stop hook script | `scripts/agent-stop-check.mjs` | **Implem
+          +ented** |                                                     
+      465 +| PostToolUse + Stop hooks + permission guardrail | `.claude/s
+          +ettings.json` | **Implemented** |                             
+      466 +| spec-reviewer subagent | `.claude/agents/spec-reviewer.md` |
+          + **Planned** — created, verification pending (new session) |  
+      467 +| LF line endings for hooks and scripts | `.gitattributes` | *
+          +*Implemented** |                                              
+      468 +| ESLint block for `scripts/*.mjs` | `eslint.config.js` | **Im
+          +plemented** |                                                 
+      469  | ESLint flat config + `no-restricted-imports` | `eslint.confi
+           g.js` | **Implemented** |
+      470  | TypeScript strict config | `tsconfig.json` | **Implemented**
+            |
+      471  | Vitest config | `vitest.config.ts` | **Implemented** |
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      470  | TypeScript strict config | `tsconfig.json` | **Implemented**
+            |
+      471  | Vitest config | `vitest.config.ts` | **Implemented** |
+      472  | Playwright config + `webServer` | `playwright.config.ts` | *
+           *Implemented** |
+      473 -| Pre-commit hook script | `.githooks/pre-commit` | **Planned*
+          -* |                                                           
+      473 +| Pre-commit hook script | `.githooks/pre-commit` | **Implemen
+          +ted** — fresh-clone activation unverified |                   
+      474  | GitHub Actions CI workflow | `.github/workflows/ci.yml` | **
+           Planned** |
+      475  
+      476  ---
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      490  | Stop hook repeated failure | `stop_hook_active=true` + faili
+           ng check → `continue:false` with `stopReason`; never a silent 
+           pass |
+      491  | Stop hook dry-run | `--dry-run` CLI flag for manual testing 
+           only; no env var; never used by the configured hook |
+      492  | spec-reviewer invocation | Standing authorization in `CLAUDE
+           .md` for this subagent only, for tasks changing `src/` or `e2e
+           /` |
+      493 -| Guardrail patterns | Five `git commit` deny patterns (§5), e
+          -ach verified separately |                                     
+      493 +| Guardrail patterns | Seven deny patterns (§5): five `git com
+          +mit` forms plus `git -c *` and `git -C *`; each verified separ
+          +ately |                                                       
+      494  
+      495  ---
+      496  
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 12 lines, removed 10 lines
+      494  
+      495  ---
+      496  
+      497 -## 11. Verification Required After Implementation             
+      497 +## 11. Verification Record                                    
+      498  
+      499 -These items are in a defined state but require post-implementa
+          -tion testing before                                           
+      500 -they can be marked as implemented:                            
+      499 +Status of the practical verification of each mechanism (detail
+          +s in the section                                              
+      500 +named in the first column). Open items:                       
+      501  
+      502 -| Item | Verification steps |                                 
+      503 -|------|-------------------|                                  
+      504 -| PostToolUse hook (§1) | Introduce a deliberate TypeScript er
+          -ror; confirm hook exits with code 2 and surfaces diagnostics; 
+          -fix the error; confirm hook exits with code 0. Also lint-only 
+          -error, docs-only edit (no check), `.json` edit (check), missin
+          -g `file_path` (check). |                                      
+      505 -| Pre-commit hook (§2) | Staged TypeScript error blocks `git c
+          -ommit`; fix passes. `git ls-files --eol` shows LF, `git ls-fil
+          -es -s` shows `100755`. Fresh-clone activation via `npm ci` is 
+          -a known unverified gap. |                                     
+      506 -| Permission guardrail (§5) | Attempt each deny-pattern varian
+          -t separately through the agent; record blocked/not blocked per
+          - command; document remaining bypasses. |                      
+      507 -| Stop hook (§6) | Prototype `continue:false`; `--dry-run` fil
+          -ter matrix; direct runs with `stop_hook_active` true/false; li
+          -ve blocked turn and halt; confirm no `--dry-run` in settings. 
+          -|                                                             
+      508 -| spec-reviewer (§7) | Clean diff has no findings; camera rota
+          -tion / OrbitControls flagged; edit attempt impossible; agent v
+          -isible to the session. |                                      
+      502 +| Item | Verification | Result (2026-10-19) |                 
+      503 +|------|--------------|---------------------|                 
+      504 +| PostToolUse hook (§1) | Type error → exit 2 + diagnostics; f
+          +ix → exit 0; lint-only error; `.md` edit runs no check; `.json
+          +` edit runs; missing `file_path` runs | **Passed** |          
+      505 +| Pre-commit hook (§2) | Staged type error blocks commit; late
+          +r commits pass; `git ls-files --eol` LF; `git ls-files -s` `10
+          +0755` | **Passed.** Open: activation on a fresh clone (`npm ci
+          +` → `prepare`) **not verified** |                             
+      506 +| Permission guardrail (§5) | Each pattern probed separately; 
+          +controls not blocked | **Passed.** Open: known gaps listed in 
+          +§5 (other global git options, `git config core.hooksPath`, hoo
+          +k-file edits) |                                               
+      507 +| Stop hook (§6) | Prototype; dry-run matrix; direct runs; liv
+          +e block and halt; no `--dry-run` in settings | **Passed** |   
+      508 +| ESLint block for `scripts/*.mjs` | `--print-config` shows No
+          +de globals; seeded errors fail `npm run lint` | **Passed** |  
+      509 +| spec-reviewer (§7) | Clean diff clean; camera rotation / Orb
+          +itControls flagged; edit attempt impossible; agent visible | *
+          +*Not run** — agent not visible in the creating session; repeat
+          + in a new session |                                           
+      510 +| CI (§4) | — | Out of scope for Phase 2 (Phase 3) |          
+
+● Виправляю лічильник у документації (у матриці було 15 станів, не 14) і дивлюсь
+  підсумковий diff та стан.
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      378  
+      379  1. The prototype confirmed that `continue: false` + `stopReaso
+           n` from a Stop hook
+      380     halts the session with a visible message.
+      381 -2. The `--dry-run` matrix gave the expected decision in all 14
+          - real git states:                                             
+      381 +2. The `--dry-run` matrix gave the expected decision in all 15
+          + real git states:                                             
+      382     skip for an untracked `docs/*.md`, an unstaged `CLAUDE.md`,
+            a `.md`→`.md`
+      383     rename, a deleted `docs/*.md`, an untracked `docs/my file.m
+           d` and a clean tree;
+      384     run for an unstaged, a staged and an untracked `.ts`, an un
+           tracked `.mjs`, a path
+
+● Bash(git status --short; echo "--- diff stat:"; git diff --stat; echo "---
+      status/gap markers:"; grep -n -E 'Status: |\*\*Planned\*\*'
+      docs/quality-gates.md; wc -l C…)  ⎿   M docs/quality-gates.md
+     --- diff stat:
+      docs/quality-gates.md | 160 ++++++++++++++++++++++++++++++++++++-----
+     … +19 lines (ctrl+o to expand)
+
+● Статуси відповідають фактичній верифікації. Комічу крок 9 і роблю фінальні
+  перевірки.
+
+● Bash(git add docs/quality-gates.md && git commit -m "$(cat <<'EOF'
+      docs: record Phase 2 verification results in quality gates…)
+  ⎿  [main 769345f] docs: record Phase 2 verification results in quality ga
+     tes
+      1 file changed, 116 insertions(+), 44 deletions(-)
+     … +21 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Phase 2 завершено, але spec-reviewer не перевірено. Усі п'ять механізмів
+  створено й закомічено, чотири з них перевірені на практиці. npm run check
+  зелений, git status чистий, останній коміт — 769345f.
+
+  Тимчасовий src/__experiment__.ts видалено. Сторонні файли не змінював:
+  .claude/settings.local.json і gitignored dist/ та test-results/ не чіпав.
+
+  Механізм: PostToolUse-хук
+  Статус: Implemented
+  Підтвердження: Помилка типів і помилка лінту дають exit 2 з діагностикою.
+  Правка .md нічого не запускає, правка .json запускає.
+  ────────────────────────────────────────
+  Механізм: Pre-commit
+  Статус: Implemented
+  Підтвердження: Застейджена помилка блокує коміт. LF і режим 100755
+  підтверджені.
+  ────────────────────────────────────────
+  Механізм: Guardrail (7 deny-правил)
+  Статус: Implemented
+  Підтвердження: Кожен патерн перевірено окремо, прогалини описані нижче.
+  ────────────────────────────────────────
+  Механізм: Stop-хук
+  Статус: Implemented
+  Підтвердження: Прототип continue:false, матриця з 15 станів git і прямі
+  запуски
+  зі stdin пройшли. Наживо перший стоп заблокувався, другий зупинив сесію з
+  stopReason.
+  ────────────────────────────────────────
+  Механізм: spec-reviewer
+  Статус: PLANNED
+  Підтвердження: Агент створено, але в цій сесії він невидимий (Agent type 
+  'spec-reviewer' not found): агенти завантажуються на старті. Підмінювати його
+   іншим агентом не став.
+
+  Також перевірено: .gitattributes, ESLint-блок для scripts/*.mjs (він ловить
+  навмисні помилки, і process не скаржиться) та правило з правок CLAUDE.md для
+  spec-reviewer (79 рядків).
+
+  Обмеження, задокументовані в docs/quality-gates.md:
+  - Свіжий клон: активація pre-commit через npm ci → prepare не перевірена. LF і
+    режим перевірені лише через git ls-files --eol/-s, а активація — тільки в
+    цій робочій копії.
+  - Guardrail:
+    - Перевірено: git --no-pager commit --no-verify і git --git-dir=… commit -n
+      не блокуються.
+    - За аналізом, не перевірялось: git config core.hooksPath … і правка або
+      видалення .githooks/pre-commit через файлові інструменти.
+    - Правила діють лише на агента, не на людину в терміналі.
+  - Stop-хук: після коміту дерево чисте, і хук check не запускає. Закомічений
+    код проходить typecheck, lint і test у pre-commit, а build та e2e гарантує
+    лише CI у Phase 3 і правило з CLAUDE.md.
+  - Проба з --amend: під час перевірки guardrail запустив її як проби патерну 2
+    (--no-verify в кінці). Якби правило не спрацювало, вона переписала б HEAD.
+    Правило її заблокувало, і це зазначено в документації.
+
+  Що лишилося: у новій сесії запустіть критерії 1–4 з §7 (чистий diff, порушення
+  на кшталт camera.rotation/OrbitControls, спроба правки, видимість агента).
+  Після цього статус spec-reviewer можна змінити на Implemented.
+
+  Закрити прогалину з глобальними опціями (git --* commit …) можна ще одним
+  deny-правилом. Додати?
+
+✻ Crunched for 3m 23s · done 8:19 PM
+
+※ recap: Phase 2 завершено: хуки, guardrail і Stop-хук реалізовано й перевірено, `npm run check` зелений, дерево чисте. Наступна дія: у новій сесії перевірити `spec-reviewer` за критеріями з §7 і лише тоді змінити його статус. (disable recaps in /config)
