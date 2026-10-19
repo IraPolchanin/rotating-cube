@@ -44,6 +44,16 @@ compatible with Git for Windows.
 - Do not use `// @ts-ignore`, unconstrained `any` casts, `eslint-disable`, or
   `--no-verify` to bypass quality checks.
 
+## Phase Workflow
+
+For multi-step phases (hooks, CI, tooling), in addition to the Workflow above:
+
+- Verify each new enforcement mechanism with a deliberate failure where appropriate.
+- Revert temporary test changes, preserve pre-existing user changes, and leave no
+  experiment artifacts in the working tree.
+- Update `docs/quality-gates.md` statuses only after practical verification.
+- Prefer the simplest reliable solution; explain material trade-offs.
+
 ## Commit Message Convention
 
 Format: `<type>(<scope>): <description>`
@@ -52,16 +62,11 @@ Types: `feat`, `fix`, `test`, `refactor`, `build`, `ci`, `docs`, `chore`
 
 Examples:
 
-- `feat(cube): render Three.js cube mesh in React canvas component`
 - `feat(cube): rotate cube mesh on pointer drag (AC-4, AC-5)`
 - `feat(cube): clamp X rotation to [-90, 90] degrees (AC-12)`
-- `feat(cube): expose data-cube-r* rotation attributes (AC-3)`
 - `feat(reset): restore initial orientation on button click (AC-9)`
-- `test(unit): add rotation delta and clamp calculations (AC-12)`
 - `test(e2e): add pointer drag and reset tests (AC-4, AC-5, AC-9)`
 - `build: scaffold Vite + React + TypeScript project`
-- `chore(eslint): add no-restricted-imports rule for OrbitControls (NFR-8)`
-- `ci: add GitHub Actions workflow running npm run check`
 
 ## Quality Gate Command
 
