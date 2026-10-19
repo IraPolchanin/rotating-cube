@@ -398,23 +398,20 @@ alternative (a state file or fingerprint) was judged higher than this gap.
 
 ## 7. spec-reviewer Subagent
 
-**Status: PLANNED** — `.claude/agents/spec-reviewer.md` and the `CLAUDE.md`
-Workflow step 6 rule exist, but verification is **not completed**. On 2026-10-19
-the agent was not visible in the session that created it (`Agent type
-'spec-reviewer' not found`): custom agents are loaded at session start. Criteria
-1–4 below must be run in a new session; the status changes to Implemented only
-after they pass.
+**Status: IMPLEMENTED** — `.claude/agents/spec-reviewer.md` and the `CLAUDE.md`
+Workflow step 6 rule exist, and criteria 1–4 below passed on 2026-10-19 in Claude
+Code 2.1.303 (see §11).
 
-**Second attempt (2026-10-19, later session):** criterion 4 failed again — the
-Agent tool still answered `Agent type 'spec-reviewer' not found` (available:
-`claude`, `claude-code-guide`, `Explore`, `general-purpose`, `Plan`,
-`statusline-setup`). Criteria 1–3 could not be run and no other agent was
-substituted. The cause is **undetermined**: the file has valid frontmatter (`name`,
-`description`, `tools`, `model`), LF endings and is committed, but it is not known
-whether that session was a genuinely fresh Claude Code process. Next step: start
-Claude Code from a new terminal, check that `/agents` lists `spec-reviewer`, then
-repeat criteria 1–4. If it is still missing, investigate the agent file format
-for the installed Claude Code version.
+**Troubleshooting history (2026-10-19):** in the first session the agent was not
+visible (`Agent type 'spec-reviewer' not found`); the `.claude/agents/` directory
+had been created during that session, which may explain why a restart was needed
+(Claude Code only watches agent directories that existed at session start). A
+second session still reported the agent as not found (available: `claude`,
+`claude-code-guide`, `Explore`, `general-purpose`, `Plan`, `statusline-setup`);
+it is not known whether that session was a genuinely fresh process. `claude update`
+was subsequently run and the agent became available. The cause is **not
+established**: whether the update, the restart, or something else made the
+agent visible was not isolated, so no installation mismatch is claimed.
 
 A read-only subagent that compares a diff against the acceptance criteria in
 `docs/spec.md` and the rules in `CLAUDE.md`. It covers controls that tooling
@@ -474,7 +471,7 @@ When any check fails, the agent must:
 | PostToolUse hook script | `scripts/agent-hook-check.mjs` + `scripts/hook-utils.mjs` | **Implemented** |
 | Stop hook script | `scripts/agent-stop-check.mjs` | **Implemented** |
 | PostToolUse + Stop hooks + permission guardrail | `.claude/settings.json` | **Implemented** |
-| spec-reviewer subagent | `.claude/agents/spec-reviewer.md` | **Planned** — created, verification pending (new session) |
+| spec-reviewer subagent | `.claude/agents/spec-reviewer.md` | **Implemented** |
 | LF line endings for hooks and scripts | `.gitattributes` | **Implemented** |
 | ESLint block for `scripts/*.mjs` | `eslint.config.js` | **Implemented** |
 | ESLint flat config + `no-restricted-imports` | `eslint.config.js` | **Implemented** |
@@ -517,5 +514,5 @@ named in the first column). Open items:
 | Permission guardrail (§5) | Each pattern probed separately; controls not blocked | **Passed.** Open: known gaps listed in §5 (other global git options, `git config core.hooksPath`, hook-file edits) |
 | Stop hook (§6) | Prototype; dry-run matrix; direct runs; live block and halt; no `--dry-run` in settings | **Passed** |
 | ESLint block for `scripts/*.mjs` | `--print-config` shows Node globals; seeded errors fail `npm run lint` | **Passed** |
-| spec-reviewer (§7) | Clean diff clean; camera rotation / OrbitControls flagged; edit attempt impossible; agent visible | **Not verified** — agent not visible in two sessions (`Agent type 'spec-reviewer' not found`); cause undetermined; criteria 1–3 not run |
+| spec-reviewer (§7) | Clean diff clean; camera rotation / OrbitControls flagged; edit attempt impossible; agent visible | **Passed** (Claude Code 2.1.303). Criterion 1: clean `src/` diff (`App.tsx`, `main.tsx`, `vite-env.d.ts`) → `No violations found.` Criterion 2: temporary `src/__probe__.tsx` (OrbitControls import/re-export, `camera.rotation.y`) → flagged as NFR-8 ×2 and spec §7.5; file removed afterwards. Criterion 3: asked to edit a file, the agent reported only `Read`/`Grep`/`Glob` and the file stayed unchanged. Criterion 4: agent invocable in the session. Earlier invisibility: agents directory was created in the first session (may explain the restart); `claude update` was run later and the agent became available — causal link **not established** |
 | CI (§4) | — | Out of scope for Phase 2 (Phase 3) |
