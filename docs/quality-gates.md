@@ -230,14 +230,14 @@ When any check fails, the agent must:
 | Specification | `docs/spec.md` | **Implemented** |
 | Agent workflow rules | `CLAUDE.md` | **Implemented** |
 | Quality gate definitions | `docs/quality-gates.md` | **Implemented** |
-| Node.js version pin | `.nvmrc` | **Planned** |
-| `package.json` scripts + `prepare` | `package.json` | **Planned** |
+| Node.js version pin | `.nvmrc` | **Implemented** |
+| `package.json` scripts + `prepare` | `package.json` | **Implemented** |
 | PostToolUse hook script | `scripts/agent-hook-check.mjs` | **Planned** |
 | PostToolUse hook + permission guardrail | `.claude/settings.json` | **Planned** |
-| ESLint flat config + `no-restricted-imports` | `eslint.config.js` | **Planned** |
-| TypeScript strict config | `tsconfig.json` | **Planned** |
-| Vitest config | `vitest.config.ts` | **Planned** |
-| Playwright config + `webServer` | `playwright.config.ts` | **Planned** |
+| ESLint flat config + `no-restricted-imports` | `eslint.config.js` | **Implemented** |
+| TypeScript strict config | `tsconfig.json` | **Implemented** |
+| Vitest config | `vitest.config.ts` | **Implemented** |
+| Playwright config + `webServer` | `playwright.config.ts` | **Implemented** |
 | Pre-commit hook script | `.githooks/pre-commit` | **Planned** |
 | GitHub Actions CI workflow | `.github/workflows/ci.yml` | **Planned** |
 
