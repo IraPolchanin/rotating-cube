@@ -28,7 +28,9 @@ compatible with Git for Windows.
 5. Before each commit, ensure the pre-commit checks pass
    (`typecheck` + `lint` + `test`).
 6. Before reporting a task complete, run `npm run check` and confirm all five
-   checks pass.
+   checks pass. If `src/` or `e2e/` changed, also invoke the `spec-reviewer`
+   subagent once on the diff (standing authorization for it alone) and fix or
+   report each finding.
 7. Summarise what changed; reference AC IDs where applicable.
 
 ## Rules
@@ -74,5 +76,4 @@ Examples:
 npm run check
 ```
 
-Full suite: `typecheck` → `lint` → `test` → `build` → `e2e`.
-Run before reporting any task complete. See `docs/quality-gates.md` for details.
+Full suite: `typecheck` → `lint` → `test` → `build` → `e2e`. See `docs/quality-gates.md`.
