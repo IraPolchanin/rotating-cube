@@ -24,8 +24,7 @@ Script commands are defined in `docs/spec.md §7.4`.
 
 ## 1. After Each File Edit — Claude Code PostToolUse Hook
 
-**Status: PLANNED** — `scripts/agent-hook-check.mjs`, `.claude/settings.json`,
-and `package.json` scripts do not yet exist.
+**Status: Implemented** — verified 2026-10-19 (see "Verification" below).
 
 **Scope:** runs automatically after every `Edit` or `Write` tool call by the agent.
 
@@ -58,7 +57,7 @@ continuing with the next edit.
 
 ### Hook configuration
 
-**Planned** (`.claude/settings.json`):
+**Configured** in `.claude/settings.json`:
 
 ```json
 {
@@ -85,8 +84,7 @@ file-writing tools are `Edit` and `Write`). The matcher `Edit|Write` covers all
 file-modifying tool calls. If a `MultiEdit` tool is introduced in a later version,
 the matcher should be updated.
 
-**Verification plan (after implementation):** once `.claude/settings.json` and
-`scripts/agent-hook-check.mjs` are created, verify by:
+**Verification** (completed 2026-10-19):
 
 1. Deliberately introducing a TypeScript error in a source file.
 2. Confirming the hook exits with code 2 and surfaces useful diagnostics to the
@@ -97,14 +95,19 @@ the matcher should be updated.
 6. Confirming that an edit to a `.md` file or a file under `docs/` runs no check,
    that a `.json` edit does, and that input without `file_path` runs the checks.
 
-The hook remains marked **PLANNED** until this verification has been completed.
+**Results:** all six steps passed in live Claude Code edits. A type error produced
+exit 2 with the `TS2322` diagnostic; a lint-only `any` produced a lint failure;
+the fix passed. With a type error left in the tree, writing a `.md` file ran no
+check while writing a `.json` file did. Direct runs confirmed the fail-safe for
+missing `file_path`, invalid JSON and empty stdin, and the "not yet scaffolded"
+skip.
 
 ---
 
 ## 2. Before Commit — Git Pre-Commit Hook
 
-**Status: PLANNED** — `.githooks/` does not yet exist; `.git/hooks/` contains
-only sample files.
+**Status: Implemented** — verified 2026-10-19 in the working copy; activation on a
+fresh clone is **not verified** (see "Known gap" below).
 
 **Scope:** blocks `git commit` if any check fails.
 
@@ -123,7 +126,7 @@ The hook directory is registered once via the `prepare` lifecycle script in
 `npm install` and `npm ci` both execute `prepare` automatically. This keeps the
 hook directory version-controlled and requires no third-party tool.
 
-### Planned hook script (`.githooks/pre-commit`)
+### Hook script (`.githooks/pre-commit`)
 
 ```sh
 #!/bin/sh
@@ -148,6 +151,12 @@ npm run typecheck && npm run lint && npm run test
 2. `git ls-files --eol .githooks/pre-commit` reports `i/lf w/lf attr/text eol=lf`.
 3. `git ls-files -s .githooks/pre-commit` reports mode `100755`.
 
+**Results (2026-10-19):** a staged TypeScript error blocked `git commit` (exit 1,
+HEAD unchanged); every later commit in Phase 2 passed through the hook
+(`typecheck`, `lint`, `test`). `git ls-files --eol` reported
+`i/lf w/lf attr/text eol=lf` for `.githooks/pre-commit` and the `scripts/*.mjs`
+files, and `git ls-files -s` reported `100755`.
+
 **Known gap:** items 2–3 do not replace a real fresh-checkout test. Hook activation
 through `npm ci` → `prepare` on a fresh clone is **not verified**; activation is
 verified only in the working copy (`npm run prepare` → `core.hooksPath=.githooks`
@@ -158,7 +167,8 @@ commit containing a TypeScript error.
 
 ## 3. Full Gate — Before Reporting a Task Complete
 
-**Status: PLANNED** — requires `package.json` scripts (not yet created).
+**Status: Implemented** — `package.json` scripts exist; `npm run check` was run
+and passed (2026-10-19). The reviewer step is tracked in §7.
 
 The agent must run `npm run check` and confirm all five steps pass before
 reporting any implementation task as complete. This is not required after every
@@ -202,12 +212,14 @@ on:
 
 ## 5. Agent Permission Guardrail
 
-**Status: PLANNED** — `.claude/settings.json` does not yet exist.
+**Status: Implemented** — verified 2026-10-19; known gaps listed below.
 
-A deny rule prevents the agent from bypassing the pre-commit hook with
-`git commit --no-verify`.
+Deny rules prevent the agent from bypassing the pre-commit hook with
+`git commit --no-verify` (or `-n`), or from altering hook resolution through
+`git -c …` / `git -C …`, which the agent has no need for when working from the
+repository root.
 
-**Planned configuration** (`.claude/settings.json`, same file as the hook
+**Configuration** (`.claude/settings.json`, same file as the hook
 configuration in §1):
 
 ```json
@@ -218,7 +230,9 @@ configuration in §1):
       "Bash(git commit * --no-verify*)",
       "Bash(git commit -n*)",
       "Bash(git commit * -n)",
-      "Bash(git commit * -n *)"
+      "Bash(git commit * -n *)",
+      "Bash(git -c *)",
+      "Bash(git -C *)"
     ]
   },
   "hooks": { "...": "..." }
@@ -230,29 +244,59 @@ system. It is not an absolute security boundary:
 
 - A human operator can still run `git commit --no-verify` directly in the
   terminal.
-- Prefix-based permission matching may not block argument-order variants such as
-  `git commit -m "message" --no-verify` or the short flag `git commit -n`.
+- Permission matching is pattern-based, so only the forms listed in the results
+  below are covered (see "Known gaps").
 
 The guardrail covers the most likely accidental bypass path and is not intended
 as an exhaustive filter.
 
-**Verification:** once `.claude/settings.json` is created with these rules, verify
-each pattern separately — wildcard matching is not assumed. On a clean tracked
+**Verification:** each pattern is verified separately — wildcard matching is not
+assumed. On a clean tracked
 tree with an empty index (so even a missed block is harmless), the agent attempts:
 `git commit --no-verify -m x`, `git commit -m x --no-verify`,
 `git commit -n -m x`, `git commit -m x -n`, `git commit -nm x`,
 `git commit -am x -n`, plus a control `git commit -m x` (must not be blocked by
 the deny rules). The blocked/not-blocked result is recorded per command. A pattern
-that fails to block is corrected and re-tested; remaining bypasses (for example
-`git -c core.hooksPath=… commit`, or compound commands such as
-`a && git commit --no-verify`) are documented here as known limitations.
+that fails to block is corrected and re-tested; remaining bypasses are documented
+here as known limitations.
+
+**Results (2026-10-19).** Each probe ran on a clean tree with an empty index. A
+probe named after a pattern is a command that only that pattern can match.
+
+| Command | Exercises | Result |
+|---------|-----------|--------|
+| `git commit --no-verify -m x` | `git commit --no-verify*` | blocked |
+| `git commit -m x --no-verify` | `git commit * --no-verify*` | blocked |
+| `git commit --amend --no-edit --no-verify` | `git commit * --no-verify*` | blocked |
+| `git commit -n -m x`, `git commit -nm x` | `git commit -n*` | blocked |
+| `git commit -m x -n`, `git commit -am x -n` | `git commit * -n` | blocked |
+| `git commit -m x -n -q` | `git commit * -n *` | blocked |
+| `git status --short && git commit --no-verify -m x` | compound command | blocked |
+| `FOO=1 git commit --dry-run -n -m x` | env-var prefix | blocked |
+| `git -c core.hooksPath=… status`, `… commit --dry-run -m x`, `git -c user.name=x log -1` | `git -c *` | blocked |
+| `git -C . status`, `git -C . commit --dry-run -m x`, `git -C src log -1` | `git -C *` | blocked |
+| `git commit -m x`, `git commit --dry-run -m x`, `git status`, `git log -1` | controls | not blocked |
+
+Note: the `--amend` probe was a mistake in hindsight, since a missed block would have
+rewritten history; later probes used `--dry-run` or read-only commands only.
+
+### Known gaps
+
+- Other global options before `commit` are **not blocked**; probed and confirmed:
+  `git --no-pager commit --dry-run --no-verify -m x` and
+  `git --git-dir=.git commit --dry-run -n -m x` both ran.
+- Not probed (by pattern analysis they are not covered): `git config core.hooksPath …`
+  followed by a commit; editing or removing `.githooks/pre-commit` with the file
+  tools; `GIT_*` environment variables set inside a wrapper script.
+- The rules bind the agent only. A human operator can bypass the hook directly.
+- Rule changes in `.claude/settings.json` took effect in the same session in which
+  they were committed (observed), but this depends on the Claude Code version.
 
 ---
 
 ## 6. Stop Hook — End-of-Turn Full Check
 
-**Status: PLANNED** — `scripts/agent-stop-check.mjs` and its `.claude/settings.json`
-entry do not yet exist.
+**Status: Implemented** — verified 2026-10-19 (see "Verification criteria" below).
 
 **Scope:** runs when the agent finishes responding. Blocks the end of the turn if
 `npm run check` (typecheck, lint, test, build, e2e) fails.
@@ -264,7 +308,8 @@ entry do not yet exist.
 3. Runs `git status --porcelain=v1 -z --untracked-files=all`. A change is
    **relevant** if any of its paths (both paths for renames/copies) is neither
    under `docs/` nor a `*.md` file. Staged, unstaged, untracked, deleted and
-   renamed entries are all covered. If no change is relevant: exits **0**.
+   renamed entries are all covered. If no change is relevant: exits **0**. If
+   `git status` itself fails, the state is treated as relevant (fail-safe).
 4. Otherwise runs the real `npm run check`.
    - Pass: exits **0**.
    - Fail with `stop_hook_active=false`: writes diagnostics (tail of the failing
@@ -329,11 +374,36 @@ alternative (a state file or fingerprint) was judged higher than this gap.
    the stop passes.
 5. The hook command in `.claude/settings.json` contains no `--dry-run`.
 
+**Results (2026-10-19):**
+
+1. The prototype confirmed that `continue: false` + `stopReason` from a Stop hook
+   halts the session with a visible message.
+2. The `--dry-run` matrix gave the expected decision in all 15 real git states:
+   skip for an untracked `docs/*.md`, an unstaged `CLAUDE.md`, a `.md`→`.md`
+   rename, a deleted `docs/*.md`, an untracked `docs/my file.md` and a clean tree;
+   run for an unstaged, a staged and an untracked `.ts`, an untracked `.mjs`, a path
+   with a space, a deleted tracked `.mjs`, a `.tsx`→`.tsx` rename, a `.ts`→`docs/*.md`
+   rename and a `.md`→`.ts` rename (both paths of a rename are examined).
+3. Direct runs: green → exit 0 (an `AGENT_STOP_CHECK_DRY_RUN=1` variable in the
+   environment had no effect); red + `stop_hook_active=false` → exit 2 with the
+   `TS2322` diagnostic on stderr; red + `stop_hook_active=true` → `continue:false`
+   JSON, exit 0; `--dry-run` never ran the check.
+4. Live: with a deliberate type error in the tree, the first end of turn was
+   blocked with the diagnostic; the second end of turn halted the session with
+   `npm run check is still failing after a retry; human guidance required`, and the
+   agent did not continue (observed by the human operator).
+5. `.claude/settings.json` contains no `--dry-run`.
+
 ---
 
 ## 7. spec-reviewer Subagent
 
-**Status: PLANNED** — `.claude/agents/spec-reviewer.md` does not yet exist.
+**Status: PLANNED** — `.claude/agents/spec-reviewer.md` and the `CLAUDE.md`
+Workflow step 6 rule exist, but verification is **not completed**. On 2026-10-19
+the agent was not visible in the session that created it (`Agent type
+'spec-reviewer' not found`): custom agents are loaded at session start. Criteria
+1–4 below must be run in a new session; the status changes to Implemented only
+after they pass.
 
 A read-only subagent that compares a diff against the acceptance criteria in
 `docs/spec.md` and the rules in `CLAUDE.md`. It covers controls that tooling
@@ -390,17 +460,17 @@ When any check fails, the agent must:
 | Quality gate definitions | `docs/quality-gates.md` | **Implemented** |
 | Node.js version pin | `.nvmrc` | **Implemented** |
 | `package.json` scripts + `prepare` | `package.json` | **Implemented** |
-| PostToolUse hook script | `scripts/agent-hook-check.mjs` + `scripts/hook-utils.mjs` | **Planned** |
-| Stop hook script | `scripts/agent-stop-check.mjs` | **Planned** |
-| PostToolUse + Stop hooks + permission guardrail | `.claude/settings.json` | **Planned** |
-| spec-reviewer subagent | `.claude/agents/spec-reviewer.md` | **Planned** |
-| LF line endings for hooks and scripts | `.gitattributes` | **Planned** |
-| ESLint block for `scripts/*.mjs` | `eslint.config.js` | **Planned** |
+| PostToolUse hook script | `scripts/agent-hook-check.mjs` + `scripts/hook-utils.mjs` | **Implemented** |
+| Stop hook script | `scripts/agent-stop-check.mjs` | **Implemented** |
+| PostToolUse + Stop hooks + permission guardrail | `.claude/settings.json` | **Implemented** |
+| spec-reviewer subagent | `.claude/agents/spec-reviewer.md` | **Planned** — created, verification pending (new session) |
+| LF line endings for hooks and scripts | `.gitattributes` | **Implemented** |
+| ESLint block for `scripts/*.mjs` | `eslint.config.js` | **Implemented** |
 | ESLint flat config + `no-restricted-imports` | `eslint.config.js` | **Implemented** |
 | TypeScript strict config | `tsconfig.json` | **Implemented** |
 | Vitest config | `vitest.config.ts` | **Implemented** |
 | Playwright config + `webServer` | `playwright.config.ts` | **Implemented** |
-| Pre-commit hook script | `.githooks/pre-commit` | **Planned** |
+| Pre-commit hook script | `.githooks/pre-commit` | **Implemented** — fresh-clone activation unverified |
 | GitHub Actions CI workflow | `.github/workflows/ci.yml` | **Planned** |
 
 ---
@@ -420,19 +490,21 @@ When any check fails, the agent must:
 | Stop hook repeated failure | `stop_hook_active=true` + failing check → `continue:false` with `stopReason`; never a silent pass |
 | Stop hook dry-run | `--dry-run` CLI flag for manual testing only; no env var; never used by the configured hook |
 | spec-reviewer invocation | Standing authorization in `CLAUDE.md` for this subagent only, for tasks changing `src/` or `e2e/` |
-| Guardrail patterns | Five `git commit` deny patterns (§5), each verified separately |
+| Guardrail patterns | Seven deny patterns (§5): five `git commit` forms plus `git -c *` and `git -C *`; each verified separately |
 
 ---
 
-## 11. Verification Required After Implementation
+## 11. Verification Record
 
-These items are in a defined state but require post-implementation testing before
-they can be marked as implemented:
+Status of the practical verification of each mechanism (details in the section
+named in the first column). Open items:
 
-| Item | Verification steps |
-|------|-------------------|
-| PostToolUse hook (§1) | Introduce a deliberate TypeScript error; confirm hook exits with code 2 and surfaces diagnostics; fix the error; confirm hook exits with code 0. Also lint-only error, docs-only edit (no check), `.json` edit (check), missing `file_path` (check). |
-| Pre-commit hook (§2) | Staged TypeScript error blocks `git commit`; fix passes. `git ls-files --eol` shows LF, `git ls-files -s` shows `100755`. Fresh-clone activation via `npm ci` is a known unverified gap. |
-| Permission guardrail (§5) | Attempt each deny-pattern variant separately through the agent; record blocked/not blocked per command; document remaining bypasses. |
-| Stop hook (§6) | Prototype `continue:false`; `--dry-run` filter matrix; direct runs with `stop_hook_active` true/false; live blocked turn and halt; confirm no `--dry-run` in settings. |
-| spec-reviewer (§7) | Clean diff has no findings; camera rotation / OrbitControls flagged; edit attempt impossible; agent visible to the session. |
+| Item | Verification | Result (2026-10-19) |
+|------|--------------|---------------------|
+| PostToolUse hook (§1) | Type error → exit 2 + diagnostics; fix → exit 0; lint-only error; `.md` edit runs no check; `.json` edit runs; missing `file_path` runs | **Passed** |
+| Pre-commit hook (§2) | Staged type error blocks commit; later commits pass; `git ls-files --eol` LF; `git ls-files -s` `100755` | **Passed.** Open: activation on a fresh clone (`npm ci` → `prepare`) **not verified** |
+| Permission guardrail (§5) | Each pattern probed separately; controls not blocked | **Passed.** Open: known gaps listed in §5 (other global git options, `git config core.hooksPath`, hook-file edits) |
+| Stop hook (§6) | Prototype; dry-run matrix; direct runs; live block and halt; no `--dry-run` in settings | **Passed** |
+| ESLint block for `scripts/*.mjs` | `--print-config` shows Node globals; seeded errors fail `npm run lint` | **Passed** |
+| spec-reviewer (§7) | Clean diff clean; camera rotation / OrbitControls flagged; edit attempt impossible; agent visible | **Not run** — agent not visible in the creating session; repeat in a new session |
+| CI (§4) | — | Out of scope for Phase 2 (Phase 3) |
