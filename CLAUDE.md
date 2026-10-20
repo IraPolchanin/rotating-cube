@@ -45,6 +45,8 @@ compatible with Git for Windows.
   English.
 - Do not use `// @ts-ignore`, unconstrained `any` casts, `eslint-disable`, or
   `--no-verify` to bypass quality checks.
+- Ask the human first before installing or starting containers, virtual machines
+  or WSL distributions, or downloading large images or tools.
 
 ## Phase Workflow
 
