@@ -107,3 +107,22 @@ Template per task:
   judged justified and narrowly scoped. No other findings.
 - Human intervention: none.
 - Commit: `feat(cube): rotate cube mesh on pointer drag (AC-4, AC-5, AC-6, AC-7, AC-12)`
+
+## T5 — Reset button (AC-8, AC-9; FR-5)
+
+- Red run: `npx playwright test e2e/reset.test.ts e2e/drag.test.ts` before
+  implementation → reset tests failed in both browsers (AC-8 `toBeVisible` failed;
+  the four AC-9 tests timed out at 30 s on the missing button); the refactored drag
+  tests passed (12). Total 8 failed, 12 passed.
+- Refactor: shared e2e helpers extracted to `e2e/helpers.ts`; `drag.test.ts` now
+  imports them. Verified with `git show HEAD:e2e/drag.test.ts` vs the working file:
+  same 6 tests and identical `expect` lines (the reviewer could not run git and
+  said so; this check was done by the agent).
+- Hook events: PostToolUse blocked 2 times on TypeScript errors (`TS2741` missing
+  `reset` in the returned object, `TS2552` unknown `resetOrientation`), transient
+  between separate edits of `createCubeScene.ts`. No pre-commit or Stop-hook block
+  before the commit.
+- Check runs: 1 × `npm run check`, green (18 unit tests, 38 e2e = 19 per browser).
+- spec-reviewer: 1 invocation → "No violations found." (with the git-diff caveat above).
+- Human intervention: none.
+- Commit: `feat(reset): restore initial orientation on button click (AC-8, AC-9)`

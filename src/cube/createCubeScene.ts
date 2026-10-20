@@ -11,9 +11,17 @@ import {
   Scene,
   WebGLRenderer,
 } from 'three'
-import { applyDrag, formatDegrees, INITIAL_ORIENTATION, type Orientation } from './rotation'
+import {
+  applyDrag,
+  formatDegrees,
+  INITIAL_ORIENTATION,
+  resetOrientation,
+  type Orientation,
+} from './rotation'
 
 export interface CubeScene {
+  /** Restores the initial orientation immediately, without animation (FR-5). */
+  reset(): void
   dispose(): void
 }
 
@@ -135,6 +143,9 @@ export function createCubeScene(wrapper: HTMLElement): CubeScene {
   loop()
 
   return {
+    reset(): void {
+      orientation = resetOrientation()
+    },
     dispose(): void {
       cancelAnimationFrame(frame)
       resizeObserver.disconnect()

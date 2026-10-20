@@ -19,3 +19,21 @@ body,
   height: 100%;
   touch-action: none;
 }
+
+.reset-button {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 1;
+  padding: 8px 16px;
+  font: inherit;
+  color: #f8fafc;
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.reset-button:hover {
+  background: #334155;
+}
