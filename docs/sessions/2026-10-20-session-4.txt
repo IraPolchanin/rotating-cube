@@ -1,0 +1,1521 @@
+ ▐▛███▛█   Claude Code v2.1.303
+▝▜██████▀  Sonnet 5.5 · Claude Pro
+ ▝▝   ▝▝   ~\Projects\rotating-cube
+
+  Sonnet 5.5 is here, and it's faster and excels at well-scoped tasks. Opus 5.5 is still your default. Switch with /model.
+
+❯ Plan Phase 3 as described in docs/quality-gates.md §4: publish the project to 
+  a public GitHub repository and add CI that runs the full npm run check.       
+  Follow the Phase Workflow in CLAUDE.md.                                       
+                                                                                
+  The GitHub CLI is installed and authenticated as IraPolchanin with the repo   
+  and workflow scopes.                                                          
+                                                                                
+  Plan only. Do not create a remote or repository, push commits, modify files,  
+  or change Git history until I approve the plan. Approval of the plan alone    
+  does not authorize publication; request separate explicit confirmation before 
+  creating the public repository or pushing.                                    
+                                                                                
+  Before publication, inspect the tracked files and Git history for secrets,    
+  tokens, personal data, and unintended artifacts. If anything suspicious is    
+  found, stop and report it; do not rewrite history or remove content without   
+  approval.                                                                     
+                                                                                
+  Include:                                                                      
+                                                                                
+  Files to add or change.                                                       
+                                                                                
+  Repository creation method and visibility.                                    
+                                                                                
+  CI workflow design and required checks.                                       
+                                                                                
+  How to verify CI with a deliberate failure and then restore the passing       
+  state.                                                                        
+                                                                                
+  Risks, limitations, and any steps requiring my manual action.                 
+                                                                                
+  Preserve existing changes and follow the project's established verification   
+  and commit conventions.                                                       
+
+● Спочатку прочитаю docs/quality-gates.md, docs/spec.md і конфігурацію проєкту
+  (лише читання).
+
+  Read 1 file (ctrl+o to expand)
+
+● Bash(git ls-files && echo ---- && git remote -v && git branch -a && git log
+      --oneline | wc -l && cat package.json && cat .gitignore && ls -a && ls
+      .github 2>&1 | hea…)
+  ⎿  .claude/agents/spec-reviewer.md
+     .claude/settings.json
+     .gitattributes
+     … +97 lines (ctrl+o to expand)
+
+● Тепер перевіряю файли, історію комітів, дані авторів та транскрипти сесій на
+  наявність секретів і персональних даних (у режимі лише читання). · summary
+
+● Bash(echo "== authors/committers ==" && git log --all --format='%an <%ae> |
+      %cn <%ce>' | sort | uniq -c && echo "== secret patterns in HEAD files =="
+      && git grep -nI…)
+  ⎿  == authors/committers ==
+          20 Iryna Polchaninova <iryna.polchaninova@epam.com> | Iryna Polch
+     aninova <iryna.polchaninova@epam.com>
+     … +78 lines (ctrl+o to expand)
+
+● Bash(cat .nvmrc .gitattributes playwright.config.ts .claude/settings.json &&
+      echo ---- && sed -n 1,80p docs/spec.md | head -100 && grep -n "7\.\|npm
+      run\|Playwright\…)
+  ⎿  22
+     .githooks/* text eol=lf
+     scripts/* text eol=lf
+     … +173 lines (ctrl+o to expand)
+
+● Bash(git grep -nIiE 'epam|@[a-z0-9.-]+\.[a-z]{2,}' -- docs/sessions | grep -v
+      'npm\|vitest\|@types\|@eslint\|@playwright\|@vitejs' | cut -c1-180 | head
+      -20; sed -n 1…)
+  ⎿  ╭─── Claude Code v2.1.131 ────────────────────────────�
+     │                                                    │ Tips for gettin
+     g        │
+     … +41 lines (ctrl+o to expand)
+
+● Bash(grep -c 'linux-x64-gnu' package-lock.json; grep -n
+      '"node_modules/@rolldown/binding-linux-x64-gnu"\|"engines"'
+      package-lock.json | head -5; node -v; git status…)
+  ⎿  6
+     43:      "engines": {
+     53:      "engines": {
+     … +4 lines (ctrl+o to expand)
+
+● Lockfile містить Linux-бінарники, Node локально 22, дерево чисте. Записую
+  план.
+
+● Updated plan
+  ⎿  /plan to preview
+  ⎿  User rejected Claude's plan:
+     ╭─────────────────────────────────────────────────────────────────────────╮
+     │ План: Phase 3 — публікація на GitHub + CI (docs/quality-gates.md §4)    │
+     │                                                                         │
+     │ Context                                                                 │
+     │                                                                         │
+     │ Phase 1–2 (хуки, pre-commit, Stop-hook, spec-reviewer) завершені й      │
+     │ локальні. Репозиторій                                                   │
+     │ ще не має remote, .github/ відсутній. Мета Phase 3: опублікувати проєкт │
+     │ у публічному                                                            │
+     │ репозиторії IraPolchanin/rotating-cube і додати GitHub Actions, що      │
+     │ запускає повний                                                         │
+     │ npm run check (typecheck → lint → test → build → e2e на Chromium +      │
+     │ Firefox), закриваючи                                                    │
+     │ прогалину з §2 (fresh-clone) та trade-off Stop-hook (§6: build/e2e для  │
+     │ закомічених змін                                                        │
+     │ гарантує лише CI).                                                      │
+     │                                                                         │
+     │ Поточний стан: main, дерево чисте, 20 комітів, remote немає, gh         │
+     │ авторизований як                                                        │
+     │ IraPolchanin (scopes: repo, workflow). IraPolchanin/rotating-cube ще не │
+     │ існує.                                                                  │
+     │                                                                         │
+     │ Крок 0 — Інспекція перед публікацією (виконано, лише читання)           │
+     │                                                                         │
+     │ Перевірено: 26 відстежуваних файлів, вся історія (20 комітів, жодних    │
+     │ видалених файлів).                                                      │
+     │                                                                         │
+     │ Не знайдено: токенів/ключів/приватних ключів (патерни ghp_, gho_,       │
+     │ github_pat_,                                                            │
+     │ sk-, AKIA, xox*, AIza, BEGIN PRIVATE — 0 збігів у файлах і в усіх diff  │
+     │ історії);                                                               │
+     │ .env, .local, великих бінарників; dist/, node_modules/, test-results/   │
+     │ не                                                                      │
+     │ відстежуються (є в .gitignore).                                         │
+     │                                                                         │
+     │ Знахідки, які потребують вашого рішення (нічого не змінювалось):        │
+     │                                                                         │
+     │ 1. Корпоративний email у метаданих усіх 20 комітів:                     │
+     │    Iryna Polchaninova <iryna.polchaninova@epam.com> (автор і комітер).  │
+     │    Після публікації                                                     │
+     │    він стане публічним і назавжди збережеться в історії/кешах. (Ваш     │
+     │    GitHub-акаунт                                                        │
+     │    використовує іншу адресу.)                                           │
+     │ 2. docs/sessions/*.txt (3 файли, ~377 КБ): транскрипти сесій містять    │
+     │    ім'я                                                                 │
+     │    «Iryna», локальні шляхи C:\Users\IrynaPolchaninova\..., назви        │
+     │    планів/моделей.                                                      │
+     │    Email у транскриптах уже замінений на [email removed]. Секретів      │
+     │    немає, ризик —                                                       │
+     │    лише персональні дані (ім'я, ім'я користувача ОС).                   │
+     │ 3. Інше (standing authorization тощо) — хибні спрацювання пошуку, не    │
+     │    проблема.                                                            │
+     │                                                                         │
+     │ Рішення, потрібні до публікації (за правилом — зупиняюсь і не переписую │
+     │ історію без                                                             │
+     │ вашого дозволу):                                                        │
+     │                                                                         │
+     │ #: D1                                                                   │
+     │ Питання: Email у комітах                                                │
+     │ Варіанти: (a) залишити як є; (b) переписати автора/комітера на GitHub   │
+     │ noreply                                                                 │
+     │ (<id>+IraPolchanin@users.noreply.github.com) у всіх 20 комітах — змінює │
+     │ хеші,                                                                   │
+     │  лише локально, remote ще немає; рекомендація: (b)                      │
+     │ ────────────────────────────────────────                                │
+     │ #: D2                                                                   │
+     │ Питання: Транскрипти сесій                                              │
+     │ Варіанти: (a) залишити публічними (практика harness engineering,        │
+     │ шляхи/ім'я                                                              │
+     │ видимі); (b) прибрати з історії; (c) лишити, але не публікувати —       │
+     │ потребує                                                                │
+     │ переписування. Рекомендація: (a), якщо ім'я та ім'я  користувача ОС не  │
+     │ чутливі                                                                 │
+     │ ────────────────────────────────────────                                │
+     │ #: D3                                                                   │
+     │ Питання: LICENSE/README                                                 │
+     │ Варіанти: Публічний репо без ліцензії = «all rights reserved». Додати   │
+     │ LICENSE                                                                 │
+     │ (яку?) / README — окремий, необов'язковий крок. Поза межами Phase 3,    │
+     │ якщо не                                                                 │
+     │ вкажете                                                                 │
+     │                                                                         │
+     │ Якщо D1=(b): план резервування до будь-якого переписування — git bundle │
+     │ create ../rotating-cube-backup.bundle --all + тег backup/pre-rewrite;   │
+     │ переписування через                                                     │
+     │ git filter-repo --mailmap (або git rebase --exec/filter-branch якщо     │
+     │ filter-repo                                                             │
+     │ недоступний); перевірка: однакові дерева (git diff backup/pre-rewrite   │
+     │ HEAD порожній),                                                         │
+     │ git log --format='%ae|%ce' | sort -u показує лише noreply. Також        │
+     │ локально                                                                │
+     │ git config user.email <noreply>, щоб нові коміти не повертали           │
+     │ корпоративну адресу.                                                    │
+     │ Кожна команда виконується окремо після вашого підтвердження.            │
+     │                                                                         │
+     │ Файли для додавання/зміни                                               │
+     │                                                                         │
+     │ Файл: .github/workflows/ci.yml                                          │
+     │ Дія: новий                                                              │
+     │ Коли: перед першою публікацією                                          │
+     │ ────────────────────────────────────────                                │
+     │ Файл: docs/quality-gates.md                                             │
+     │ Дія: змінити §4 (Status → Implemented + результати), §9 (рядок CI), §10 │
+     │                                                                         │
+     │ (рішення CI), §11 (рядок CI), §2 «Known gap» (результат fresh-clone: CI │
+     │                                                                         │
+     │ робить npm ci)                                                          │
+     │ Коли: лише після практичної верифікації                                 │
+     │ ────────────────────────────────────────                                │
+     │ Файл: docs/spec.md, src/, e2e/ (постійно)                               │
+     │ Дія: не змінюються                                                      │
+     │ Коли: —                                                                 │
+     │                                                                         │
+     │ Дизайн ci.yml (англійською, відповідно до §4)                           │
+     │                                                                         │
+     │ name: CI                                                                │
+     │ on:                                                                     │
+     │   push:                                                                 │
+     │     branches: ["**"]                                                    │
+     │   pull_request:                                                         │
+     │     branches: [main]                                                    │
+     │ permissions:                                                            │
+     │   contents: read                                                        │
+     │ concurrency:                                                            │
+     │   group: ci-${{ github.workflow }}-${{ github.ref }}                    │
+     │   cancel-in-progress: true                                              │
+     │ jobs:                                                                   │
+     │   check:                                                                │
+     │     name: check                                                         │
+     │     runs-on: ubuntu-latest                                              │
+     │     timeout-minutes: 20                                                 │
+     │     steps:                                                              │
+     │       - uses: actions/checkout@v4                                       │
+     │       - uses: actions/setup-node@v4                                     │
+     │         with:                                                           │
+     │           node-version-file: .nvmrc     # Node 22, одне джерело правди  │
+     │           cache: npm                                                    │
+     │       - run: npm ci                      # виконує і `prepare`          │
+     │ (core.hooksPath) — безпечно                                             │
+     │       - run: npx playwright install --with-deps chromium firefox        │
+     │       - run: npm run check                                              │
+     │       - if: failure()                                                   │
+     │         uses: actions/upload-artifact@v4                                │
+     │         with: { name: test-results, path: test-results/,                │
+     │ if-no-files-found: ignore }                                             │
+     │                                                                         │
+     │ Рішення/відхилення від чернетки §4 (відобразити в §10):                 │
+     │ - playwright install --with-deps chromium firefox замість «усі          │
+     │   браузери» — §4 і NFR-5                                                │
+     │   вимагають лише Chromium+Firefox; економить час (без WebKit). Це       │
+     │   уточнення, не послаблення.                                            │
+     │ - node-version-file: .nvmrc — точно відповідає «Node 22 (matches        │
+     │   .nvmrc)».                                                             │
+     │ - Один job check = одна перевірка, що запускає той самий npm run check  │
+     │   (без дублювання                                                       │
+     │   скриптів у YAML; локальний і CI-гейт ідентичні).                      │
+     │ - Мінімальні права (contents: read), без секретів, без                  │
+     │   pull_request_target.                                                  │
+     │ - Версії actions — мажорні теги; на етапі реалізації звірити актуальні  │
+     │   мажори.                                                               │
+     │ - playwright.config.ts уже має reuseExistingServer: !process.env['CI']  │
+     │   — зміни не потрібні.                                                  │
+     │ - Тригер push: ["**"] + pull_request дублює запуски для гілок із PR —   │
+     │   прийнято в §4,                                                        │
+     │   concurrency пом'якшує.                                                │
+     │                                                                         │
+     │ Створення репозиторію (потребує ОКРЕМОГО явного підтвердження)          │
+     │                                                                         │
+     │ Лише після: затвердження плану, рішень D1–D3, коміту ci.yml та          │
+     │ успішного локального                                                    │
+     │ npm run check, і окремої фрази «створюй публічний репозиторій і пушай». │
+     │                                                                         │
+     │ 1. gh repo create IraPolchanin/rotating-cube --public --source=.        │
+     │    --remote=origin --description "Interactive draggable 3D cube (React  │
+     │    + Three.js), built via agent harness engineering"                    │
+     │    — без --push (створення і публікація розділені).                     │
+     │ 2. Показати git remote -v, git log --oneline, git log                   │
+     │    --format='%ae|%ce' | sort -u                                         │
+     │    ще раз; отримати підтвердження.                                      │
+     │ 3. git push -u origin main — перший запуск CI на main. (git push не     │
+     │    заборонений deny-правилами; --no-verify/-c/-C не використовуємо.)    │
+     │ 4. Перевірка: gh run watch / gh run list; усі кроки зелені.             │
+     │                                                                         │
+     │ Видимість: public, ім'я rotating-cube, власник IraPolchanin, default    │
+     │ branch main.                                                            │
+     │                                                                         │
+     │ Верифікація CI навмисною помилкою (Phase Workflow)                      │
+     │                                                                         │
+     │ Обмеження: pre-commit блокує TS/lint/unit помилки, --no-verify          │
+     │ заборонено. Тому                                                        │
+     │ помилка має бути такою, що проходить pre-commit, але валить CI — тобто  │
+     │ в e2e.                                                                  │
+     │                                                                         │
+     │ 1. Після зеленого CI на main: git switch -c ci/verify-failure (з        │
+     │    підтвердженням).                                                     │
+     │ 2. Тимчасово змінити очікуване значення в одному e2e-тесті              │
+     │    (e2e/smoke.test.ts,                                                  │
+     │    наприклад неправильне початкове значення data-cube-ry) — це          │
+     │    експеримент у                                                        │
+     │    тимчасовій гілці, не послаблення тесту; main не торкається. Локально │
+     │    typecheck                                                            │
+     │    - lint + test зелені, e2e червоний (підтвердити локально до пушу).   │
+     │      Примітка: Stop-hook може зупинити хід, поки дерево не закомічене — │
+     │      коміт одразу.                                                      │
+     │ 3. Коміт test(e2e): deliberate failure to verify CI (temporary) → git   │
+     │    push -u origin ci/verify-failure.                                    │
+     │ 4. Очікувано: CI червоний на кроці npm run check (e2e), артефакт        │
+     │    test-results                                                         │
+     │    завантажено. Зафіксувати URL запуску.                                │
+     │ 5. Відновлення: git revert <коміт> (нова історія, без перезапису) →     │
+     │    push → CI зелений.                                                   │
+     │    Зафіксувати URL.                                                     │
+     │ 6. (Опційно) відкрити PR ci/verify-failure → main, переконатися, що     │
+     │    тригер                                                               │
+     │    pull_request працює; закрити PR без merge.                           │
+     │ 7. Прибирання (кожне окремо з підтвердженням): видалити віддалену та    │
+     │    локальну гілку                                                       │
+     │    ci/verify-failure. git status чистий, артефактів експерименту немає. │
+     │ 8. Тільки тепер оновити docs/quality-gates.md (§4 → Implemented,        │
+     │    посилання на                                                         │
+     │    запуски: червоний + зелений, §9, §10, §11, закрити Known gap у §2    │
+     │    лише якщо                                                            │
+     │    npm ci/prepare у CI справді підтверджено логом). Коміт:              │
+     │    docs(ci): record Phase 3 CI verification results, main push.         │
+     │                                                                         │
+     │ Коміти (конвенція <type>(<scope>): <description>, з Co-Authored-By)     │
+     │                                                                         │
+     │ 1. ci: add GitHub Actions workflow running npm run check                │
+     │    (.github/workflows/ci.yml)                                           │
+     │ 2. (експеримент у гілці, не мерджиться) test(e2e): deliberate failure…  │
+     │    + revert                                                             │
+     │ 3. docs(ci): record Phase 3 CI verification results                     │
+     │                                                                         │
+     │ Перед кожним комітом — pre-commit (typecheck+lint+test); перед          │
+     │ «завершено» —                                                           │
+     │ npm run check (5 кроків). spec-reviewer не потрібен: src/ та e2e/ у     │
+     │ main                                                                    │
+     │ не змінюються (за CLAUDE.md крок 6) — лише за вашим запитом.            │
+     │                                                                         │
+     │ Ризики та обмеження                                                     │
+     │                                                                         │
+     │ - Приватність (D1/D2) — головний ризик; публікація необоротна де-факто  │
+     │   (форки,                                                               │
+     │   кеші, індексація). Тому окреме підтвердження.                         │
+     │ - WebGL у headless CI: e2e покладаються на canvas/Three.js; на          │
+     │   ubuntu-latest                                                         │
+     │   Chromium/Firefox зазвичай рендерять через програмний GL, але перший   │
+     │   запуск може                                                           │
+     │   виявити нестабільність (AC-2, AC-10/11, AC-13). Якщо так — коренева   │
+     │   причина                                                               │
+     │   (напр. launch-аргументи Playwright), без пропуску/послаблення тестів. │
+     │ - npm ci на Linux: у package-lock.json є linux-x64-gnu бінарники        │
+     │   (перевірено), Node                                                    │
+     │   локально 22.23 = .nvmrc. Все одно перший запуск — реальна перевірка.  │
+     │ - Час прогону ≈ кілька хвилин (install браузерів + e2e ×2 браузери);    │
+     │   для публічного                                                        │
+     │   репо Actions безкоштовні.                                             │
+     │ - Branch protection / required checks: CI сам по собі нічого не блокує. │
+     │   Вимагати                                                              │
+     │   статус check перед merge можна через gh api (rulesets) — це зміна     │
+     │   налаштувань                                                           │
+     │   репозиторію, не входить у план без вашого окремого «так». Прямий push │
+     │   у main                                                                │
+     │   залишається можливим.                                                 │
+     │ - Fresh-clone перевірка pre-commit (npm ci → prepare) через CI не       │
+     │   перевіряє                                                             │
+     │   сам коміт-хук; CI покаже лише, що prepare не ламає npm ci. Повна      │
+     │   перевірка                                                             │
+     │   (git clone → npm ci → коміт з TS-помилкою) — ручна, опційна.          │
+     │ - Dependabot/CodeQL/secret-scanning/ліцензія — поза межами; GitHub      │
+     │   автоматично вмикає                                                    │
+     │   secret scanning для публічних репо.                                   │
+     │ - Нові версії actions/залежностей: пінінг лише мажорними тегами         │
+     │   (прийнятний компроміс                                                 │
+     │   простоти; SHA-пінінг — за бажанням).                                  │
+     │                                                                         │
+     │ Кроки, що потребують вашої ручної дії / рішення                         │
+     │                                                                         │
+     │ 1. Відповісти на D1, D2, D3.                                            │
+     │ 2. Затвердити цей план (ExitPlanMode).                                  │
+     │ 3. Окремо підтвердити: (а) переписування історії (якщо D1=b), (б)       │
+     │    створення публічного                                                 │
+     │    репо, (в) git push, (г) створення/видалення гілки ci/verify-failure, │
+     │    (д) будь-які                                                         │
+     │    зміни налаштувань репо (branch protection).                          │
+     │ 4. Переглянути результат CI у браузері (за потреби) та, опційно, вручну │
+     │    перевірити                                                           │
+     │    fresh-clone hook.                                                    │
+     │                                                                         │
+     │ Верифікація (підсумок)                                                  │
+     │                                                                         │
+     │ - Локально: npm run check — 5/5 зелених перед публікацією.              │
+     │ - Віддалено: зелений запуск на main; червоний запуск на                 │
+     │   ci/verify-failure                                                     │
+     │   (e2e); зелений після git revert; (опційно) PR-тригер.                 │
+     │ - Після: git status чистий; немає тимчасових файлів/гілок;              │
+     │   docs/quality-gates.md                                                 │
+     │   оновлено лише посиланнями на фактично виконані перевірки.             │
+     ╰─────────────────────────────────────────────────────────────────────────╯
+
+● Приймаю рішення. Спочатку перевірю актуальні мажорні версії actions за
+  офіційними джерелами (релізи на GitHub).
+
+● Fetch(https://github.com/actions/checkout/releases/latest)
+  ⎿  Received 200.4KB (200 OK)
+
+● Fetch(https://github.com/actions/setup-node/releases/latest)
+  ⎿  Received 215.8KB (200 OK)
+
+● Fetch(https://github.com/actions/upload-artifact/releases/latest)
+  ⎿  Received 198.8KB (200 OK)
+
+● Знайшов останні релізи: checkout v7.0.1, setup-node v7.1.0, upload-artifact
+  v7.0.2. Тепер перевірю, чи існують плаваючі мажорні теги v7, і погляну на
+  нотатки про зміни в setup-node v7. · summary
+
+● Bash(for r in checkout setup-node upload-artifact; do echo -n "$r v7 tag: ";
+      gh api repos/actions/$r/git/ref/tags/v7 --jq '.object.sha' 2>&1 | head -1;
+      done; gh rele…)
+  ⎿  checkout v7 tag: 3d3c42e5aac5ba805825da76410c181273ba90b1
+     setup-node v7 tag: 949feb2413d6458794dcd2491c4babbbce0c15c1
+     upload-artifact v7 tag: cf430e030ddbb5b0abf93d22962f4752f3646cd9
+     … +28 lines (ctrl+o to expand)
+
+● Версії підтверджено: усі три дії оновлюються з @v4 на @v7 без breaking-змін
+  для нашого використання. Зараз створюю LICENSE (MIT) та ci.yml. · summary
+
+● Write(LICENSE)
+  ⎿  Wrote 21 lines to LICENSE
+       1 MIT License
+       3 Copyright (c) 2026 Iryna Polchaninova
+       4 
+         ining a copy
+       6 of this software and associated documentation files (the "Softwa
+       7 in the Software without restriction, including without limitatio
+         n the rights
+         d/or sell
+       9 copies of the Software, and to permit persons to whom the Softwa
+      10 furnished to do so, subject to the following conditions:
+     … +23 lines (ctrl+o to expand)
+
+● Write(.github\workflows\ci.yml)
+  ⎿  Wrote 40 lines to .github\workflows\ci.yml
+       1 name: CI
+       2 
+       3 on:
+       4   push:
+       5     branches: ["**"]
+       6   pull_request:
+       7     branches: [main]
+       8 
+       9 permissions:
+      10   contents: read
+     … +30 lines (ctrl+o to expand)
+● Файли створено. Запускаю локально повний npm run check (5 кроків) перед
+  комітами.
+
+● Bash(npm run check 2>&1 | tail -30; echo EXIT=${PIPESTATUS[0]})
+  ⎿  > rotating-cube@0.0.1 build
+     > vite build
+     … +26 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● npm run check пройшов (exit 0). Роблю два локальні коміти (без push).
+
+● Bash(git add LICENSE && git commit -q -m "docs: add MIT license…)
+  ⎿  warning: in the working copy of 'LICENSE', LF will be replaced by CRLF
+      the next time Git touches it
+     … +44 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● Локальну частину виконано. Нічого не опубліковано: remote немає, push не було.
+
+  Що зроблено
+  - Версії actions. Я перевірив останні релізи в офіційних репозиторіях
+    actions/* через сторінки релізів і gh api. Усі три плаваючі теги v7 існують.
+
+  | Action          | Чернетка | Тепер | Остання версія |
+  |-----------------|----------|-------|----------------|
+  | checkout        | v4       | v7    | v7.0.1         |
+  | setup-node      | v4       | v7    | v7.1.0         |
+  | upload-artifact | v4       | v7    | v7.0.2         |
+    Breaking-змін для нашого використання (node-version-file, cache: npm,
+    name/path) у нотатках релізів я не знайшов. Для setup-node v7 релізні
+    нотатки згадують міграцію на ESM і зміну поведінки NODE_AUTH_TOKEN; це не
+    стосується нашого workflow. Для checkout і upload-artifact сторінки релізів
+    про breaking-зміни не кажуть нічого, тож це моя інтерпретація, а не
+    підтвердження.
+  - LICENSE. MIT, правовласник «Iryna Polchaninova», 2026. Ім'я взяв з автора
+    комітів; змініть, якщо потрібне інше.
+  - .github/workflows/ci.yml.
+    - Один job check на ubuntu-latest виконує npm run check.
+    - Node береться з .nvmrc, npm кешується.
+    - Playwright встановлює лише Chromium і Firefox.
+    - Права мінімальні (contents: read), є concurrency і timeout-minutes: 20.
+    - При падінні завантажується артефакт test-results.
+  - Перевірка. npm run check пройшов повністю (typecheck, lint, test, build, e2e
+    на обох браузерах, exit 0).
+  - Коміти. Лише локальні, pre-commit пройшов:
+    - d2f53b2 docs: add MIT license
+    - 2805805 ci: add GitHub Actions workflow running npm run check
+  - Робоче дерево. Чисте.
+
+  Наступні кроки (чекаю вашого окремого підтвердження на кожен)
+  1. Створити публічний репозиторій IraPolchanin/rotating-cube без --push.
+  2. git push -u origin main, перший запуск CI.
+  3. Експеримент із навмисним падінням e2e на гілці ci/verify-failure, git 
+     revert і прибирання гілки.
+  4. Оновлення docs/quality-gates.md після реальної верифікації.
+
+  Перед кроком 1 нагадую: у кожному з 22 комітів (включно з двома новими) буде
+  корпоративний email @epam.com, як ви й вирішили (D1a). Підтвердьте, і я
+  перейду до кроку 1.
+
+✻ Worked for 3m 6s · done 12:16 PM
+
+※ recap: Мета: опублікувати rotating-cube у публічному GitHub-репозиторії з CI, що запускає повний npm run check. Локально готово (LICENSE, ci.yml, два коміти, check зелений), чекаю вашого підтвердження створити репозиторій IraPolchanin/rotating-cube, без push. (disable recaps in /config)
+
+❯ I confirm that the corporate email remains in Git history, as previously      
+  decided.                                                                      
+                                                                                
+  Briefly verify:                                                               
+                                                                                
+  git status --short is clean;                                                  
+                                                                                
+  the latest commits include the intended LICENSE and CI commits;               
+                                                                                
+  no Git remote is configured.                                                  
+                                                                                
+  If these checks pass, create the public repository IraPolchanin/rotating-cube 
+  without pushing any commits.                                                  
+                                                                                
+  After creation, show me:                                                      
+                                                                                
+  the repository URL and confirmed visibility;                                  
+                                                                                
+  git remote -v;                                                                
+                                                                                
+  git status --short.                                                           
+                                                                                
+  Do not push or perform any other remote operation. Wait for my separate       
+  explicit confirmation before pushing.                                         
+
+● Спершу три перевірки (лише читання); якщо всі пройдуть, створю репозиторій без
+  push.
+
+● Bash(echo "status:[$(git status --short)]" && git log --oneline -3 && echo
+      "remotes:[$(git remote -v)]")
+  ⎿  status:[]
+     2805805 ci: add GitHub Actions workflow running npm run check
+     d2f53b2 docs: add MIT license
+     … +2 lines (ctrl+o to expand)
+
+● Усі три перевірки пройшли: дерево чисте, останні коміти — LICENSE і CI, remote
+  немає. Створюю репозиторій без --push.
+
+● Bash(gh repo create IraPolchanin/rotating-cube --public --source=.
+      --remote=origin --description "Interactive draggable 3D cube (React +
+      Three.js), built via agent h…)
+  ⎿  https://github.com/IraPolchanin/rotating-cube
+     --- view
+     {
+     … +10 lines (ctrl+o to expand)
+
+● Публічний репозиторій створено, нічого не запушено.
+
+  - URL: https://github.com/IraPolchanin/rotating-cube
+  - Видимість: PUBLIC (isPrivate: false). Гілка за замовчуванням порожня, бо
+    комітів у віддаленому репозиторії ще немає.
+  - git remote -v:
+  origin  https://github.com/IraPolchanin/rotating-cube.git (fetch)
+  origin  https://github.com/IraPolchanin/rotating-cube.git (push)
+  - git status --short: порожньо, дерево чисте.
+
+  Інших віддалених операцій я не виконував. Чекаю вашого окремого підтвердження
+  на git push -u origin main. Після нього CI запуститься на main автоматично, і
+  я простежу за ним через gh run watch.
+
+✻ Cogitated for 18s · done 12:23 PM
+
+❯ I confirm: push main to origin now                                            
+
+● Пушу main у origin.
+
+● Bash(git push -u origin main 2>&1; echo "--- runs"; sleep 8; gh run list
+      --repo IraPolchanin/rotating-cube --limit 3)
+  ⎿  branch 'main' set up to track 'origin/main'.
+     To https://github.com/IraPolchanin/rotating-cube.git
+      * [new branch]      main -> main
+     … +3 lines (ctrl+o to expand)
+  ⎿  (timeout 3m)
+
+● Push виконано, CI у черзі. Стежу за запуском.
+
+● Bash(gh run watch 39400495789 --repo IraPolchanin/rotating-cube --exit-status
+      2>&1 | tail -30; echo "EXIT=${PIPESTATUS[0]}")
+  ⎿  * check (ID 118553703929)
+       ✓ Set up job
+       ✓ Run actions/checkout@v7
+     … +28 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● main запушено в origin, і CI на ньому пройшов: job check зелений за 1 хв 5 с.
+
+  - Запуск:
+    https://github.com/IraPolchanin/rotating-cube/actions/runs/39400495789
+  - Кроки: checkout, setup-node, npm ci, встановлення Playwright (Chromium +
+    Firefox) і npm run check пройшли. upload-artifact пропущено, бо це крок лише
+    на випадок падіння.
+  - Попередження від GitHub: мітка ubuntu-latest почне вказувати на Ubuntu 26 з
+    19 жовтня 2026. Цей запуск ішов уже після цієї дати, і все пройшло. Якщо
+    захочете, можна зафіксувати ubuntu-24.04, але це не потрібно.
+  - Наслідки для документації: npm ci у CI на чистому клоні спрацював, зокрема з
+    prepare. Це закриває частину відомої прогалини з §2. Сам коміт-хук на
+    чистому клоні CI не перевіряє.
+
+  Далі за планом експеримент із навмисним падінням e2e:
+  1. Створити гілку ci/verify-failure.
+  2. Тимчасово змінити очікуване значення в e2e/smoke.test.ts, закомітити
+     (pre-commit пройде, бо e2e у ньому немає) і запушити. Це буде push гілки, а
+     main не змінюється.
+  3. Переконатися, що CI червоний, потім зробити git revert, запушити й
+     переконатися, що CI знову зелений.
+  4. Видалити гілку локально й віддалено, перед кожним видаленням чекаючи
+     окремого підтвердження.
+
+  Чекаю вашого підтвердження на створення гілки та push ci/verify-failure.
+
+✻ Brewed for 1m 15s · done 12:26 PM
+
+※ recap: Мета Phase 3: публічний репозиторій із CI, що запускає повний npm run check. Репозиторій створено, main запушено, CI зелений. Далі потрібне ваше підтвердження створити гілку ci/verify-failure і запушити її для експерименту з навмисним падінням e2e. (disable recaps in /config)
+
+❯ Confirmed: create the local branch ci/verify-failure from main and make the   
+  smallest temporary change in e2e/smoke.test.ts that makes one E2E assertion   
+  fail. Do not modify main, the CI workflow, or unrelated files, and do not     
+  weaken or remove tests.                                                       
+                                                                                
+  Run npm run check locally and confirm that typecheck, lint, unit tests, and   
+  build pass, and only E2E fails because of the intentional change. Review the  
+  diff and commit the change locally on the test branch so the Stop hook does   
+  not block on an uncommitted failing change. Then show me the diff, check      
+  results, and commit hash. Wait for my separate explicit approval before       
+  pushing.                                                                      
+                                                                                
+  After the push, watch the CI run and report the result. Ask me before the     
+  revert commit/push and before deleting either the local or remote branch.     
+
+● Bash(git switch -c ci/verify-failure && cat e2e/smoke.test.ts)
+  ⎿  Switched to a new branch 'ci/verify-failure'
+     import { test, expect } from '@playwright/test'
+     … +4 lines (ctrl+o to expand)
+
+● Найменша зміна: інвертувати очікування в єдиній перевірці (toBeVisible →
+  toBeHidden).
+
+● Update(e2e\smoke.test.ts)
+  ⎿  Added 1 line, removed 1 line
+      2  
+      3  test('app loads', async ({ page }) => {
+      4    await page.goto('/')
+      5 -  await expect(page.locator('body')).toBeVisible()              
+      5 +  await expect(page.locator('body')).toBeHidden()               
+      6  })
+
+● Запускаю кроки по черзі, щоб побачити, який саме падає.
+
+● Bash(for s in typecheck lint test build e2e; do npm run $s >/tmp/out_$s.txt
+      2>&1; echo "$s exit=$?"; done; echo ---; grep -E
+      "Error|expect|Expected|Received|failed|p…)
+  ⎿  typecheck exit=0
+     lint exit=0
+     test exit=0
+     … +17 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+● Падає лише e2e (обидва браузери), решта зелена. Дивлюся diff і комічу
+  локально.
+
+● Bash(git diff && git add e2e/smoke.test.ts && git commit -q -m "test(e2e):
+      deliberate failure to verify CI (temporary)…)
+  ⎿  warning: in the working copy of 'e2e/smoke.test.ts', LF will be replac
+     ed by CRLF the next time Git touches it
+     diff --git a/e2e/smoke.test.ts b/e2e/smoke.test.ts
+     … +19 lines (ctrl+o to expand)
+  ⎿  (timeout 2m)
+  ⎿  PostToolUse:Bash says: Tip: Run /ultrareview before you push to catch bugs 
+     with a cloud-based multi-agent review — 3 free reviews left.
+
+● Локальну частину готово, нічого не запушено.
+
+  Diff (єдина зміна, e2e/smoke.test.ts):
+  -  await expect(page.locator('body')).toBeVisible()
+  +  await expect(page.locator('body')).toBeHidden()
+
+  Результати npm run check (кроки запускались окремо):
+
+  ┌───────────┬──────────────────────────────────────────────────────────────┐
+  │   Крок    │                          Результат                           │
+  ├───────────┼──────────────────────────────────────────────────────────────┤
+  │ typecheck │ exit 0                                                       │
+  ├───────────┼──────────────────────────────────────────────────────────────┤
+  │ lint      │ exit 0                                                       │
+  ├───────────┼──────────────────────────────────────────────────────────────┤
+  │ test      │ exit 0                                                       │
+  ├───────────┼──────────────────────────────────────────────────────────────┤
+  │ build     │ exit 0                                                       │
+  ├───────────┼──────────────────────────────────────────────────────────────┤
+  │ e2e       │ exit 1: expect(locator).toBeHidden() failed, Expected:       │
+  │           │ hidden, Received: visible у Chromium і Firefox               │
+  └───────────┴──────────────────────────────────────────────────────────────┘
+
+  Коміт: 5864fa0 — test(e2e): deliberate failure to verify CI (temporary). Він
+  лежить на локальній ci/verify-failure. main лишається на 2805805 і відповідає
+  origin/main. Дерево чисте, інші файли не чіпав. Pre-commit пропустив коміт, бо
+  e2e у ньому не запускається.
+
+  Чекаю окремого підтвердження на git push -u origin ci/verify-failure. Після
+  цього простежу за CI і запитаю перед revert-комітом та видаленням гілок.
+
+✻ Churned for 48s · done 12:34 PM
+
+❯ Confirmed: push ci/verify-failure to origin and watch the CI run. Report the  
+  result and the run URL, then ask me before the revert.                        
+
+● Bash(git push -u origin ci/verify-failure 2>&1 | tail -4; sleep 8; gh run list
+      --repo IraPolchanin/rotating-cube --branch ci/verify-failure --limit 1
+      --json database…)
+  ⎿  remote:
+     branch 'ci/verify-failure' set up to track 'origin/ci/verify-failure'.
+     To https://github.com/IraPolchanin/rotating-cube.git
+     … +7 lines (ctrl+o to expand)
+  ⎿  (timeout 2m)
+
+● Bash(gh run watch 39402098647 --repo IraPolchanin/rotating-cube 2>&1 | tail
+      -22; gh run view 39402098647 --repo IraPolchanin/rotating-cube --json
+      conclusion --jq .co…)
+  ⎿  Run CI (39402098647) has already completed with 'failure'
+     failure
+     check   Run npm run check       2026-10-20T09:38:46.4096483Z  Test 
+     Files  1 pass
+     … +14 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Bash(gh run view 39402098647 --repo IraPolchanin/rotating-cube --json jobs
+      --jq '.jobs[0].steps[] | "\(.conclusion)\t\(.name)"')
+  ⎿  success Set up job
+     success Run actions/checkout@v7
+     success Run actions/setup-node@v7
+     … +7 lines (ctrl+o to expand)
+
+● CI на ci/verify-failure став червоним, як і очікувалось.
+
+  - Запуск:
+    https://github.com/IraPolchanin/rotating-cube/actions/runs/39402098647
+  - Підсумок: failure.
+  - Де впало: на кроці Run npm run check. Лог показує unit-тести пройшли (1
+    passed), а e2e впали з expect(locator).toBeHidden() failed, Expected: 
+    hidden, Received: visible.
+  - Артефакт: крок upload-artifact виконався (success), тож test-results
+    завантажено.
+  - Решта кроків: checkout, setup-node, npm ci і встановлення Playwright
+    пройшли.
+
+  Поведінка збігається з локальним результатом, тож CI справді ловить падіння
+  e2e.
+
+  Далі: git revert 5864fa0 на ci/verify-failure (новий коміт, без переписування
+  історії), push і перевірка, що CI знову зелений. Підтвердіть, будь ласка,
+  revert-коміт і push.
+
+✻ Baked for 36s · done 12:40 PM
+
+※ recap: Мета: опублікувати rotating-cube на GitHub з CI, що запускає повний npm run check. Зараз CI на ci/verify-failure впав на e2e, як і планувалось; наступний крок — ваше підтвердження на revert-коміт 5864fa0 і push, щоб побачити зелений CI. (disable recaps in /config)
+
+❯ Confirmed: run git revert 5864fa0 on ci/verify-failure to create a new revert 
+  commit. Then inspect the diff and run the local checks. If the revert is      
+  correct and the checks pass, push ci/verify-failure to origin without         
+  --force, and watch the CI run until it completes. Report the result and the   
+  CI run URL. Ask me before deleting any local or remote branch.                
+
+● Bash(git branch --show-current && git revert --no-commit 5864fa0 && git diff
+      --cached && git diff HEAD~1 --stat | tail -2)
+  ⎿  ci/verify-failure
+     diff --git a/e2e/smoke.test.ts b/e2e/smoke.test.ts
+     index 0490cc9..7513ad1 100644
+     … +9 lines (ctrl+o to expand)
+
+● Diff правильний: повертає toBeVisible(). Запускаю повний npm run check, потім
+  комічу revert.
+
+● Bash(npm run check >/tmp/check_rev.txt 2>&1; echo EXIT=$?; grep -E
+      "passed|failed" /tmp/check_rev.txt | tail -3)
+  ⎿  EXIT=0
+      Test Files  1 passed (1)
+           Tests  1 passed (1)
+       2 passed (5.2s)
+  ⎿  (timeout 10m)
+
+● Bash(git commit -q -m "Revert \"test(e2e): deliberate failure to verify CI
+      (temporary)\"…)
+  ⎿  90e2e7d Revert "test(e2e): deliberate failure to verify CI (temporary)
+     "
+     5864fa0 test(e2e): deliberate failure to verify CI (temporary)
+     … +8 lines (ctrl+o to expand)
+  ⎿  (timeout 3m)
+
+● Bash(gh run watch 39403260460 --repo IraPolchanin/rotating-cube >/dev/null
+      2>&1; gh run view 39403260460 --repo IraPolchanin/rotating-cube --json
+      conclusion,jobs --j…)
+  ⎿  success
+     success Set up job
+     success Run actions/checkout@v7
+     … +8 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Revert виконано, і CI на ci/verify-failure знову зелений.
+
+  - Revert-коміт: 90e2e7d. Diff повернув toBeVisible() в e2e/smoke.test.ts,
+    інших змін немає. Історію не переписував.
+  - Локально: npm run check пройшов повністю (exit 0).
+  - Push: 5864fa0..90e2e7d, без --force.
+  - CI: success, включно з кроком npm run check. Крок upload-artifact пропущено,
+    бо не було падіння.
+    https://github.com/IraPolchanin/rotating-cube/actions/runs/39403260460
+  - Стан гілки: вона відрізняється від main лише двома комітами, які взаємно
+    скасовуються. Робоче дерево чисте.
+
+  Тепер маємо повний цикл: зелений на main, червоний (e2e) на навмисній помилці,
+  зелений після revert.
+
+  Гілки не видаляв. Чекаю підтвердження на видалення, окремо на кожну: локальної
+  ci/verify-failure і віддаленої origin/ci/verify-failure. Перед видаленням я
+  переключусь на main. Після цього оновлю docs/quality-gates.md (§4, §9, §10,
+  §11) з посиланнями на обидва запуски, але лише з вашого підтвердження.
+
+✻ Baked for 58s · done 12:48 PM
+
+❯ Confirmed: switch to main, verify the working tree is clean and the branch    
+  references are correct, then delete the local branch ci/verify-failure and    
+  the remote branch origin/ci/verify-failure. Do not delete or modify any other 
+  branch. Skip the optional PR check.                                           
+  Next, update only docs/quality-gates.md (§2, §4, §9, §10, §11).               
+                                                                                
+  In §2, document the pre-commit verification status accurately: the CI run     
+  confirmed that npm ci and its prepare script complete successfully on a clean 
+  runner, but the actual pre-commit hook execution on a fresh clone has not     
+  been independently verified. Do not claim that the pre-commit hook itself is  
+  confirmed to work on a fresh clone.                                           
+                                                                                
+  Show me the complete diff and stop. Do not commit until I explicitly approve  
+  the diff. After approval, commit only docs/quality-gates.md. Do not push the  
+  documentation commit until I explicitly confirm.                              
+
+● Bash(git switch main 2>&1 | tail -1; echo "status:[$(git status --short)]";
+      git branch -vv | cat; git branch -r | cat; git rev-parse main origin/main;
+      echo ---; git…)
+  ⎿  Switched to branch 'main'
+     status:[]
+       ci/verify-failure 90e2e7d [origin/ci/verify-failure] Revert "test(e2
+     … +15 lines (ctrl+o to expand)
+
+● Гілки видалено (локальну й віддалену), main = origin/main (2805805), дерево
+  чисте. Тепер правлю лише docs/quality-gates.md.
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 8 lines
+      163  → commit blocked). Optional manual check: `git clone`, `npm ci
+           `, then attempt a
+      164  commit containing a TypeScript error.
+      165  
+      166 +**CI evidence (2026-10-20):** the CI run on `main` (§4) execut
+          +ed `npm ci` on a clean                                        
+      167 +`ubuntu-latest` runner, which also runs the `prepare` script  
+      168 +(`git config core.hooksPath .githooks`); both completed succes
+          +sfully. This confirms                                         
+      169 +only that `npm ci` and `prepare` do not fail on a clean runner
+          +. It does **not**                                             
+      170 +verify that the pre-commit hook itself runs on a fresh clone: 
+          +CI performs no commit,                                        
+      171 +and the hook's effect (`core.hooksPath` set, a commit with a T
+          +ypeScript error                                               
+      172 +blocked) was not checked there. Fresh-clone hook execution rem
+          +ains **not verified**.                                        
+      173 +                                                              
+      174  ---
+      175  
+      176  ## 3. Full Gate — Before Reporting a Task Complete
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 43 lines, removed 8 lines
+      190  
+      191  ## 4. CI — GitHub Actions
+      192  
+      193 -**Status: PLANNED** — no `.github/` directory or workflow file
+          -s exist yet.                                                  
+      193 +**Status: Implemented** — `.github/workflows/ci.yml` is on `ma
+          +in` in the public                                             
+      194 +repository `IraPolchanin/rotating-cube`; verified 2026-10-20 (
+          +see "Verification"                                            
+      195 +below).                                                       
+      196  
+      197  **Scope:** runs the full `npm run check` suite on every push t
+           o any branch and on
+      198  every pull request targeting `main`.
+      199  
+      198 -**Planned trigger:**                                          
+      200 +**Trigger:**                                                  
+      201  
+      202  ```yaml
+      203  on:
+     ...
+      207      branches: [main]
+      208  ```
+      209  
+      208 -**Planned steps:**                                            
+      210 +**Job `check`** (`ubuntu-latest`, `timeout-minutes: 20`, `perm
+          +issions: contents: read`,                                     
+      211 +`concurrency` cancels superseded runs of the same ref):       
+      212  
+      210 -1. Checkout repository.                                       
+      211 -2. Set up Node.js 22 (matches `.nvmrc`).                      
+      213 +1. `actions/checkout@v7`.                                     
+      214 +2. `actions/setup-node@v7` with `node-version-file: .nvmrc` (N
+          +ode 22) and                                                   
+      215 +   `cache: npm`.                                              
+      216  3. `npm ci`
+      213 -4. `npx playwright install --with-deps` (installs Chromium and
+          - Firefox).                                                    
+      217 +4. `npx playwright install --with-deps chromium firefox`      
+      218  5. `npm run check`
+      219 +6. On failure only: `actions/upload-artifact@v7` uploads `test
+          +-results/`.                                                   
+      220  
+      216 -**Runner:** `ubuntu-latest`                                   
+      217 -**Planned artifact:** `.github/workflows/ci.yml`              
+      221 +**Artifact:** `.github/workflows/ci.yml`                      
+      222  
+      223 +**Not configured:** branch protection and required status chec
+          +ks. CI reports a                                              
+      224 +result but does not block merges or direct pushes to `main`.  
+      225 +                                                              
+      226 +### Verification                                              
+      227 +                                                              
+      228 +1. Green baseline: CI on `main` passes.                       
+      229 +2. Deliberate failure: a temporary branch `ci/verify-failure` 
+          +with an inverted                                              
+      230 +   assertion in `e2e/smoke.test.ts` (`toBeVisible()` → `toBeHi
+          +dden()`). The change                                          
+      231 +   passes `typecheck`, `lint`, `test` and `build` locally and 
+          +the pre-commit hook                                           
+      232 +   (which excludes e2e), and fails only `e2e`.                
+      233 +3. Restore: `git revert` of that commit (no history rewrite); 
+          +CI passes again.                                              
+      234 +4. Cleanup: the local and remote `ci/verify-failure` branches 
+          +were deleted.                                                 
+      235 +                                                              
+      236 +**Results (2026-10-20):**                                     
+      237 +                                                              
+      238 +| Run | Ref | Result | URL |                                  
+      239 +|-----|-----|--------|-----|                                  
+      240 +| Baseline | `main` (`2805805`) | **Passed** (job `check`, 1m5
+          +s) | https://github.com/IraPolchanin/rotating-cube/actions/run
+          +s/39400495789 |                                               
+      241 +| Deliberate failure | `ci/verify-failure` (`5864fa0`) | **Fai
+          +led** at `npm run check` (e2e, `expect(locator).toBeHidden() f
+          +ailed` in Chromium and Firefox); `test-results` artifact uploa
+          +ded | https://github.com/IraPolchanin/rotating-cube/actions/ru
+          +ns/39402098647 |                                              
+      242 +| Restore | `ci/verify-failure` (`90e2e7d`, revert) | **Passed
+          +** | https://github.com/IraPolchanin/rotating-cube/actions/run
+          +s/39403260460 |                                               
+      243 +                                                              
+      244 +Locally, the same temporary change failed only the e2e step. T
+          +he `pull_request`                                             
+      245 +trigger was **not** exercised (optional PR check skipped); onl
+          +y `push` runs were                                            
+      246 +observed.                                                     
+      247 +                                                              
+      248 +**Notes:**                                                    
+      249 +                                                              
+      250 +- GitHub annotated the runs: the `ubuntu-latest` label began m
+          +igrating to Ubuntu 26                                         
+      251 +  on 2026-10-19. The runs above passed regardless; the runner 
+          +image is not pinned.                                          
+      252 +- Action versions are pinned to major tags, not commit SHAs.  
+      253 +                                                              
+      254  ---
+      255  
+      256  ## 5. Agent Permission Guardrail
+
+● Update(docs\quality-gates.md)  ⎿  Added 2 lines, removed 1 line
+      522  | Vitest config | `vitest.config.ts` | **Implemented** |
+      523  | Playwright config + `webServer` | `playwright.config.ts` | *
+           *Implemented** |
+      524  | Pre-commit hook script | `.githooks/pre-commit` | **Implemen
+           ted** — fresh-clone activation unverified |
+      525 -| GitHub Actions CI workflow | `.github/workflows/ci.yml` | **
+          -Planned** |                                                   
+      525 +| GitHub Actions CI workflow | `.github/workflows/ci.yml` | **
+          +Implemented** — verified 2026-10-20; no branch protection |   
+      526 +| MIT license | `LICENSE` | **Implemented** |                 
+      527  
+      528  ---
+      529  
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 10 lines
+      543  | Stop hook dry-run | `--dry-run` CLI flag for manual testing 
+           only; no env var; never used by the configured hook |
+      544  | spec-reviewer invocation | Standing authorization in `CLAUDE
+           .md` for this subagent only, for tasks changing `src/` or `e2e
+           /` |
+      545  | Guardrail patterns | Seven deny patterns (§5): five `git com
+           mit` forms plus `git -c *` and `git -C *`; each verified separ
+           ately |
+      546 +| Repository | Public `IraPolchanin/rotating-cube`, default br
+          +anch `main`; created and pushed only after separate explicit c
+          +onfirmations |                                                
+      547 +| Commit email | The corporate commit email stays in the publi
+          +c history; history was not rewritten (decision of the reposito
+          +ry owner) |                                                   
+      548 +| Session transcripts | `docs/sessions/*.txt` stay public as e
+          +vidence that the source code was agent-written |              
+      549 +| CI job | Single job `check` running `npm run check`, so loca
+          +l and CI gates are identical |                                
+      550 +| CI browsers | `playwright install --with-deps chromium firef
+          +ox` (NFR-5 requires only these two; WebKit is skipped) |      
+      551 +| CI Node version | `node-version-file: .nvmrc`, one source of
+          + truth |                                                      
+      552 +| CI action versions | `checkout@v7`, `setup-node@v7`, `upload
+          +-artifact@v7` (latest majors on 2026-10-20, verified from the 
+          +official `actions/*` releases); major tags, not SHAs |        
+      553 +| CI failure experiment | Done on a throwaway branch with an e
+          +2e-only failure (the pre-commit hook blocks type, lint and uni
+          +t failures and `--no-verify` is denied); branch deleted afterw
+          +ards |                                                        
+      554 +| Branch protection | Not enabled; required status checks are 
+          +a possible later step |                                       
+      555 +| License | MIT, added before publication; README is a separat
+          +e later task |                                                
+      556  
+      557  ---
+      558  
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      564  | Item | Verification | Result (2026-10-19) |
+      565  |------|--------------|---------------------|
+      566  | PostToolUse hook (§1) | Type error → exit 2 + diagnostics; f
+           ix → exit 0; lint-only error; `.md` edit runs no check; `.json
+           ` edit runs; missing `file_path` runs | **Passed** |
+      567 -| Pre-commit hook (§2) | Staged type error blocks commit; late
+          -r commits pass; `git ls-files --eol` LF; `git ls-files -s` `10
+          -0755` | **Passed.** Open: activation on a fresh clone (`npm ci
+          -` → `prepare`) **not verified** |                             
+      567 +| Pre-commit hook (§2) | Staged type error blocks commit; late
+          +r commits pass; `git ls-files --eol` LF; `git ls-files -s` `10
+          +0755` | **Passed.** Open: hook execution on a fresh clone **no
+          +t verified**. CI shows only that `npm ci` and `prepare` comple
+          +te on a clean runner (§2) |                                   
+      568  | Permission guardrail (§5) | Each pattern probed separately; 
+           controls not blocked | **Passed.** Open: known gaps listed in 
+           §5 (other global git options, `git config core.hooksPath`, hoo
+           k-file edits) |
+      569  | Stop hook (§6) | Prototype; dry-run matrix; direct runs; liv
+           e block and halt; no `--dry-run` in settings | **Passed** |
+      570  | ESLint block for `scripts/*.mjs` | `--print-config` shows No
+           de globals; seeded errors fail `npm run lint` | **Passed** |
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      569  | Stop hook (§6) | Prototype; dry-run matrix; direct runs; liv
+           e block and halt; no `--dry-run` in settings | **Passed** |
+      570  | ESLint block for `scripts/*.mjs` | `--print-config` shows No
+           de globals; seeded errors fail `npm run lint` | **Passed** |
+      571  | spec-reviewer (§7) | Clean diff clean; camera rotation / Orb
+           itControls flagged; edit attempt impossible; agent visible | *
+           *Passed** (Claude Code 2.1.303). Criterion 1: clean `src/` dif
+           f (`App.tsx`, `main.tsx`, `vite-env.d.ts`) → `No violations fo
+           und.` Criterion 2: temporary `src/__probe__.tsx` (OrbitControl
+           s import/re-export, `camera.rotation.y`) → flagged as NFR-8 ×2
+            and spec §7.5; file removed afterwards. Criterion 3: asked to
+            edit a file, the agent reported only `Read`/`Grep`/`Glob` and
+            the file stayed unchanged. Criterion 4: agent invocable in th
+           e session. Earlier invisibility: agents directory was created 
+           in the first session (may explain the restart); `claude update
+           ` was run later and the agent became available — causal link *
+           *not established** |
+      572 -| CI (§4) | — | Out of scope for Phase 2 (Phase 3) |          
+      572 +| CI (§4) | Green baseline on `main`; deliberate e2e-only fail
+          +ure on a temporary branch; `git revert` restores green; tempor
+          +ary branch deleted | **Passed** (2026-10-20, three runs listed
+          + in §4). Open: `pull_request` trigger not exercised; no branch
+          + protection |                                                 
+
+● Bash(git status --short && git --no-pager diff)
+  ⎿   M docs/quality-gates.md
+     diff --git a/docs/quality-gates.md b/docs/quality-gates.md
+     index 51efaa7..2add749 100644
+     … +129 lines (ctrl+o to expand)
+
+● Гілки видалено, docs/quality-gates.md змінено, але не закомічено.
+
+  Гілки. Перед видаленням я переключився на main: дерево було чисте, main і
+  origin/main на одному коміті (2805805). Видалив локальну ci/verify-failure
+  (git branch -D, була на 90e2e7d) і віддалену origin/ci/verify-failure. Інших
+  гілок не чіпав. Тепер є лише main та origin/main, git ls-remote --heads
+  показує тільки main.
+
+  Документація. Змінено лише docs/quality-gates.md. Повний diff показаний вище.
+  Що в ньому:
+  - §2: новий абзац «CI evidence». Він каже лише, що npm ci і prepare пройшли на
+    чистому runner. Окремо зазначено, що виконання самого pre-commit хука на
+    свіжому клоні не перевірено, бо CI не робить комітів.
+  - §4: статус став Implemented. Додано опис job check, три запуски з URL і
+    результатами, а також застереження: pull_request не перевірявся, branch
+    protection немає, actions закріплені мажорними тегами.
+  - §9: CI став Implemented, додано рядок LICENSE.
+  - §10: додано рішення щодо репозиторію, email, транскриптів, CI, ліцензії та
+    branch protection.
+  - §11: рядок CI замінено на Passed, у рядку pre-commit уточнено, що відкрито.
+
+  Про рядок «Commit email» у §10. Я написав «corporate commit email» і не вказав
+  саму адресу, щоб не дублювати її в документі. Якщо хочете явніше
+  формулювання, скажіть.
+
+  Не змінював: розділ «Result (2026-10-19)» у заголовку таблиці §11, бо рядок CI
+  тепер має дату 2026-10-20 (вказана в самій клітинці). Те саме стосується
+  рядка про Stop-hook у §6, де «Phase 3» згадується як майбутнє. Це лишається за
+  вами, бо ви обмежили правки секціями §2, §4, §9, §10, §11.
+
+  Коміт docs(ci): record Phase 3 CI verification results створю лише після
+  вашого схвалення diff, і лише для цього файлу. Push — окремо, після вашого
+  підтвердження.
+
+✻ Churned for 33s · done 12:58 PM
+
+❯   In the §11 table header, change "Result (2026-10-19)" to "Result", since    
+     each row now carries its own date. Then show the final diff and wait       
+     for my approval before committing.                                         
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      561  Status of the practical verification of each mechanism (detail
+           s in the section
+      562  named in the first column). Open items:
+      563  
+      564 -| Item | Verification | Result (2026-10-19) |                 
+      564 +| Item | Verification | Result |                              
+      565  |------|--------------|---------------------|
+      566  | PostToolUse hook (§1) | Type error → exit 2 + diagnostics; f
+           ix → exit 0; lint-only error; `.md` edit runs no check; `.json
+           ` edit runs; missing `file_path` runs | **Passed** |
+      567  | Pre-commit hook (§2) | Staged type error blocks commit; late
+           r commits pass; `git ls-files --eol` LF; `git ls-files -s` `10
+           0755` | **Passed.** Open: hook execution on a fresh clone **no
+           t verified**. CI shows only that `npm ci` and `prepare` comple
+           te on a clean runner (§2) |
+
+● Bash(git status --short && git --no-pager diff -U0 | grep -nE
+      '^(\+\+\+|@@).*|Result' | tail -8; echo ---; git --no-pager diff --stat;
+      grep -n "2026-10-19\|2026-10-2…)
+  ⎿   M docs/quality-gates.md
+     66:@@ -208,2 +250,3 @@ on:
+     72:@@ -482 +525,2 @@ When any check fails, the agent must:
+     … +15 lines (ctrl+o to expand)
+
+● Заголовок змінено, але є застереження: у таблиці §11 дату має лише рядок CI,
+  інші рядки її втратили. Нічого не закомічено.
+
+  Зміна, дописана до попереднього diff (решта diff, показаний раніше, без змін):
+  -| Item | Verification | Result (2026-10-19) |
+  +| Item | Verification | Result |
+
+  Поточний стан: змінено лише docs/quality-gates.md, 66 додавань і 12 видалень.
+
+  Застереження: ви написали, що кожен рядок тепер має власну дату, але це не
+  так. Дату (2026-10-20) має лише рядок CI. Рядки PostToolUse, pre-commit,
+  guardrail, Stop-hook, ESLint і spec-reviewer без заголовка не мають дати в
+  самій таблиці. Їхні дати (2026-10-19) є лише у відповідних розділах §1, §2,
+  §5, §6, §7. Тобто після цієї зміни таблиця менш самодостатня.
+
+  Варіанти:
+  1. Залишити як є: дати читаються з розділів.
+  2. Дописати (2026-10-19) у клітинки результатів шести рядків, наприклад
+     **Passed** (2026-10-19). Це рекомендований варіант.
+
+  Скажіть, який варіант обрати, і підтвердіть diff для коміту docs(ci): record 
+  Phase 3 CI verification results. Коміт буде лише для цього файлу. Push —
+  окремо, після вашого підтвердження.
+
+✻ Churned for 11s · done 1:00 PM
+
+❯ Option 2: add dates to the six rows, then show the diff.                      
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      563  
+      564  | Item | Verification | Result |
+      565  |------|--------------|---------------------|
+      566 -| PostToolUse hook (§1) | Type error → exit 2 + diagnostics; f
+          -ix → exit 0; lint-only error; `.md` edit runs no check; `.json
+          -` edit runs; missing `file_path` runs | **Passed** |          
+      566 +| PostToolUse hook (§1) | Type error → exit 2 + diagnostics; f
+          +ix → exit 0; lint-only error; `.md` edit runs no check; `.json
+          +` edit runs; missing `file_path` runs | **Passed** (2026-10-19
+          +) |                                                           
+      567  | Pre-commit hook (§2) | Staged type error blocks commit; late
+           r commits pass; `git ls-files --eol` LF; `git ls-files -s` `10
+           0755` | **Passed.** Open: hook execution on a fresh clone **no
+           t verified**. CI shows only that `npm ci` and `prepare` comple
+           te on a clean runner (§2) |
+      568  | Permission guardrail (§5) | Each pattern probed separately; 
+           controls not blocked | **Passed.** Open: known gaps listed in 
+           §5 (other global git options, `git config core.hooksPath`, hoo
+           k-file edits) |
+      569  | Stop hook (§6) | Prototype; dry-run matrix; direct runs; liv
+           e block and halt; no `--dry-run` in settings | **Passed** |
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      564  | Item | Verification | Result |
+      565  |------|--------------|---------------------|
+      566  | PostToolUse hook (§1) | Type error → exit 2 + diagnostics; f
+           ix → exit 0; lint-only error; `.md` edit runs no check; `.json
+           ` edit runs; missing `file_path` runs | **Passed** (2026-10-19
+           ) |
+      567 -| Pre-commit hook (§2) | Staged type error blocks commit; late
+          -r commits pass; `git ls-files --eol` LF; `git ls-files -s` `10
+          -0755` | **Passed.** Open: hook execution on a fresh clone **no
+          -t verified**. CI shows only that `npm ci` and `prepare` comple
+          -te on a clean runner (§2) |                                   
+      567 +| Pre-commit hook (§2) | Staged type error blocks commit; late
+          +r commits pass; `git ls-files --eol` LF; `git ls-files -s` `10
+          +0755` | **Passed** (2026-10-19). Open: hook execution on a fre
+          +sh clone **not verified**. CI shows only that `npm ci` and `pr
+          +epare` complete on a clean runner (§2) |                      
+      568  | Permission guardrail (§5) | Each pattern probed separately; 
+           controls not blocked | **Passed.** Open: known gaps listed in 
+           §5 (other global git options, `git config core.hooksPath`, hoo
+           k-file edits) |
+      569  | Stop hook (§6) | Prototype; dry-run matrix; direct runs; liv
+           e block and halt; no `--dry-run` in settings | **Passed** |
+      570  | ESLint block for `scripts/*.mjs` | `--print-config` shows No
+           de globals; seeded errors fail `npm run lint` | **Passed** |
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      565  |------|--------------|---------------------|
+      566  | PostToolUse hook (§1) | Type error → exit 2 + diagnostics; f
+           ix → exit 0; lint-only error; `.md` edit runs no check; `.json
+           ` edit runs; missing `file_path` runs | **Passed** (2026-10-19
+           ) |
+      567  | Pre-commit hook (§2) | Staged type error blocks commit; late
+           r commits pass; `git ls-files --eol` LF; `git ls-files -s` `10
+           0755` | **Passed** (2026-10-19). Open: hook execution on a fre
+           sh clone **not verified**. CI shows only that `npm ci` and `pr
+           epare` complete on a clean runner (§2) |
+      568 -| Permission guardrail (§5) | Each pattern probed separately; 
+          -controls not blocked | **Passed.** Open: known gaps listed in 
+          -§5 (other global git options, `git config core.hooksPath`, hoo
+          -k-file edits) |                                               
+      568 +| Permission guardrail (§5) | Each pattern probed separately; 
+          +controls not blocked | **Passed** (2026-10-19). Open: known ga
+          +ps listed in §5 (other global git options, `git config core.ho
+          +oksPath`, hook-file edits) |                                  
+      569  | Stop hook (§6) | Prototype; dry-run matrix; direct runs; liv
+           e block and halt; no `--dry-run` in settings | **Passed** |
+      570  | ESLint block for `scripts/*.mjs` | `--print-config` shows No
+           de globals; seeded errors fail `npm run lint` | **Passed** |
+      571  | spec-reviewer (§7) | Clean diff clean; camera rotation / Orb
+           itControls flagged; edit attempt impossible; agent visible | *
+           *Passed** (Claude Code 2.1.303). Criterion 1: clean `src/` dif
+           f (`App.tsx`, `main.tsx`, `vite-env.d.ts`) → `No violations fo
+           und.` Criterion 2: temporary `src/__probe__.tsx` (OrbitControl
+           s import/re-export, `camera.rotation.y`) → flagged as NFR-8 ×2
+            and spec §7.5; file removed afterwards. Criterion 3: asked to
+            edit a file, the agent reported only `Read`/`Grep`/`Glob` and
+            the file stayed unchanged. Criterion 4: agent invocable in th
+           e session. Earlier invisibility: agents directory was created 
+           in the first session (may explain the restart); `claude update
+           ` was run later and the agent became available — causal link *
+           *not established** |
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      566  | PostToolUse hook (§1) | Type error → exit 2 + diagnostics; f
+           ix → exit 0; lint-only error; `.md` edit runs no check; `.json
+           ` edit runs; missing `file_path` runs | **Passed** (2026-10-19
+           ) |
+      567  | Pre-commit hook (§2) | Staged type error blocks commit; late
+           r commits pass; `git ls-files --eol` LF; `git ls-files -s` `10
+           0755` | **Passed** (2026-10-19). Open: hook execution on a fre
+           sh clone **not verified**. CI shows only that `npm ci` and `pr
+           epare` complete on a clean runner (§2) |
+      568  | Permission guardrail (§5) | Each pattern probed separately; 
+           controls not blocked | **Passed** (2026-10-19). Open: known ga
+           ps listed in §5 (other global git options, `git config core.ho
+           oksPath`, hook-file edits) |
+      569 -| Stop hook (§6) | Prototype; dry-run matrix; direct runs; liv
+          -e block and halt; no `--dry-run` in settings | **Passed** |   
+      569 +| Stop hook (§6) | Prototype; dry-run matrix; direct runs; liv
+          +e block and halt; no `--dry-run` in settings | **Passed** (202
+          +6-10-19) |                                                    
+      570  | ESLint block for `scripts/*.mjs` | `--print-config` shows No
+           de globals; seeded errors fail `npm run lint` | **Passed** |
+      571  | spec-reviewer (§7) | Clean diff clean; camera rotation / Orb
+           itControls flagged; edit attempt impossible; agent visible | *
+           *Passed** (Claude Code 2.1.303). Criterion 1: clean `src/` dif
+           f (`App.tsx`, `main.tsx`, `vite-env.d.ts`) → `No violations fo
+           und.` Criterion 2: temporary `src/__probe__.tsx` (OrbitControl
+           s import/re-export, `camera.rotation.y`) → flagged as NFR-8 ×2
+            and spec §7.5; file removed afterwards. Criterion 3: asked to
+            edit a file, the agent reported only `Read`/`Grep`/`Glob` and
+            the file stayed unchanged. Criterion 4: agent invocable in th
+           e session. Earlier invisibility: agents directory was created 
+           in the first session (may explain the restart); `claude update
+           ` was run later and the agent became available — causal link *
+           *not established** |
+      572  | CI (§4) | Green baseline on `main`; deliberate e2e-only fail
+           ure on a temporary branch; `git revert` restores green; tempor
+           ary branch deleted | **Passed** (2026-10-20, three runs listed
+            in §4). Open: `pull_request` trigger not exercised; no branch
+            protection |
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      567  | Pre-commit hook (§2) | Staged type error blocks commit; late
+           r commits pass; `git ls-files --eol` LF; `git ls-files -s` `10
+           0755` | **Passed** (2026-10-19). Open: hook execution on a fre
+           sh clone **not verified**. CI shows only that `npm ci` and `pr
+           epare` complete on a clean runner (§2) |
+      568  | Permission guardrail (§5) | Each pattern probed separately; 
+           controls not blocked | **Passed** (2026-10-19). Open: known ga
+           ps listed in §5 (other global git options, `git config core.ho
+           oksPath`, hook-file edits) |
+      569  | Stop hook (§6) | Prototype; dry-run matrix; direct runs; liv
+           e block and halt; no `--dry-run` in settings | **Passed** (202
+           6-10-19) |
+      570 -| ESLint block for `scripts/*.mjs` | `--print-config` shows No
+          -de globals; seeded errors fail `npm run lint` | **Passed** |  
+      570 +| ESLint block for `scripts/*.mjs` | `--print-config` shows No
+          +de globals; seeded errors fail `npm run lint` | **Passed** (20
+          +26-10-19) |                                                   
+      571  | spec-reviewer (§7) | Clean diff clean; camera rotation / Orb
+           itControls flagged; edit attempt impossible; agent visible | *
+           *Passed** (Claude Code 2.1.303). Criterion 1: clean `src/` dif
+           f (`App.tsx`, `main.tsx`, `vite-env.d.ts`) → `No violations fo
+           und.` Criterion 2: temporary `src/__probe__.tsx` (OrbitControl
+           s import/re-export, `camera.rotation.y`) → flagged as NFR-8 ×2
+            and spec §7.5; file removed afterwards. Criterion 3: asked to
+            edit a file, the agent reported only `Read`/`Grep`/`Glob` and
+            the file stayed unchanged. Criterion 4: agent invocable in th
+           e session. Earlier invisibility: agents directory was created 
+           in the first session (may explain the restart); `claude update
+           ` was run later and the agent became available — causal link *
+           *not established** |
+      572  | CI (§4) | Green baseline on `main`; deliberate e2e-only fail
+           ure on a temporary branch; `git revert` restores green; tempor
+           ary branch deleted | **Passed** (2026-10-20, three runs listed
+            in §4). Open: `pull_request` trigger not exercised; no branch
+            protection |
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      568  | Permission guardrail (§5) | Each pattern probed separately; 
+           controls not blocked | **Passed** (2026-10-19). Open: known ga
+           ps listed in §5 (other global git options, `git config core.ho
+           oksPath`, hook-file edits) |
+      569  | Stop hook (§6) | Prototype; dry-run matrix; direct runs; liv
+           e block and halt; no `--dry-run` in settings | **Passed** (202
+           6-10-19) |
+      570  | ESLint block for `scripts/*.mjs` | `--print-config` shows No
+           de globals; seeded errors fail `npm run lint` | **Passed** (20
+           26-10-19) |
+      571 -| spec-reviewer (§7) | Clean diff clean; camera rotation / Orb
+          -itControls flagged; edit attempt impossible; agent visible | *
+          -*Passed** (Claude Code 2.1.303). Criterion 1: clean `src/` dif
+          -f (`App.tsx`, `main.tsx`, `vite-env.d.ts`) → `No violations fo
+          -und.` Criterion 2: temporary `src/__probe__.tsx` (OrbitControl
+          -s import/re-export, `camera.rotation.y`) → flagged as NFR-8 ×2
+          - and spec §7.5; file removed afterwards. Criterion 3: asked to
+          - edit a file, the agent reported only `Read`/`Grep`/`Glob` and
+          - the file stayed unchanged. Criterion 4: agent invocable in th
+          -e session. Earlier invisibility: agents directory was created 
+          -in the first session (may explain the restart); `claude update
+          -` was run later and the agent became available — causal link *
+          -*not established** |                                          
+      571 +| spec-reviewer (§7) | Clean diff clean; camera rotation / Orb
+          +itControls flagged; edit attempt impossible; agent visible | *
+          +*Passed** (2026-10-19, Claude Code 2.1.303). Criterion 1: clea
+          +n `src/` diff (`App.tsx`, `main.tsx`, `vite-env.d.ts`) → `No v
+          +iolations found.` Criterion 2: temporary `src/__probe__.tsx` (
+          +OrbitControls import/re-export, `camera.rotation.y`) → flagged
+          + as NFR-8 ×2 and spec §7.5; file removed afterwards. Criterion
+          + 3: asked to edit a file, the agent reported only `Read`/`Grep
+          +`/`Glob` and the file stayed unchanged. Criterion 4: agent inv
+          +ocable in the session. Earlier invisibility: agents directory 
+          +was created in the first session (may explain the restart); `c
+          +laude update` was run later and the agent became available — c
+          +ausal link **not established** |                              
+      572  | CI (§4) | Green baseline on `main`; deliberate e2e-only fail
+           ure on a temporary branch; `git revert` restores green; tempor
+           ary branch deleted | **Passed** (2026-10-20, three runs listed
+            in §4). Open: `pull_request` trigger not exercised; no branch
+            protection |
+
+● Bash(git status --short && git --no-pager diff --stat && sed -n '/^| Item |
+      Verification | Result |/,$p' docs/quality-gates.md | cut -c1-60,0 | awk
+      -F'|' '{print sub…)
+  ⎿  Interrupted · What should Claude do instead?
+
+✻ Churned for 9s · done 1:05 PM
+
+❯ Skip that table check — the row dates are already confirmed. Show me only the 
+  §4 Verification section from docs/quality-gates.md with the three CI run      
+  links, and wait for my approval before committing.                            
+
+  Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+● Ось розділ §4 «Verification» (рядки 226–252) з трьома посиланнями на запуски
+  CI:
+
+  ### Verification
+
+  1. Green baseline: CI on `main` passes.
+  2. Deliberate failure: a temporary branch `ci/verify-failure` with an inverted
+     assertion in `e2e/smoke.test.ts` (`toBeVisible()` → `toBeHidden()`). The
+  change
+     passes `typecheck`, `lint`, `test` and `build` locally and the pre-commit
+  hook
+     (which excludes e2e), and fails only `e2e`.
+  3. Restore: `git revert` of that commit (no history rewrite); CI passes again.
+  4. Cleanup: the local and remote `ci/verify-failure` branches were deleted.
+
+  **Results (2026-10-20):**
+
+  | Run | Ref | Result | URL |
+  |-----|-----|--------|-----|
+  | Baseline | `main` (`2805805`) | **Passed** (job `check`, 1m5s) |
+  https://github.com/IraPolchanin/rotating-cube/actions/runs/39400495789 |
+  | Deliberate failure | `ci/verify-failure` (`5864fa0`) | **Failed** at `npm
+  run check` (e2e, `expect(locator).toBeHidden() failed` in Chromium and
+  Firefox); `test-results` artifact uploaded |
+  https://github.com/IraPolchanin/rotating-cube/actions/runs/39402098647 |
+  | Restore | `ci/verify-failure` (`90e2e7d`, revert) | **Passed** |
+  https://github.com/IraPolchanin/rotating-cube/actions/runs/39403260460 |
+
+  Locally, the same temporary change failed only the e2e step. The
+  `pull_request`
+  trigger was **not** exercised (optional PR check skipped); only `push` runs
+  were
+  observed.
+
+  **Notes:**
+
+  - GitHub annotated the runs: the `ubuntu-latest` label began migrating to
+  Ubuntu 26
+    on 2026-10-19. The runs above passed regardless; the runner image is not
+  pinned.
+  - Action versions are pinned to major tags, not commit SHAs.
+
+  Таблицю §11 не перевіряв, як ви й просили. Шість правок із датами було
+  застосовано до перерваної перевірки, тож вони в файлі. Але я не побачив
+  фінального git diff після них. Тому не можу підтвердити, що всі шість Edit
+  лягли саме в потрібні клітинки, окрім того, що кожен повернув успіх.
+
+  Нічого не закомічено. Чекаю вашого схвалення на коміт docs(ci): record Phase 3
+  CI verification results (лише docs/quality-gates.md). Push — окремо, після
+  вашого підтвердження.
+✻ Crunched for 18s · done 1:05 PM
+
+❯ Approved, commit only docs/quality-gates.md. The six row edits were           
+  reviewed in the edit output. Ask me before pushing.                           
+
+● Bash(git add docs/quality-gates.md && git commit -q -m "docs(ci): record Phase
+      3 CI verification results…)
+  ⎿     Duration  177ms (import 47%, transform 25%, worker 19%, tests 9%, e
+     nvironment 1%)
+     … +6 lines (ctrl+o to expand)
+  ⎿  (timeout 2m)
+
+● Закомічено локально: 71ec192 docs(ci): record Phase 3 CI verification results.
+  Pre-commit пройшов.
+
+  - Що в коміті: лише docs/quality-gates.md (71 додавання, 17 видалень). Дерево
+    чисте.
+  - Стан гілки: main попереду origin/main на 1 коміт, нічого не запушено.
+
+  Чи можна виконати git push origin main? Після пушу CI запуститься ще раз на
+  main. Зміна лише в .md, але workflow спрацьовує на кожен push, тож це буде ще
+  один зелений прогін.
+
+✻ Brewed for 13s · done 1:07 PM
+
+❯ Confirmed: push main to origin (no --force), then monitor the CI run          
+  triggered by this push. Report the push result, CI status, and the run URL.   
+  Do not make any further changes.                                              
+
+● Bash(git push origin main 2>&1 | tail -3; sleep 8; gh run list --repo
+      IraPolchanin/rotating-cube --branch main --limit 1 --json
+      databaseId,url,headSha --jq '.[0]')
+  ⎿  To https://github.com/IraPolchanin/rotating-cube.git
+        2805805..71ec192  main -> main
+     {
+     … +5 lines (ctrl+o to expand)
+  ⎿  (timeout 2m)
+
+● Bash(gh run watch 39405934985 --repo IraPolchanin/rotating-cube >/dev/null
+      2>&1; gh run view 39405934985 --repo IraPolchanin/rotating-cube --json
+      conclusion --jq .co…)
+  ⎿  success
+     ## main...origin/main
+
+● Push і CI пройшли успішно.
+
+  - Push: 2805805..71ec192  main -> main, без --force.
+  - CI: success для коміту 71ec192.
+    https://github.com/IraPolchanin/rotating-cube/actions/runs/39405934985
+  - Стан: main синхронізована з origin/main, дерево чисте. Більше нічого не
+    змінював.
+
+  Phase 3 завершено. Відкриті пункти, зафіксовані в docs/quality-gates.md:
+  - Виконання pre-commit хука на свіжому клоні не перевірено.
+  - Тригер pull_request не перевірявся.
+  - Branch protection вимкнено.
+  - README ще не створено.
+
+✻ Cooked for 25s · done 1:25 PM
