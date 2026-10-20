@@ -1,0 +1,3333 @@
+ ▐▛███▛█   Claude Code v2.1.304
+▝▜██████▀  Sonnet 5.5 · Claude Pro
+ ▝▝   ▝▝   ~\Projects\rotating-cube
+
+  Sonnet 5.5 is here, and it's faster and excels at well-scoped tasks. Opus 5.5 is still your default. Switch with /model.
+
+❯ Plan Phase 4: implement the rotating cube according to docs/spec.md           
+  (AC-1 to AC-15). Follow the Workflow and Phase Workflow in CLAUDE.md.         
+                                                                                
+  Plan only. Split the work into small tasks mapped to AC IDs. For each         
+  task: write the tests first and confirm they fail, implement, get             
+  npm run check green, run the spec-reviewer, and commit.                       
+                                                                                
+  Include a coverage matrix that maps every AC to concrete test names,          
+  and name any requirement that can only be checked manually. Do not use        
+  subagents for implementation (the spec-reviewer is the only exception).       
+                                                                                
+  Propose a lightweight way to record evidence of autonomy for each task:       
+  checks run, failures before success, what the hooks or the reviewer           
+  caught, and any human intervention.                                           
+                                                                                
+  After the plan is approved, you will work through the tasks without           
+  asking me, except before pushing to origin.                                   
+
+● Спершу прочитаю специфікацію та поточний стан проєкту (лише читання).
+
+  Searched for 1 pattern, read 2 files (ctrl+o to expand)
+
+● Bash(git ls-files | grep -v '^docs/sessions' ; echo ---; cat package.json
+      src/App.tsx src/main.tsx src/__tests__/smoke.test.ts e2e/*.ts
+      playwright.config.ts index.ht…)
+  ⎿  .claude/agents/spec-reviewer.md
+     .claude/settings.json
+     .gitattributes
+     … +166 lines (ctrl+o to expand)
+
+● Updated plan
+  ⎿  /plan to preview
+  ⎿  User rejected Claude's plan:
+     ╭─────────────────────────────────────────────────────────────────────────╮
+     │ План Phase 4 — реалізація Rotating Cube (AC-1…AC-15)                    │
+     │                                                                         │
+     │ Контекст                                                                │
+     │                                                                         │
+     │ Phases 1–3 дали інфраструктуру: scaffold (Vite/React/TS/Three), ESLint  │
+     │ з NFR-8, PostToolUse / Stop / pre-commit хуки, CI, spec-reviewer. У     │
+     │ src/ лише заглушка App.tsx. Phase 4 — написати весь код застосунку так, │
+     │ щоб npm run check був зелений і кожен AC мав автоматичну перевірку      │
+     │ (або явно названу ручну).                                               │
+     │                                                                         │
+     │ Поточні smoke-тести (src/__tests__/smoke.test.ts, e2e/smoke.test.ts)    │
+     │ залишаю як є (не видаляю без підтвердження; на них посилається          │
+     │ docs/quality-gates.md §4).                                              │
+     │                                                                         │
+     │ Архітектура (малі модулі)                                               │
+     │                                                                         │
+     │ ┌─────────────────────────────┬──────────────────────────────────────── │
+     │ ───┐                                                                    │
+     │ │            Файл             │                   Роль                  │
+     │   │                                                                     │
+     │ ├─────────────────────────────┼──────────────────────────────────────── │
+     │ ───┤                                                                    │
+     │ │                             │ Чиста логіка без DOM/Three:             │
+     │   │                                                                     │
+     │ │ src/cube/rotation.ts        │ INITIAL_ORIENTATION, SENSITIVITY (A-6,  │
+     │   │                                                                     │
+     │ │                             │ 0.5°/px), applyDrag, clampX,            │
+     │ normaliseY,  │                                                          │
+     │ │                             │ resetOrientation, formatDegrees         │
+     │   │                                                                     │
+     │ ├─────────────────────────────┼──────────────────────────────────────── │
+     │ ───┤                                                                    │
+     │ │                             │ Three.js: renderer, камера, куб-mesh,   │
+     │   │                                                                     │
+     │ │ src/cube/createCubeScene.ts │ rAF-цикл, pointer-обробники, reset(),   │
+     │   │                                                                     │
+     │ │                             │ dispose(); оновлює data-cube-r* щокадру │
+     │   │                                                                     │
+     │ ├─────────────────────────────┼──────────────────────────────────────── │
+     │ ───┤                                                                    │
+     │ │                             │ Тонка React-обгортка:                   │
+     │   │                                                                     │
+     │ │ src/CubeScene.tsx           │ div[data-testid="cube-scene"] +         │
+     │ <canvas>, │                                                             │
+     │ │                             │  useEffect створює/знищує сцену         │
+     │ (коректно │                                                             │
+     │ │                             │  для StrictMode double-mount)           │
+     │   │                                                                     │
+     │ ├─────────────────────────────┼──────────────────────────────────────── │
+     │ ───┤                                                                    │
+     │ │                             │ Сцена +                                 │
+     │   │                                                                     │
+     │ │ src/App.tsx                 │ button[data-testid="reset-button"]      │
+     │   │                                                                     │
+     │ │                             │ (оверлей)                               │
+     │   │                                                                     │
+     │ ├─────────────────────────────┼──────────────────────────────────────── │
+     │ ───┤                                                                    │
+     │ │ src/index.css (імпорт у     │ margin:0; overflow:hidden, canvas       │
+     │   │                                                                     │
+     │ │ main.tsx)                   │ display:block; touch-action:none, fill  │
+     │   │                                                                     │
+     │ │                             │ viewport                                │
+     │   │                                                                     │
+     │ ├─────────────────────────────┼──────────────────────────────────────── │
+     │ ───┤                                                                    │
+     │ │ index.html                  │ <link rel="icon" href="data:,"> — щоб   │
+     │ 404 │                                                                   │
+     │ │                             │  favicon не дав console error (AC-13)   │
+     │   │                                                                     │
+     │ └─────────────────────────────┴──────────────────────────────────────── │
+     │ ───┘                                                                    │
+     │                                                                         │
+     │ Ключові рішення: обертається mesh, не камера; OrbitControls не          │
+     │ використовується; rz завжди 0; атрибути беруться зі стану (не з         │
+     │ float-зворотного читання mesh), -0.0 нормалізується до 0.0;             │
+     │ setPointerCapture у pointerdown (FR-4), touch-action:none у CSS.        │
+     │                                                                         │
+     │ Завдання (кожне: тести → red → реалізація → npm run check →             │
+     │ spec-reviewer (якщо src//e2e/) → коміт)                                 │
+     │                                                                         │
+     │ Red-стан для unit: спершу заглушка, що throw new Error('not             │
+     │ implemented') (типізується, тож PostToolUse-хук не блокує), тест падає  │
+     │ в runtime. Для e2e: запускаю лише новий файл (npx playwright test       │
+     │ e2e/<file> ) і фіксую падіння.                                          │
+     │                                                                         │
+     │ T1 — Чиста логіка обертання (AC-3 формат, AC-4–7, AC-9, AC-12) —        │
+     │ rotation.ts + rotation.test.ts. Коміт: feat(cube): add pure rotation    │
+     │ logic (AC-4, AC-5, AC-9, AC-12).                                        │
+     │                                                                         │
+     │ T2 — Сцена, куб, DOM-контракт (AC-1, AC-2, AC-3, AC-13, AC-15; FR-1,    │
+     │ FR-3) — e2e/scene.test.ts red (немає testid) → createCubeScene,         │
+     │ CubeScene, CSS, favicon. Розмір canvas ставиться один раз при           │
+     │ монтуванні (без resize-слухача). Ранній ризик-чек: WebGL у headless     │
+     │ Chromium і Firefox працює (інакше AC-13/AC-2 падають) — вирішується     │
+     │ тут. Коміт: feat(cube): render cube scene with testability contract     │
+     │ (AC-1, AC-2, AC-3, AC-13, AC-15).                                       │
+     │                                                                         │
+     │ T3 — Resize (AC-10, AC-11; FR-6) — e2e/resize.test.ts: AC-11 red (немає │
+     │ слухача), AC-10 очікувано green «на вході» (фіксую це чесно в           │
+     │ evidence; страхується AC-11). Реалізація: ResizeObserver/window resize  │
+     │ → renderer.setSize(w,h,false), camera.aspect. Коміт: feat(cube): resize │
+     │ canvas with viewport (AC-10, AC-11).                                    │
+     │                                                                         │
+     │ T4 — Drag миші й touch (AC-4, AC-5, AC-6, AC-7, AC-12; FR-2, FR-3,      │
+     │ FR-4) — e2e/drag.test.ts red → pointerdown/move/up/cancel, один         │
+     │ активний pointerId, лише drag, що почався на canvas (A-4),              │
+     │ clamp/normalise через rotation.ts. Коміт: feat(cube): rotate cube mesh  │
+     │ on pointer drag (AC-4, AC-5, AC-6, AC-7, AC-12).                        │
+     │                                                                         │
+     │ T5 — Reset (AC-8, AC-9; FR-5) — e2e/reset.test.ts red → кнопка +        │
+     │ scene.reset() (миттєво, без анімації). Коміт: feat(reset): restore      │
+     │ initial orientation on button click (AC-8, AC-9).                       │
+     │                                                                         │
+     │ T6 — Pointer capture через кнопку + мутаційна перевірка (AC-14, FR-4) — │
+     │ тест AC-14 спершу, імовірно green (захоплення вже є з T4) → тому        │
+     │ навмисна мутація: тимчасово прибрати setPointerCapture → AC-14 має      │
+     │ впасти; повернути. Так само для AC-15 (прибрати touch-action) і AC-12   │
+     │ (прибрати clamp). Мутації відкочуються до коміту; у дереві не лишається │
+     │ артефактів. Коміт: test(e2e): verify pointer capture over reset button  │
+     │ (AC-14).                                                                │
+     │                                                                         │
+     │ T7 — Закриття фази — повний npm run check; spec-reviewer на сукупному   │
+     │ diff Phase 4; ручний чекліст (нижче); оновлення docs/quality-gates.md   │
+     │ (рядок Phase 4 у §9/§11) лише після фактичної перевірки; підсумкова     │
+     │ таблиця evidence. Коміт: docs: record Phase 4 verification results.     │
+     │ Перед git push — питаю вас.                                             │
+     │                                                                         │
+     │ Матриця покриття AC → тести                                             │
+     │                                                                         │
+     │ Unit — src/cube/rotation.test.ts; E2E — e2e/*.test.ts (обидва проєкти:  │
+     │ chromium + firefox).                                                    │
+     │                                                                         │
+     │ AC: AC-1                                                                │
+     │ Unit (Vitest): —                                                        │
+     │ E2E (Playwright): AC-1: cube-scene wrapper is present on load           │
+     │ ────────────────────────────────────────                                │
+     │ AC: AC-2                                                                │
+     │ Unit (Vitest): —                                                        │
+     │ E2E (Playwright): AC-2: canvas has non-zero client size on load         │
+     │ ────────────────────────────────────────                                │
+     │ AC: AC-3                                                                │
+     │ Unit (Vitest): AC-3: formatDegrees renders one decimal and never        │
+     │ "-0.0"; AC-3:                                                           │
+     │ INITIAL_ORIENTATION is 25 / -45 / 0                                     │
+     │ E2E (Playwright): AC-3: initial rx/ry/rz attributes are 25.0 / -45.0 /  │
+     │ 0.0                                                                     │
+     │ ────────────────────────────────────────                                │
+     │ AC: AC-4                                                                │
+     │ Unit (Vitest): AC-4: horizontal delta changes ry by dx * SENSITIVITY;   │
+     │ AC-4: 100                                                               │
+     │  px rotates 2x of 50 px within 5%; AC-4: ry normalised to (-180,  180]  │
+     │ (180→180, -180→180, 190→-170, 540→180)                                  │
+     │ E2E (Playwright): AC-4: horizontal mouse drag of 50 px changes ry       │
+     │ ────────────────────────────────────────                                │
+     │ AC: AC-5                                                                │
+     │ Unit (Vitest): AC-5: vertical delta changes rx by dy * SENSITIVITY;     │
+     │ AC-5: 100                                                               │
+     │ px rotates 2x of 50 px within 5%                                        │
+     │ E2E (Playwright): AC-5: vertical mouse drag of 50 px changes rx         │
+     │ ────────────────────────────────────────                                │
+     │ AC: AC-6                                                                │
+     │ Unit (Vitest): AC-6: positive dx increases ry, zero delta changes       │
+     │ nothing                                                                 │
+     │ (розрахунок залежить лише від px)                                       │
+     │ E2E (Playwright): AC-6: horizontal touch drag of 50 px changes ry       │
+     │ (синтетичні                                                             │
+     │ PointerEvent pointerType:"touch")                                       │
+     │ ────────────────────────────────────────                                │
+     │ AC: AC-7                                                                │
+     │ Unit (Vitest): AC-7: positive dy increases rx; rz stays 0               │
+     │ E2E (Playwright): AC-7: vertical touch drag of 50 px changes rx         │
+     │ ────────────────────────────────────────                                │
+     │ AC: AC-8                                                                │
+     │ Unit (Vitest): —                                                        │
+     │ E2E (Playwright): AC-8: reset button is visible and enabled on load     │
+     │ ────────────────────────────────────────                                │
+     │ AC: AC-9                                                                │
+     │ Unit (Vitest): AC-9: resetOrientation returns exact initial values and  │
+     │ does not                                                                │
+     │  mutate input                                                           │
+     │ E2E (Playwright): AC-9: reset restores all attributes after a drag      │
+     │ ────────────────────────────────────────                                │
+     │ AC: AC-10                                                               │
+     │ Unit (Vitest): —                                                        │
+     │ E2E (Playwright): AC-10: canvas width matches innerWidth at 1280x720    │
+     │ ────────────────────────────────────────                                │
+     │ AC: AC-11                                                               │
+     │ Unit (Vitest): —                                                        │
+     │ E2E (Playwright): AC-11: canvas width follows viewport after resize to  │
+     │ 375x667                                                                 │
+     │ ────────────────────────────────────────                                │
+     │ AC: AC-12                                                               │
+     │ Unit (Vitest): AC-12: clampX holds rx within [-90, 90] (±90 допустимі,  │
+     │ ±500 →                                                                  │
+     │ ±90)                                                                    │
+     │ E2E (Playwright): AC-12: 1000 px vertical drag never leaves [-90, 90]   │
+     │ (опитування атрибута під час і після drag)                              │
+     │ ────────────────────────────────────────                                │
+     │ AC: AC-13                                                               │
+     │ Unit (Vitest): —                                                        │
+     │ E2E (Playwright): AC-13: no console errors or page errors on load       │
+     │ (console                                                                │
+     │ type=error + pageerror)                                                 │
+     │ ────────────────────────────────────────                                │
+     │ AC: AC-14                                                               │
+     │ Unit (Vitest): —                                                        │
+     │ E2E (Playwright): AC-14: drag over reset button keeps rotating and does │
+     │ not                                                                     │
+     │ reset                                                                   │
+     │ ────────────────────────────────────────                                │
+     │ AC: AC-15                                                               │
+     │ Unit (Vitest): —                                                        │
+     │ E2E (Playwright): AC-15: canvas computed touch-action is none           │
+     │ ────────────────────────────────────────                                │
+     │ AC: A-6                                                                 │
+     │ Unit (Vitest): A-6: SENSITIVITY is 0.5 deg/px                           │
+     │ E2E (Playwright): —                                                     │
+     │                                                                         │
+     │ Лише вручну (поза AC; spec §7.3/§7.5):                                  │
+     │ - FR-1 вигляд куба (без z-fighting, коректна перспектива);              │
+     │ - FR-2 плавність обертання;                                             │
+     │ - FR-6 canvas візуально заповнює viewport без смуг прокрутки;           │
+     │ - FR-3 справжній фізичний touch-пристрій (AC-6/7 перевіряють лише       │
+     │   симуляцію);                                                           │
+     │ - NFR-7 останні стабільні Chrome і Firefox (Playwright використовує     │
+     │   власні збірки);                                                       │
+     │ - «обертається mesh, не камера» — інструкція + spec-reviewer (spec      │
+     │   §7.5), автотесту немає.                                               │
+     │                                                                         │
+     │ Evidence автономності (легковаговий)                                    │
+     │                                                                         │
+     │ Один append-only файл docs/evidence/phase-4.md (англійською, .md → хуки │
+     │ не запускають перевірки). На кожне завдання — запис із фіксованим       │
+     │ шаблоном, який я заповнюю з реального виводу інструментів у момент      │
+     │ події, а не по пам'яті:                                                 │
+     │                                                                         │
+     │ ## T<n> — <title> (AC-…)                                                │
+     │ - Red run: command → failing test names / exit code (or "green on       │
+     │ arrival" + reason)                                                      │
+     │ - Hook events: PostToolUse blocks (count + what: TS/lint rule),         │
+     │ pre-commit blocks, Stop-hook blocks                                     │
+     │ - Check runs: N × `npm run check`; failures before success (which step, │
+     │ root cause, fix)                                                        │
+     │ - spec-reviewer: findings count → fixed / reported / none               │
+     │ - Human intervention: none | description                                │
+     │ - Commit: subject (hash додається в підсумковій таблиці T7)             │
+     │                                                                         │
+     │ Запис додається в коміт відповідного завдання. У T7 — підсумкова        │
+     │ таблиця: завдання × (red→green, кількість check-запусків, спіймано      │
+     │ хуками/reviewer'ом, втручань людини, hash коміту). Сирі дані також      │
+     │ лишаються в docs/sessions/*.txt (транскрипт). Єдине очікуване втручання │
+     │ людини — схвалення цього плану та рішення щодо push.                    │
+     │                                                                         │
+     │ Ризики                                                                  │
+     │                                                                         │
+     │ 1. Синтетичний touch + setPointerCapture: Playwright mouse API не       │
+     │    генерує touch; тести шлють dispatchEvent(new                         │
+     │    PointerEvent(...,{pointerType:'touch'})), а setPointerCapture на     │
+     │    неактивний pointerId кидає NotFoundError. Захист: обгорнути виклик у │
+     │    try/catch лише з цим винятком (для реальних вказівників завжди       │
+     │    успішно); задокументувати в коментарі.                               │
+     │ 2. WebGL у headless Firefox/CI — перевіряється в T2 одразу; запасний    │
+     │    варіант — launch-аргументи в playwright.config.ts (не послаблення    │
+     │    перевірок).                                                          │
+     │ 3. StrictMode double-mount — dispose() має скасовувати rAF, слухачі,    │
+     │    renderer.dispose().                                                  │
+     │ 4. Точність 2 px (AC-10/11) — margin:0, overflow:hidden, display:block, │
+     │    без scrollbar.                                                       │
+     │ 5. -0.0 у атрибутах — нормалізація у formatDegrees.                     │
+     │ 6. Хуки (PostToolUse) запускають повний typecheck+lint після кожного    │
+     │    Edit — red-заглушки мають типізуватись; red-стан фіксується лише на  │
+     │    рівні runtime-падіння тестів.                                        │
+     │                                                                         │
+     │ Верифікація (наскрізна)                                                 │
+     │                                                                         │
+     │ - Після кожного завдання: npm run check (typecheck → lint → test →      │
+     │   build → e2e) зелений; pre-commit хук проходить.                       │
+     │ - Після T7: npm run check на чистому дереві; CI на main після push (з   │
+     │   вашого дозволу).                                                      │
+     │ - Мутаційні перевірки з T6 підтверджують, що тести справді ловлять      │
+     │   регресії AC-12/14/15.                                                 │
+     │ - Ручний чекліст виконується в Chrome і Firefox через npm run dev;      │
+     │   результати — в docs/quality-gates.md.                                 │
+     ╰─────────────────────────────────────────────────────────────────────────╯
+
+● Оновлюю план з двома змінами.
+
+● Updated plan
+  ⎿  /plan to preview
+
+● Updated plan
+  ⎿  /plan to preview
+
+● User approved Claude's plan
+  ⎿  Plan saved to: 
+     ~\.claude\plans\pasted-content-id-7b5d-plan-phase-eager-patterson.md · 
+     /plan to edit
+     План Phase 4 — реалізація Rotating Cube (AC-1…AC-15)
+
+     Контекст
+
+     Phases 1–3 дали інфраструктуру: scaffold (Vite/React/TS/Three), ESLint з
+     NFR-8, PostToolUse / Stop / pre-commit хуки, CI, spec-reviewer. У src/ лише
+     заглушка App.tsx. Phase 4 — написати весь код застосунку так, щоб npm run 
+     check був зелений і кожен AC мав автоматичну перевірку (або явно названу
+     ручну).
+
+     Поточні smoke-тести (src/__tests__/smoke.test.ts, e2e/smoke.test.ts)
+     залишаю як є (не видаляю без підтвердження; на них посилається
+     docs/quality-gates.md §4).
+
+     Архітектура (малі модулі)
+
+     ┌─────────────────────────────┬───────────────────────────────────────────┐
+     │            Файл             │                   Роль                    │
+     ├─────────────────────────────┼───────────────────────────────────────────┤
+     │                             │ Чиста логіка без DOM/Three:               │
+     │ src/cube/rotation.ts        │ INITIAL_ORIENTATION, SENSITIVITY (A-6,    │
+     │                             │ 0.5°/px), applyDrag, clampX, normaliseY,  │
+     │                             │ resetOrientation, formatDegrees           │
+     ├─────────────────────────────┼───────────────────────────────────────────┤
+     │                             │ Three.js: renderer, камера, куб-mesh,     │
+     │ src/cube/createCubeScene.ts │ rAF-цикл, pointer-обробники, reset(),     │
+     │                             │ dispose(); оновлює data-cube-r* щокадру   │
+     ├─────────────────────────────┼───────────────────────────────────────────┤
+     │                             │ Тонка React-обгортка:                     │
+     │ src/CubeScene.tsx           │ div[data-testid="cube-scene"] + <canvas>, │
+     │                             │  useEffect створює/знищує сцену (коректно │
+     │                             │  для StrictMode double-mount)             │
+     ├─────────────────────────────┼───────────────────────────────────────────┤
+     │                             │ Сцена +                                   │
+     │ src/App.tsx                 │ button[data-testid="reset-button"]        │
+     │                             │ (оверлей)                                 │
+     ├─────────────────────────────┼───────────────────────────────────────────┤
+     │ src/index.css (імпорт у     │ margin:0; overflow:hidden, canvas         │
+     │ main.tsx)                   │ display:block; touch-action:none, fill    │
+     │                             │ viewport                                  │
+     ├─────────────────────────────┼───────────────────────────────────────────┤
+     │ index.html                  │ <link rel="icon" href="data:,"> — щоб 404 │
+     │                             │  favicon не дав console error (AC-13)     │
+     └─────────────────────────────┴───────────────────────────────────────────┘
+
+     Ключові рішення: обертається mesh, не камера; OrbitControls не
+     використовується; rz завжди 0; атрибути беруться зі стану (не з
+     float-зворотного читання mesh), -0.0 нормалізується до 0.0;
+     setPointerCapture у pointerdown (FR-4), touch-action:none у CSS.
+
+     Завдання (кожне: тести → red → реалізація → npm run check → spec-reviewer 
+     (якщо src//e2e/) → коміт)
+
+     Red-стан для unit: спершу заглушка, що throw new Error('not implemented')
+     (типізується, тож PostToolUse-хук не блокує), тест падає в runtime. Для
+     e2e: запускаю лише новий файл (npx playwright test e2e/<file> ) і фіксую
+     падіння.
+
+     T0 — Guardrail для git push (перед T1) — додати в .claude/settings.json у
+     permissions правило "ask": ["Bash(git push*)"], щоб push завжди вимагав
+     вашого підтвердження, навіть в auto mode. Перевірка на практиці: за
+     відсутності чого пушити виконати git push origin main → очікую permission
+     prompt, який ви відхиляєте. Результат і сам guardrail записую в
+     docs/quality-gates.md (§5 + §9/§11). Коміт: chore(settings): require 
+     confirmation for git push. Після верифікації T0 — T1–T7 виконую в auto mode
+     без запитань, окрім push.
+
+     T1 — Чиста логіка обертання (AC-3 формат, AC-4–7, AC-9, AC-12) —
+     rotation.ts + rotation.test.ts. Коміт: feat(cube): add pure rotation logic 
+     (AC-4, AC-5, AC-9, AC-12).
+
+     T2 — Сцена, куб, DOM-контракт (AC-1, AC-2, AC-3, AC-13, AC-15; FR-1, FR-3)
+     — e2e/scene.test.ts red (немає testid) → createCubeScene, CubeScene, CSS,
+     favicon. Розмір canvas ставиться один раз при монтуванні (без
+     resize-слухача). Ранній ризик-чек: WebGL у headless Chromium і Firefox
+     працює (інакше AC-13/AC-2 падають) — вирішується тут. Коміт: feat(cube): 
+     render cube scene with testability contract (AC-1, AC-2, AC-3, AC-13, 
+     AC-15).
+
+     T3 — Resize (AC-10, AC-11; FR-6) — e2e/resize.test.ts: AC-11 red (немає
+     слухача), AC-10 очікувано green «на вході» (фіксую це чесно в evidence;
+     страхується AC-11). Реалізація: ResizeObserver/window resize →
+     renderer.setSize(w,h,false), camera.aspect. Коміт: feat(cube): resize 
+     canvas with viewport (AC-10, AC-11).
+
+     T4 — Drag миші й touch (AC-4, AC-5, AC-6, AC-7, AC-12; FR-2, FR-3, FR-4) —
+     e2e/drag.test.ts red → pointerdown/move/up/cancel, один активний pointerId,
+     лише drag, що почався на canvas (A-4), clamp/normalise через rotation.ts.
+     Коміт: feat(cube): rotate cube mesh on pointer drag (AC-4, AC-5, AC-6, 
+     AC-7, AC-12).
+
+     T5 — Reset (AC-8, AC-9; FR-5) — e2e/reset.test.ts red → кнопка +
+     scene.reset() (миттєво, без анімації). Коміт: feat(reset): restore initial 
+     orientation on button click (AC-8, AC-9).
+
+     T6 — Pointer capture через кнопку + мутаційна перевірка (AC-14, FR-4) —
+     тест AC-14 спершу, імовірно green (захоплення вже є з T4) → тому навмисна 
+     мутація: тимчасово прибрати setPointerCapture → AC-14 має впасти;
+     повернути. Так само для AC-15 (прибрати touch-action) і AC-12 (прибрати
+     clamp). Мутації відкочуються до коміту; у дереві не лишається артефактів.
+     Коміт: test(e2e): verify pointer capture over reset button (AC-14).
+
+     T7 — Закриття фази — повний npm run check; spec-reviewer на сукупному diff
+     Phase 4; ручний чекліст (нижче); оновлення docs/quality-gates.md (рядок
+     Phase 4 у §9/§11) лише після фактичної перевірки; підсумкова таблиця
+     evidence. Коміт: docs: record Phase 4 verification results. Перед git push 
+     — питаю вас.
+
+     Матриця покриття AC → тести
+
+     Unit — src/cube/rotation.test.ts; E2E — e2e/*.test.ts (обидва проєкти:
+     chromium + firefox).
+
+     AC: AC-1
+     Unit (Vitest): —
+     E2E (Playwright): AC-1: cube-scene wrapper is present on load
+     ────────────────────────────────────────
+     AC: AC-2
+     Unit (Vitest): —
+     E2E (Playwright): AC-2: canvas has non-zero client size on load
+     ────────────────────────────────────────
+     AC: AC-3
+     Unit (Vitest): AC-3: formatDegrees renders one decimal and never "-0.0";
+     AC-3: 
+     INITIAL_ORIENTATION is 25 / -45 / 0
+     E2E (Playwright): AC-3: initial rx/ry/rz attributes are 25.0 / -45.0 / 0.0
+     ────────────────────────────────────────
+     AC: AC-4
+     Unit (Vitest): AC-4: horizontal delta changes ry by dx * SENSITIVITY; AC-4:
+     100
+      px rotates 2x of 50 px within 5%; AC-4: ry normalised to (-180,  180]
+     (180→180, -180→180, 190→-170, 540→180)
+     E2E (Playwright): AC-4: horizontal mouse drag of 50 px changes ry
+     ────────────────────────────────────────
+     AC: AC-5
+     Unit (Vitest): AC-5: vertical delta changes rx by dy * SENSITIVITY; AC-5: 
+     100 
+     px rotates 2x of 50 px within 5%
+     E2E (Playwright): AC-5: vertical mouse drag of 50 px changes rx
+     ────────────────────────────────────────
+     AC: AC-6
+     Unit (Vitest): AC-6: positive dx increases ry, zero delta changes nothing
+     (розрахунок залежить лише від px)
+     E2E (Playwright): AC-6: horizontal touch drag of 50 px changes ry
+     (синтетичні
+     PointerEvent pointerType:"touch")
+     ────────────────────────────────────────
+     AC: AC-7
+     Unit (Vitest): AC-7: positive dy increases rx; rz stays 0
+     E2E (Playwright): AC-7: vertical touch drag of 50 px changes rx
+     ────────────────────────────────────────
+     AC: AC-8
+     Unit (Vitest): —
+     E2E (Playwright): AC-8: reset button is visible and enabled on load
+     ────────────────────────────────────────
+     AC: AC-9
+     Unit (Vitest): AC-9: resetOrientation returns exact initial values and does
+     not
+      mutate input
+     E2E (Playwright): AC-9: reset restores all attributes after a drag
+     ────────────────────────────────────────
+     AC: AC-10
+     Unit (Vitest): —
+     E2E (Playwright): AC-10: canvas width matches innerWidth at 1280x720
+     ────────────────────────────────────────
+     AC: AC-11
+     Unit (Vitest): —
+     E2E (Playwright): AC-11: canvas width follows viewport after resize to 
+     375x667
+     ────────────────────────────────────────
+     AC: AC-12
+     Unit (Vitest): AC-12: clampX holds rx within [-90, 90] (±90 допустимі, ±500
+     →
+     ±90)
+     E2E (Playwright): AC-12: 1000 px vertical drag never leaves [-90, 90]
+     (опитування атрибута під час і після drag)
+     ────────────────────────────────────────
+     AC: AC-13
+     Unit (Vitest): —
+     E2E (Playwright): AC-13: no console errors or page errors on load (console
+     type=error + pageerror)
+     ────────────────────────────────────────
+     AC: AC-14
+     Unit (Vitest): —
+     E2E (Playwright): AC-14: drag over reset button keeps rotating and does not
+      
+     reset
+     ────────────────────────────────────────
+     AC: AC-15
+     Unit (Vitest): —
+     E2E (Playwright): AC-15: canvas computed touch-action is none
+     ────────────────────────────────────────
+     AC: A-6
+     Unit (Vitest): A-6: SENSITIVITY is 0.5 deg/px
+     E2E (Playwright): —
+
+     Лише вручну (поза AC; spec §7.3/§7.5):
+     - FR-1 вигляд куба (без z-fighting, коректна перспектива);
+     - FR-2 плавність обертання;
+     - FR-6 canvas візуально заповнює viewport без смуг прокрутки;
+     - FR-3 справжній фізичний touch-пристрій (AC-6/7 перевіряють лише
+       симуляцію);
+     - NFR-7 останні стабільні Chrome і Firefox (Playwright використовує власні
+       збірки);
+     - «обертається mesh, не камера» — інструкція + spec-reviewer (spec §7.5),
+       автотесту немає.
+
+     Evidence автономності (легковаговий)
+
+     Один append-only файл docs/evidence/phase-4.md (англійською, .md → хуки не
+     запускають перевірки). На кожне завдання — запис із фіксованим шаблоном,
+     який я заповнюю з реального виводу інструментів у момент події, а не по
+     пам'яті:
+
+     ## T<n> — <title> (AC-…)
+     - Red run: command → failing test names / exit code (or "green on arrival" 
+     + reason)
+     - Hook events: PostToolUse blocks (count + what: TS/lint rule), pre-commit 
+     blocks, Stop-hook blocks
+     - Check runs: N × `npm run check`; failures before success (which step, 
+     root cause, fix)
+     - spec-reviewer: findings count → fixed / reported / none
+     - Human intervention: none | description
+     - Commit: subject (hash додається в підсумковій таблиці T7)
+
+     Запис додається в коміт відповідного завдання. У T7 — підсумкова таблиця:
+     завдання × (red→green, кількість check-запусків, спіймано
+     хуками/reviewer'ом, втручань людини, hash коміту). Сирі дані також
+     лишаються в docs/sessions/*.txt (транскрипт). Єдине очікуване втручання
+     людини — схвалення цього плану та рішення щодо push.
+
+     Ризики
+
+     1. Синтетичний touch + setPointerCapture: Playwright mouse API не генерує
+        touch; тести шлють dispatchEvent(new 
+        PointerEvent(...,{pointerType:'touch'})), а setPointerCapture на
+        неактивний pointerId кидає NotFoundError. Спершу перевіряю чистіші
+        альтернативи (напр. hasPointerCapture/перевірка активності pointer,
+        CDP-touch лише для Chromium — не підходить для Firefox, тож навряд).
+        Якщо try/catch лишається найкращим: ловлю лише DOMException з name === 
+        'NotFoundError' (інші пробрасую), з коментарем у коді, чому це потрібно
+        (синтетичні події не мають активного pointerId). В evidence зазначаю:
+        реальний pointer capture перевіряє AC-14 із Playwright mouse.
+     2. WebGL у headless Firefox/CI — перевіряється в T2 одразу; запасний
+        варіант — launch-аргументи в playwright.config.ts (не послаблення
+        перевірок).
+     3. StrictMode double-mount — dispose() має скасовувати rAF, слухачі,
+        renderer.dispose().
+     4. Точність 2 px (AC-10/11) — margin:0, overflow:hidden, display:block, без
+        scrollbar.
+     5. -0.0 у атрибутах — нормалізація у formatDegrees.
+     6. Хуки (PostToolUse) запускають повний typecheck+lint після кожного Edit —
+        red-заглушки мають типізуватись; red-стан фіксується лише на рівні
+        runtime-падіння тестів.
+
+     Верифікація (наскрізна)
+
+     - Після кожного завдання: npm run check (typecheck → lint → test → build →
+       e2e) зелений; pre-commit хук проходить.
+     - Після T7: npm run check на чистому дереві; CI на main після push (з
+       вашого дозволу).
+     - Мутаційні перевірки з T6 підтверджують, що тести справді ловлять регресії
+       AC-12/14/15.
+     - Ручний чекліст виконується в Chrome і Firefox через npm run dev;
+       результати — в docs/quality-gates.md.
+
+❯ If the permission prompt does not appear for git push in T0, stop and         
+     report to me; do not continue to T1.                                       
+
+● Зрозуміло. Починаю T0: спершу читаю поточний .claude/settings.json.
+
+  Read 1 file (ctrl+o to expand)
+
+● Додаю правило ask для git push (одна маленька зміна в permissions).
+
+● Update(.claude\settings.json)
+  ⎿  Added 3 lines
+      1  {
+      2    "permissions": {
+      3 +    "ask": [                                                    
+      4 +      "Bash(git push*)"                                         
+      5 +    ],                                                          
+      6      "deny": [
+      7        "Bash(git commit --no-verify*)",
+      8        "Bash(git commit * --no-verify*)",
+
+● Тепер перевірю на практиці: виконаю git push origin main (пушити нічого не
+  буде, але має з'явитися запит на дозвіл, який ви відхилите). · summary
+
+● Bash(git push origin main)
+  ⎿  Interrupted · What should Claude do instead?
+
+✻ Churned for 2m 15s · done 1:46 PM
+
+❯ The permission prompt appeared ("Ask rule Bash(git push*) overrides auto      
+  mode"), and I declined it as planned. T0 is verified.                         
+                                                                                
+  Record the verified result in docs/quality-gates.md, then commit T0 locally.  
+  Do not push.                                                                  
+                                                                                
+  After T0 is committed, continue with T1–T7 in auto mode, following the        
+  approved plan. Run the required tests, npm run check, and spec-reviewer for   
+  each task, and record actual results in the evidence log. Do not invent or    
+  assume verification results.                                                  
+                                                                                
+  Ask me for explicit approval before any push to origin. If the push guardrail 
+  fails or any blocker prevents the required verification, stop and report the  
+  issue rather than bypassing it.                                               
+
+● Записую результат у docs/quality-gates.md: §5 (конфігурація + результат), §9 і
+  §11.
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 21 lines
+      323  Note: the `--amend` probe was a mistake in hindsight, since a 
+           missed block would have
+      324  rewritten history; later probes used `--dry-run` or read-only 
+           commands only.
+      325  
+      326 +### Push confirmation rule (added in Phase 4, T0)             
+      327 +                                                              
+      328 +An `ask` rule makes every `git push` require explicit human co
+          +nfirmation, even in                                           
+      329 +auto mode:                                                    
+      330 +                                                              
+      331 +```json                                                       
+      332 +{                                                             
+      333 +  "permissions": {                                            
+      334 +    "ask": ["Bash(git push*)"]                                
+      335 +  }                                                           
+      336 +}                                                             
+      337 +```                                                           
+      338 +                                                              
+      339 +**Verification (2026-10-20):** with nothing to push, the agent
+          + ran                                                          
+      340 +`git push origin main`. The permission prompt appeared (text s
+          +hown to the human:                                            
+      341 +"Ask rule Bash(git push*) overrides auto mode"); the human dec
+          +lined it and the                                              
+      342 +command did not run. Only this one form was probed; other push
+          + forms (for example                                           
+      343 +`git push` through a global option such as `git --no-pager pus
+          +h`) were **not**                                              
+      344 +probed and, by the same pattern analysis as the known gaps bel
+          +ow, are not                                                   
+      345 +necessarily covered. As with the deny rules, the rule binds th
+          +e agent only.                                                 
+      346 +                                                              
+      347  ### Known gaps
+      348  
+      349  - Other global options before `commit` are **not blocked**; pr
+           obed and confirmed:
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line
+      535  | PostToolUse hook script | `scripts/agent-hook-check.mjs` + `
+           scripts/hook-utils.mjs` | **Implemented** |
+      536  | Stop hook script | `scripts/agent-stop-check.mjs` | **Implem
+           ented** |
+      537  | PostToolUse + Stop hooks + permission guardrail | `.claude/s
+           ettings.json` | **Implemented** |
+      538 +| `git push` confirmation (`ask` rule) | `.claude/settings.jso
+          +n` | **Implemented** — verified 2026-10-20 (one form probed) |
+      539  | spec-reviewer subagent | `.claude/agents/spec-reviewer.md` |
+            **Implemented** |
+      540  | LF line endings for hooks and scripts | `.gitattributes` | *
+           *Implemented** |
+      541  | ESLint block for `scripts/*.mjs` | `eslint.config.js` | **Im
+           plemented** |
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line
+      588  | PostToolUse hook (§1) | Type error → exit 2 + diagnostics; f
+           ix → exit 0; lint-only error; `.md` edit runs no check; `.json
+           ` edit runs; missing `file_path` runs | **Passed** (2026-10-19
+           ) |
+      589  | Pre-commit hook (§2) | Staged type error blocks commit; late
+           r commits pass; `git ls-files --eol` LF; `git ls-files -s` `10
+           0755` | **Passed** (2026-10-19). Open: hook execution on a fre
+           sh clone **not verified**. CI shows only that `npm ci` and `pr
+           epare` complete on a clean runner (§2) |
+      590  | Permission guardrail (§5) | Each pattern probed separately; 
+           controls not blocked | **Passed** (2026-10-19). Open: known ga
+           ps listed in §5 (other global git options, `git config core.ho
+           oksPath`, hook-file edits) |
+      591 +| Push confirmation (§5) | `git push origin main` with nothing
+          + to push; prompt expected, human declines | **Passed** (2026-1
+          +0-20): prompt "Ask rule Bash(git push*) overrides auto mode" a
+          +ppeared and was declined. Open: other push forms not probed | 
+      592  | Stop hook (§6) | Prototype; dry-run matrix; direct runs; liv
+           e block and halt; no `--dry-run` in settings | **Passed** (202
+           6-10-19) |
+      593  | ESLint block for `scripts/*.mjs` | `--print-config` shows No
+           de globals; seeded errors fail `npm run lint` | **Passed** (20
+           26-10-19) |
+      594  | spec-reviewer (§7) | Clean diff clean; camera rotation / Orb
+           itControls flagged; edit attempt impossible; agent visible | *
+           *Passed** (2026-10-19, Claude Code 2.1.303). Criterion 1: clea
+           n `src/` diff (`App.tsx`, `main.tsx`, `vite-env.d.ts`) → `No v
+           iolations found.` Criterion 2: temporary `src/__probe__.tsx` (
+           OrbitControls import/re-export, `camera.rotation.y`) → flagged
+            as NFR-8 ×2 and spec §7.5; file removed afterwards. Criterion
+            3: asked to edit a file, the agent reported only `Read`/`Grep
+           `/`Glob` and the file stayed unchanged. Criterion 4: agent inv
+           ocable in the session. Earlier invisibility: agents directory 
+           was created in the first session (may explain the restart); `c
+           laude update` was run later and the agent became available — c
+           ausal link **not established** |
+
+● Створюю evidence-лог із записом T0 і комічу локально.
+
+● Write(docs\evidence\phase-4.md)  ⎿  Wrote 29 lines to docs\evidence\phase-4.md
+       1 # Phase 4 — Evidence of Autonomy
+       3 Append-only log. Each entry is filled from real tool output at t
+         he time of the
+       4 event. Raw transcripts: `docs/sessions/*.txt`.
+       6 Template per task:
+       7 
+          on arrival" and why)
+       9 - Hook events: PostToolUse blocks, pre-commit blocks, Stop-hook 
+         blocks
+         ccess
+     … +28 lines (ctrl+o to expand)
+
+● Bash(git add .claude/settings.json docs/quality-gates.md
+      docs/evidence/phase-4.md && git commit -q -m "chore(settings): require
+      confirmation for git push…)
+  ⎿  warning: in the working copy of '.claude/settings.json', LF will be re
+     placed by CRLF the next time Git touches it
+     warning: in the working copy of 'docs/evidence/phase-4.md', LF will be
+     … +25 lines (ctrl+o to expand)
+
+● T0 закомічено (pre-commit пройшов). Починаю T1: спершу заглушка (що
+  типізується) і тести.
+
+● Write(src\cube\rotation.ts)
+  ⎿  Wrote 29 lines to src\cube\rotation.ts
+      1 export interface Orientation {
+      2   readonly rx: number
+      3   readonly ry: number
+      4   readonly rz: number
+      5 }
+      6 
+      7 export const INITIAL_ORIENTATION: Orientation = { rx: 25, ry: -45
+        , rz: 0 }
+      8 
+      9 export const SENSITIVITY = 0.5
+     … +21 lines (ctrl+o to expand)
+  ⎿  PostToolUse:Write hook returned blocking error
+  ⎿  [node "$CLAUDE_PROJECT_DIR/scripts/agent-hook-check.mjs"]: [hook] npm run 
+     lint failed:
+
+     > rotating-cube@0.0.1 lint
+     > eslint . --max-warnings 0
+
+
+     C:\Users\IrynaPolchaninova\Projects\rotating-cube\src\cube\rotation.ts
+       11:24  error  '_degrees' is defined but never used      
+     @typescript-eslint/no-unused-vars
+       15:28  error  '_degrees' is defined but never used      
+     @typescript-eslint/no-unused-vars
+       19:27  error  '_orientation' is defined but never used  
+     @typescript-eslint/no-unused-vars
+       19:54  error  '_dx' is defined but never used           
+     @typescript-eslint/no-unused-vars
+       19:67  error  '_dy' is defined but never used           
+     @typescript-eslint/no-unused-vars
+       27:31  error  '_degrees' is defined but never used      
+     @typescript-eslint/no-unused-vars
+
+     ✖ 6 problems (6 errors, 0 warnings)
+
+● Write(src\cube\rotation.test.ts)
+  ⎿  Wrote 125 lines to src\cube\rotation.test.ts
+       1 import { describe, it, expect } from 'vitest'
+       2 import {
+       3   INITIAL_ORIENTATION,
+       4   SENSITIVITY,
+       5   applyDrag,
+       6   clampX,
+       7   formatDegrees,
+       8   normaliseY,
+       9   resetOrientation,
+      10 } from './rotation'
+     … +122 lines (ctrl+o to expand)
+  ⎿  PostToolUse:Write hook returned blocking error
+  ⎿  [node "$CLAUDE_PROJECT_DIR/scripts/agent-hook-check.mjs"]: [hook] npm run 
+     lint failed:
+
+     > rotating-cube@0.0.1 lint
+     > eslint . --max-warnings 0
+
+
+     C:\Users\IrynaPolchaninova\Projects\rotating-cube\src\cube\rotation.ts
+       11:24  error  '_degrees' is defined but never used      
+     @typescript-eslint/no-unused-vars
+       15:28  error  '_degrees' is defined but never used      
+     @typescript-eslint/no-unused-vars
+       19:27  error  '_orientation' is defined but never used  
+     @typescript-eslint/no-unused-vars
+       19:54  error  '_dx' is defined but never used           
+     @typescript-eslint/no-unused-vars
+       19:67  error  '_dy' is defined but never used           
+     @typescript-eslint/no-unused-vars
+       27:31  error  '_degrees' is defined but never used      
+     @typescript-eslint/no-unused-vars
+
+     ✖ 6 problems (6 errors, 0 warnings)
+
+● Bash(npx vitest run 2>&1 | tail -40; echo exit=${PIPESTATUS[0]})
+  ⎿       16|   throw new Error('not implemented')
+            |         ^
+          17| }
+     … +38 lines (ctrl+o to expand)
+
+● Підтверджено червону стадію: 15 тестів падають через "not implemented" (3
+  константи проходять), а хук уже виявив lint-помилки через невикористані
+  параметри заглушки. Переходжу до реалізації. · summary
+
+● Write(src\cube\rotation.ts)
+  ⎿  Added 25 lines, removed 9 lines
+       6  
+       7  export const INITIAL_ORIENTATION: Orientation = { rx: 25, ry: -
+          45, rz: 0 }
+       8  
+       9 +/** Degrees of rotation per pixel of pointer movement (spec A-6
+         +). */                                                          
+      10  export const SENSITIVITY = 0.5
+      11  
+      11 -export function clampX(_degrees: number): number {             
+      12 -  throw new Error('not implemented')                           
+      12 +const MAX_X = 90                                               
+      13 +                                                               
+      14 +/** Clamps X rotation to the closed range [-90, 90]. */        
+      15 +export function clampX(degrees: number): number {              
+      16 +  return Math.min(MAX_X, Math.max(-MAX_X, degrees))            
+      17  }
+      18  
+      15 -export function normaliseY(_degrees: number): number {         
+      16 -  throw new Error('not implemented')                           
+      19 +/** Normalises Y rotation to the half-open range (-180, 180]. *
+         +/                                                              
+      20 +export function normaliseY(degrees: number): number {          
+      21 +  const wrapped = ((degrees % 360) + 360) % 360                
+      22 +  return wrapped > 180 ? wrapped - 360 : wrapped               
+      23  }
+      24  
+      19 -export function applyDrag(_orientation: Orientation, _dx: numbe
+         -r, _dy: number): Orientation {                                 
+      20 -  throw new Error('not implemented')                           
+      25 +/**                                                            
+      26 + * Horizontal movement (dx) rotates around Y, vertical movement
+         + (dy) around X.                                                
+      27 + * Z is never affected by user interaction.                    
+      28 + */                                                            
+      29 +export function applyDrag(orientation: Orientation, dx: number,
+         + dy: number): Orientation {                                    
+      30 +  return {                                                     
+      31 +    rx: clampX(orientation.rx + dy * SENSITIVITY),             
+      32 +    ry: normaliseY(orientation.ry + dx * SENSITIVITY),         
+      33 +    rz: 0,                                                     
+      34 +  }                                                            
+      35  }
+      36  
+      37  export function resetOrientation(): Orientation {
+      24 -  throw new Error('not implemented')                           
+      38 +  return { ...INITIAL_ORIENTATION }                            
+      39  }
+      40  
+      27 -export function formatDegrees(_degrees: number): string {      
+      28 -  throw new Error('not implemented')                           
+      41 +/** Formats degrees with one decimal place, never producing "-0
+         +.0". */                                                        
+      42 +export function formatDegrees(degrees: number): string {       
+      43 +  const rounded = Math.round(degrees * 10) / 10                
+      44 +  return rounded === 0 ? '0.0' : rounded.toFixed(1)            
+      45  }
+
+● Bash(npm run check 2>&1 | tail -40; echo exit=${PIPESTATUS[0]})
+  ⎿  > rotating-cube@0.0.1 lint
+     > eslint . --max-warnings 0
+     … +38 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● npm run check зелений (18 unit-тестів). Запускаю spec-reviewer на diff T1.
+
+● spec-reviewer(Review T1 diff against spec)
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Рев'ю T1 ще виконується; чекаю на сповіщення про завершення, не дублюючи його
+  роботу.
+
+✻ Cooked for 1m 40s · done 1:49 PM
+
+› Message from spec-reviewer
+  No violations found.
+
+● Reviewer: порушень немає. Записую evidence T1 і комічу.
+
+● Bash(cat >> docs/evidence/phase-4.md <<'EOF'…)
+  ⎿  warning: in the working copy of 'docs/evidence/phase-4.md', LF will be
+      replaced by CRLF the next time Git touches it
+     warning: in the working copy of 'src/cube/rotation.test.ts', LF will b
+     … +10 lines (ctrl+o to expand)
+
+● Agent "Review T1 diff against spec" finished · 7s
+
+● Виправлю помилку в T1 evidence: ті 3 пройдені тести — це 2 константи + наявний
+  smoke-тест, а не «один непомилковий шлях», і зафіксую це в наступному коміті.
+  Далі переходжу до T2, починаючи з e2e-тесту. · summary
+
+● Update(docs\evidence\phase-4.md)
+  ⎿  Added 4 lines, removed 3 lines
+      31  ## T1 — Pure rotation logic (AC-3 format, AC-4, AC-5, AC-6, AC-
+          7, AC-9, AC-12, A-6)
+      32  
+      33  - Red run: `npx vitest run` against throwing stubs → 15 failed,
+           3 passed
+      34 -  (`Error: not implemented`); exit 1. The 3 passing tests were 
+         -the constant checks                                            
+      35 -  (`INITIAL_ORIENTATION`, `SENSITIVITY`) and one non-throwing p
+         -ath, which the stub                                            
+      36 -  already satisfied.                                           
+      34 +  (`Error: not implemented`); exit 1. The 3 passing tests were 
+         +the two constant                                               
+      35 +  checks (`INITIAL_ORIENTATION`, `SENSITIVITY`) and the pre-exi
+         +sting scaffold smoke                                           
+      36 +  test (`vitest runs`), which the stub already satisfied. (Corr
+         +ected in the T2                                                
+      37 +  commit: the T1 commit text wrongly said "one non-throwing pat
+         +h".)                                                           
+      38  - Hook events: PostToolUse blocked 2 times (after writing the s
+          tub and the test file),
+      39    both with the same 6 `@typescript-eslint/no-unused-vars` erro
+          rs for the stub's
+      40    unused parameters. Resolved by the real implementation. No pr
+          e-commit or Stop-hook
+
+● Write(e2e\scene.test.ts)
+  ⎿  Wrote 52 lines to e2e\scene.test.ts
+       1 import { test, expect } from '@playwright/test'
+       3 test('AC-1: cube-scene wrapper is present on load', async ({ pag
+         e }) => {
+       4   await page.goto('/')
+         BeAttached()
+       6 })
+       8 test('AC-2: canvas has non-zero client size on load', async ({ p
+         age }) => {
+       9   await page.goto('/')
+         vas')
+     … +54 lines (ctrl+o to expand)
+
+● Bash(npx playwright test e2e/scene.test.ts --reporter=line 2>&1 | grep -E
+      "^\s+[0-9]+ (passed|failed)|✘|failed|passed|Error:|Timeout" | head -30;
+      echo exit=${PIPESTA…)
+  ⎿      Error: expect(locator).toBeAttached() failed
+         Timeout: 5000ms
+         Error: element(s) not found
+     … +28 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● Red підтверджено: усі e2e-тести падають (element(s) not found, обидва
+  браузери). Реалізую сцену.
+
+● Write(src\cube\createCubeScene.ts)
+  ⎿  Wrote 97 lines to src\cube\createCubeScene.ts
+       1 import {
+       2   AmbientLight,
+       3   BoxGeometry,
+       4   DirectionalLight,
+       5   EdgesGeometry,
+       6   LineBasicMaterial,
+       7   LineSegments,
+       8   Mesh,
+       9   MeshStandardMaterial,
+      10   PerspectiveCamera,
+     … +90 lines (ctrl+o to expand)
+  ⎿  PostToolUse:Write hook returned blocking error
+  ⎿  [node "$CLAUDE_PROJECT_DIR/scripts/agent-hook-check.mjs"]: [hook] npm run 
+     lint failed:
+
+     > rotating-cube@0.0.1 lint
+     > eslint . --max-warnings 0
+
+
+     C:\Users\IrynaPolchaninova\Projects\rotating-cube\src\cube\createCubeScene.
+     ts
+       50:7  error  'orientation' is never reassigned. Use 'const' instead  
+     prefer-const
+
+     ✖ 1 problem (1 error, 0 warnings)
+       1 error and 0 warnings potentially fixable with the `--fix` option.
+
+● Write(src\CubeScene.tsx)  ⎿  Wrote 17 lines to src\CubeScene.tsx
+       1 import { useEffect, useRef } from 'react'
+       2 import { createCubeScene } from './cube/createCubeScene'
+       3 
+       4 export default function CubeScene() {
+       5   const wrapperRef = useRef<HTMLDivElement>(null)
+       6 
+       7   useEffect(() => {
+       8     const wrapper = wrapperRef.current
+       9     if (!wrapper) return
+      10     const cubeScene = createCubeScene(wrapper)
+     … +8 lines (ctrl+o to expand)
+  ⎿  PostToolUse:Write hook returned blocking error
+  ⎿  [node "$CLAUDE_PROJECT_DIR/scripts/agent-hook-check.mjs"]: [hook] npm run 
+     lint failed:
+
+     > rotating-cube@0.0.1 lint
+     > eslint . --max-warnings 0
+
+
+     C:\Users\IrynaPolchaninova\Projects\rotating-cube\src\cube\createCubeScene.
+     ts
+       50:7  error  'orientation' is never reassigned. Use 'const' instead  
+     prefer-const
+
+     ✖ 1 problem (1 error, 0 warnings)
+       1 error and 0 warnings potentially fixable with the `--fix` option.
+
+● Write(src\App.tsx)
+  ⎿  Added 3 lines, removed 5 lines
+      1 +import CubeScene from './CubeScene'                             
+      2 +                                                                
+      3  export default function App() {
+      2 -  return (                                                      
+      3 -    <div data-testid="app">                                     
+      4 -      <h1>Rotating Cube</h1>                                    
+      5 -    </div>                                                      
+      6 -  )                                                             
+      4 +  return <CubeScene />                                          
+      5  }
+  ⎿  PostToolUse:Write hook returned blocking error
+  ⎿  [node "$CLAUDE_PROJECT_DIR/scripts/agent-hook-check.mjs"]: [hook] npm run 
+     lint failed:
+
+     > rotating-cube@0.0.1 lint
+     > eslint . --max-warnings 0
+
+
+     C:\Users\IrynaPolchaninova\Projects\rotating-cube\src\cube\createCubeScene.
+     ts
+       50:7  error  'orientation' is never reassigned. Use 'const' instead  
+     prefer-const
+
+     ✖ 1 problem (1 error, 0 warnings)
+       1 error and 0 warnings potentially fixable with the `--fix` option.
+
+● Write(src\index.css)
+  ⎿  Wrote 21 lines to src\index.css
+      1 html,
+      2 body,
+      3 #root {
+      4   margin: 0;
+      5   width: 100%;
+      6   height: 100%;
+      7   overflow: hidden;
+      8   background: #0f172a;
+      9 }
+     … +11 lines (ctrl+o to expand)
+
+● Update(src\main.tsx)
+  ⎿  Added 1 line
+      1  import { StrictMode } from 'react'
+      2  import { createRoot } from 'react-dom/client'
+      3  import App from './App'
+      4 +import './index.css'                                            
+      5  
+      6  createRoot(document.getElementById('root')!).render(
+      7    <StrictMode>
+  ⎿  PostToolUse:Edit hook returned blocking error
+  ⎿  [node "$CLAUDE_PROJECT_DIR/scripts/agent-hook-check.mjs"]: [hook] npm run 
+     lint failed:
+
+     > rotating-cube@0.0.1 lint
+     > eslint . --max-warnings 0
+
+
+     C:\Users\IrynaPolchaninova\Projects\rotating-cube\src\cube\createCubeScene.
+     ts
+       50:7  error  'orientation' is never reassigned. Use 'const' instead  
+     prefer-const
+
+     ✖ 1 problem (1 error, 0 warnings)
+       1 error and 0 warnings potentially fixable with the `--fix` option.
+
+● Update(index.html)
+  ⎿  Added 1 line
+      3    <head>
+      4      <meta charset="UTF-8" />
+      5      <meta name="viewport" content="width=device-width, initial-s
+         cale=1.0" />
+      6 +    <link rel="icon" href="data:," />                           
+      7      <title>Rotating Cube</title>
+      8    </head>
+      9    <body>
+
+● Хук спіймав prefer-const (змінна стане let лише в T4/T5, коли з'явиться drag).
+  Виправляю на const.
+
+● Update(src\cube\createCubeScene.ts)
+  ⎿  Added 1 line, removed 1 line
+      47    light.position.set(3, 4, 5)
+      48    scene.add(light)
+      49  
+      50 -  let orientation: Orientation = INITIAL_ORIENTATION           
+      50 +  const orientation: Orientation = INITIAL_ORIENTATION         
+      51  
+      52    const resize = (): void => {
+      53      const width = Math.max(wrapper.clientWidth, 1)
+
+● Bash(npm run check 2>&1 | tail -35; echo exit=${PIPESTATUS[0]})
+  ⎿  transforming...
+     ✓ 21 modules transformed.
+     rendering chunks...
+     … +33 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● check зелений, WebGL працює в обох headless-браузерах. Запускаю spec-reviewer
+  на T2.
+
+● spec-reviewer(Review T2 diff against spec)
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Чекаю на результат рев'ю T2.
+
+✻ Cooked for 3m 1s · done 1:52 PM
+
+› Message from spec-reviewer
+  No violations found.
+
+● Reviewer: порушень немає. Записую evidence T2 і комічу.
+
+● Bash(cat >> docs/evidence/phase-4.md <<'EOF'…)
+  ⎿  warning: in the working copy of 'docs/evidence/phase-4.md', LF will be
+      replaced by CRLF the next time Git touches it
+     warning: in the working copy of 'index.html', LF will be replaced by C
+     … +15 lines (ctrl+o to expand)
+
+● Agent "Review T2 diff against spec" finished · 11s
+
+● T2 закомічено. T3: resize — спершу тести.
+
+● Write(e2e\resize.test.ts)
+  ⎿  Wrote 49 lines to e2e\resize.test.ts
+       1 import { test, expect, type Page } from '@playwright/test'
+       2 
+       3 const TOLERANCE_PX = 2
+       5 async function canvasWidthDelta(page: Page): Promise<number> {
+       6   return page.evaluate(() => {
+       7     const canvas = document.querySelector('div[data-testid="cube
+         -scene"] canvas')
+         'canvas not found')
+       9     return Math.abs(canvas.clientWidth - window.innerWidth)
+      10   })
+     … +52 lines (ctrl+o to expand)
+
+● Bash(npx playwright test e2e/resize.test.ts --reporter=list 2>&1 | grep -E
+      "✓|✘|passed|failed" ; echo exit=${PIPESTATUS[0]})
+  ⎿    ✓  1 [chromium] › e2e\resize.test.ts:13:1 › AC-10: canvas width matc
+     hes innerWidth at 1280x720 (530ms)
+       ✓  3 [chromium] › e2e\resize.test.ts:20:1 › AC-11: canvas width foll
+     … +12 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● AC-10 і AC-11 вже проходять завдяки CSS 100%, тож у evidence піде лише мій
+  тест на буфер малювання (FR-6), який поки червоний. Тепер реалізую
+  ResizeObserver. · summary
+
+● Update(src\cube\createCubeScene.ts)
+  ⎿  Added 4 lines
+      79      frame = requestAnimationFrame(loop)
+      80    }
+      81  
+      82 +  const resizeObserver = new ResizeObserver(resize)            
+      83 +  resizeObserver.observe(wrapper)                              
+      84 +                                                               
+      85    resize()
+      86    loop()
+      87  
+      88    return {
+      89      dispose(): void {
+      90        cancelAnimationFrame(frame)
+      91 +      resizeObserver.disconnect()                              
+      92        geometry.dispose()
+      93        material.dispose()
+      94        edgesGeometry.dispose()
+
+● Bash(npm run check 2>&1 | grep -E "✓|✘|passed|failed|error|Error|exit" ; echo
+      exit=${PIPESTATUS[0]})
+  ⎿   Test Files  2 passed (2)
+           Tests  18 passed (18)
+     ✓ 21 modules transformed.
+     … +25 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● spec-reviewer(Review T3 diff against spec)
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+● Чекаю на рев'ю T3.
+
+✻ Crunched for 1m 56s · done 1:54 PM
+
+› Message from spec-reviewer
+  e2e/resize.test.ts:45 — Low severity. The FR-6 buffer check divides
+  `canvas.width` by the raw `window.devicePixelRatio`, but
+  `createCubeScene.ts:32` caps the renderer pixel ratio at 2. On a device with a
+  ratio above 2 the check would fail even though the behaviour is correct. It
+  passes with Playwright's default ratio of 1. Use `Math.min(devicePixelRatio,
+  2)` to keep it robust — FR-6
+
+  I found no other violations:
+  - The mesh is rotated and the camera is only repositioned for aspect ratio
+  (spec §7.5 satisfied).
+  - There is no OrbitControls import (NFR-8).
+  - `ResizeObserver` is disconnected in `dispose()`, and the existing `resize()`
+  is reused.
+  - Test names carry AC-10, AC-11 and FR-6.
+  - No tests are weakened or skipped, and there is no `ts-ignore`,
+  `eslint-disable` or `any`.
+  - All files are in English.
+
+● Знахідка слушна (мій тест ділить на сирий devicePixelRatio, а рендерер обмежує
+  його до 2). Виправляю в тесті.
+
+● Update(e2e\resize.test.ts)
+  ⎿  Added 2 lines, removed 1 line
+      42        page.evaluate(() => {
+      43          const canvas = document.querySelector('div[data-testid=
+          "cube-scene"] canvas')
+      44          if (!(canvas instanceof HTMLCanvasElement)) throw new E
+          rror('canvas not found')
+      45 -        return canvas.width / window.devicePixelRatio          
+      45 +        // The renderer caps its pixel ratio at 2.             
+      46 +        return canvas.width / Math.min(window.devicePixelRatio,
+         + 2)                                                            
+      47        }),
+      48      )
+      49      .toBeCloseTo(375, 0)
+
+● Bash(npm run check 2>&1 | grep -E "passed|failed|✘|error" ; echo
+      exit=${PIPESTATUS[0]})
+  ⎿   Test Files  2 passed (2)
+           Tests  18 passed (18)
+       ✓  11 [chromium] › e2e\scene.test.ts:28:1 › AC-13: no console errors
+     … +5 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Agent "Review T3 diff against spec" finished · 10s
+
+● Bash(cat >> docs/evidence/phase-4.md <<'EOF'…)
+  ⎿  warning: in the working copy of 'docs/evidence/phase-4.md', LF will be
+      replaced by CRLF the next time Git touches it
+     warning: in the working copy of 'src/cube/createCubeScene.ts', LF will
+     … +5 lines (ctrl+o to expand)
+
+● T3 закомічено. T4: drag миші й touch — спершу тести.
+
+● Write(e2e\drag.test.ts)
+  ⎿  Wrote 145 lines to e2e\drag.test.ts
+       1 import { test, expect, type Locator, type Page } from '@playwrig
+         ht/test'
+       3 const INITIAL = { rx: '25.0', ry: '-45.0', rz: '0.0' }
+       4 
+       5 function sceneOf(page: Page): Locator {
+       7 }
+       8 
+       9 async function canvasCentre(page: Page): Promise<{ x: number; y:
+      10   const box = await page.locator('div[data-testid="cube-scene"] 
+         canvas').boundingBox()
+     … +152 lines (ctrl+o to expand)
+
+● Bash(npx playwright test e2e/drag.test.ts --reporter=list 2>&1 | grep -E
+      "✓|✘|passed|failed" ; echo exit=${PIPESTATUS[0]})
+  ⎿    ✘   1 [chromium] › e2e\drag.test.ts:70:1 › AC-4: horizontal mouse dr
+     ag of 50 px changes ry (5.8s)
+       ✘   2 [firefox] › e2e\drag.test.ts:70:1 › AC-4: horizontal mouse dra
+     … +26 lines (ctrl+o to expand)
+  ⎿  (timeout 6m 40s)
+
+● Усі 12 червоні з правильної причини (атрибути не змінюються). Реалізую обробку
+  pointer events.
+
+● Update(src\cube\createCubeScene.ts)
+  ⎿  Added 32 lines
+       79      frame = requestAnimationFrame(loop)
+       80    }
+       81  
+       82 +  // Only one pointer drives the rotation at a time (first poi
+          +nter wins).                                                   
+       83 +  let activePointerId: number | null = null                   
+       84 +  let lastX = 0                                               
+       85 +  let lastY = 0                                               
+       86 +                                                              
+       87 +  const onPointerDown = (event: PointerEvent): void => {      
+       88 +    if (activePointerId !== null) return                      
+       89 +    if (event.pointerType === 'mouse' && event.button !== 0) r
+          +eturn                                                         
+       90 +    activePointerId = event.pointerId                         
+       91 +    lastX = event.clientX                                     
+       92 +    lastY = event.clientY                                     
+       93 +    capturePointer(canvas, event.pointerId)                   
+       94 +  }                                                           
+       95 +                                                              
+       96 +  const onPointerMove = (event: PointerEvent): void => {      
+       97 +    if (event.pointerId !== activePointerId) return           
+       98 +    orientation = applyDrag(orientation, event.clientX - lastX
+          +, event.clientY - lastY)                                      
+       99 +    lastX = event.clientX                                     
+      100 +    lastY = event.clientY                                     
+      101 +  }                                                           
+      102 +                                                              
+      103 +  const endDrag = (event: PointerEvent): void => {            
+      104 +    if (event.pointerId !== activePointerId) return           
+      105 +    activePointerId = null                                    
+      106 +  }                                                           
+      107 +                                                              
+      108 +  canvas.addEventListener('pointerdown', onPointerDown)       
+      109 +  canvas.addEventListener('pointermove', onPointerMove)       
+      110 +  canvas.addEventListener('pointerup', endDrag)               
+      111 +  canvas.addEventListener('pointercancel', endDrag)           
+      112 +  canvas.addEventListener('lostpointercapture', endDrag)      
+      113 +                                                              
+      114    const resizeObserver = new ResizeObserver(resize)
+      115    resizeObserver.observe(wrapper)
+      116  
+  ⎿  PostToolUse:Edit hook returned blocking error
+  ⎿  [node "$CLAUDE_PROJECT_DIR/scripts/agent-hook-check.mjs"]: [hook] npm run 
+     typecheck failed:
+
+     > rotating-cube@0.0.1 typecheck
+     > tsc --noEmit
+
+     src/cube/createCubeScene.ts(93,5): error TS2304: Cannot find name 
+     'capturePointer'.
+     src/cube/createCubeScene.ts(98,5): error TS2588: Cannot assign to 
+     'orientation' because it is a constant.
+     src/cube/createCubeScene.ts(98,19): error TS2304: Cannot find name 
+     'applyDrag'.
+
+● Update(src\cube\createCubeScene.ts)
+  ⎿  Added 1 line, removed 1 line
+      47    light.position.set(3, 4, 5)
+      48    scene.add(light)
+      49  
+      50 -  const orientation: Orientation = INITIAL_ORIENTATION         
+      50 +  let orientation: Orientation = INITIAL_ORIENTATION           
+      51  
+      52    const resize = (): void => {
+      53      const width = Math.max(wrapper.clientWidth, 1)
+  ⎿  PostToolUse:Edit hook returned blocking error
+  ⎿  [node "$CLAUDE_PROJECT_DIR/scripts/agent-hook-check.mjs"]: [hook] npm run 
+     typecheck failed:
+
+     > rotating-cube@0.0.1 typecheck
+     > tsc --noEmit
+
+     src/cube/createCubeScene.ts(93,5): error TS2304: Cannot find name 
+     'capturePointer'.
+     src/cube/createCubeScene.ts(98,19): error TS2304: Cannot find name 
+     'applyDrag'.
+
+● Update(src\cube\createCubeScene.ts)
+  ⎿  Added 5 lines
+      121      dispose(): void {
+      122        cancelAnimationFrame(frame)
+      123        resizeObserver.disconnect()
+      124 +      canvas.removeEventListener('pointerdown', onPointerDown)
+      125 +      canvas.removeEventListener('pointermove', onPointerMove)
+      126 +      canvas.removeEventListener('pointerup', endDrag)        
+      127 +      canvas.removeEventListener('pointercancel', endDrag)    
+      128 +      canvas.removeEventListener('lostpointercapture', endDrag
+          +)                                                             
+      129        geometry.dispose()
+      130        material.dispose()
+      131        edgesGeometry.dispose()
+  ⎿  PostToolUse:Edit hook returned blocking error
+  ⎿  [node "$CLAUDE_PROJECT_DIR/scripts/agent-hook-check.mjs"]: [hook] npm run 
+     typecheck failed:
+
+     > rotating-cube@0.0.1 typecheck
+     > tsc --noEmit
+
+     src/cube/createCubeScene.ts(93,5): error TS2304: Cannot find name 
+     'capturePointer'.
+     src/cube/createCubeScene.ts(98,19): error TS2304: Cannot find name 
+     'applyDrag'.
+
+● Update(src\cube\createCubeScene.ts)
+  ⎿  Added 1 line, removed 1 line
+      11    Scene,
+      12    WebGLRenderer,
+      13  } from 'three'
+      14 -import { formatDegrees, INITIAL_ORIENTATION, type Orientation }
+         - from './rotation'                                             
+      14 +import { applyDrag, formatDegrees, INITIAL_ORIENTATION, type Or
+         +ientation } from './rotation'                                  
+      15  
+      16  export interface CubeScene {
+      17    dispose(): void
+  ⎿  PostToolUse:Edit hook returned blocking error
+  ⎿  [node "$CLAUDE_PROJECT_DIR/scripts/agent-hook-check.mjs"]: [hook] npm run 
+     typecheck failed:
+
+     > rotating-cube@0.0.1 typecheck
+     > tsc --noEmit
+
+     src/cube/createCubeScene.ts(93,5): error TS2304: Cannot find name 
+     'capturePointer'.
+
+● Update(src\cube\createCubeScene.ts)
+  ⎿  Added 17 lines
+      21  const DEG_TO_RAD = Math.PI / 180
+      22  
+      23  /**
+      24 + * Keeps a drag alive when the pointer leaves the canvas (FR-4)
+         +.                                                              
+      25 + *                                                             
+      26 + * `setPointerCapture` throws `NotFoundError` when the pointer 
+         +id is not an active                                            
+      27 + * pointer. That cannot happen for real input, but the E2E touc
+         +h tests dispatch                                               
+      28 + * synthetic PointerEvents (Playwright cannot produce touch poi
+         +nters in Firefox),                                             
+      29 + * which have no active pointer. Only that error is ignored; an
+         +ything else is                                                 
+      30 + * rethrown. Real capture is verified by AC-14 with Playwright'
+         +s mouse.                                                       
+      31 + */                                                            
+      32 +function capturePointer(element: Element, pointerId: number): v
+         +oid {                                                          
+      33 +  try {                                                        
+      34 +    element.setPointerCapture(pointerId)                       
+      35 +  } catch (error) {                                            
+      36 +    if (!(error instanceof DOMException && error.name === 'NotF
+         +oundError')) throw error                                       
+      37 +  }                                                            
+      38 +}                                                              
+      39 +                                                               
+      40 +/**                                                            
+      41   * Creates the WebGL canvas inside `wrapper` and starts the ren
+          der loop.
+      42   * The cube mesh is rotated; the camera never moves for user in
+          teraction.
+      43   */
+
+● Bash(npm run check 2>&1 | grep -E "passed|failed|✘|error|Error" ; echo
+      exit=${PIPESTATUS[0]})
+  ⎿   Test Files  2 passed (2)
+           Tests  18 passed (18)
+       ✓  15 [chromium] › e2e\scene.test.ts:28:1 › AC-13: no console errors
+     … +5 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Перевірка пройшла успішно — усі 30 e2e-тестів зелені, проміжні блоки хука
+  зникли після моїх правок. Тепер запускаю spec-reviewer на T4. · summary
+
+● spec-reviewer(Review T4 diff against spec)
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Чекаю на рев'ю T4.
+
+✻ Crunched for 4m 20s · done 1:58 PM
+› Message from spec-reviewer
+  C:\Users\IrynaPolchaninova\Projects\rotating-cube\e2e\drag.test.ts:136-145 —
+  Low severity. The touch variant of the AC-12 test asserts only the final
+  `data-cube-rx` ('-90.0'). It never checks that rx stays in [-90, 90] during
+  the drag, because the whole drag is dispatched in one synchronous
+  `page.evaluate`. The mouse variant does check each step. The final value does
+  show the clamp works, so this is acceptable but weaker than the "never
+  produces" wording in AC-12. — AC-12
+
+  I checked the other points you listed and found no violations:
+  - **Mesh, not camera:** the drag handlers only update `orientation`.
+  `render()` applies it to `cube.rotation`, and the camera position changes only
+  on resize. — FR-2, spec §7.5
+  - **OrbitControls:** none imported. — NFR-8
+  - **Pointer events:** `pointerdown`, `pointermove`, `pointerup`,
+  `pointercancel` and `lostpointercapture` are handled on the canvas, with a
+  single active `pointerId` and a mouse-button-0 filter. Pointer capture is set
+  on `pointerdown`, and drags that start outside the canvas are ignored.
+  Listeners are removed in `dispose`. — FR-3, FR-4, A-4
+  - **AC IDs and test integrity:** test names carry AC-4, AC-5, AC-6, AC-7 and
+  AC-12. Assertions use auto-retrying `expect(...).toHaveAttribute`. Nothing is
+  skipped or weakened, and I found no `ts-ignore`, `eslint-disable` or `any`.
+  All text is English. — CLAUDE.md rules
+  - **Touch simulation:** synthetic `PointerEvent`s with `pointerType: 'touch'`
+  match the spec's wording for the touch ACs. — AC-6, AC-7, spec §3
+  - **`capturePointer` try/catch:** it is justified and narrowly scoped.
+    - It catches only `DOMException` with `name === 'NotFoundError'` and
+  rethrows everything else.
+    - The comment explains why, and it points to AC-14 for verifying real
+  capture with the mouse.
+    - Synthetic pointer ids have no active pointer, so `setPointerCapture` would
+  otherwise throw in the touch tests.
+    - Real input cannot trigger it, so there is no behaviour change for users.
+
+● Низьку знахідку (touch AC-12 не перевіряє межі під час drag) виправляю:
+  розбиваю touch-drag на окремі події, щоб семплувати rx на кожному кроці.
+
+● Update(e2e\drag.test.ts)
+  ⎿  Added 35 lines, removed 27 lines
+      31   * canvas. Playwright's mouse API cannot produce touch pointers
+          , so real touch
+      32   * hardware is covered by the manual check only (spec §3, §7.3)
+          .
+      33   */
+      34 -async function touchDrag(                                      
+      34 +async function fireTouch(                                      
+      35    page: Page,
+      36 -  start: { x: number; y: number },                             
+      37 -  dx: number,                                                  
+      38 -  dy: number,                                                  
+      39 -  steps = 10,                                                  
+      36 +  type: 'pointerdown' | 'pointermove' | 'pointerup',           
+      37 +  x: number,                                                   
+      38 +  y: number,                                                   
+      39  ): Promise<void> {
+      40    await page.evaluate(
+      42 -    ({ start, dx, dy, steps }) => {                            
+      41 +    ({ type, x, y }) => {                                      
+      42        const canvas = document.querySelector('div[data-testid="c
+          ube-scene"] canvas')
+      43        if (!canvas) throw new Error('canvas not found')
+      45 -      const fire = (type: string, x: number, y: number): void =
+         -> {                                                            
+      46 -        canvas.dispatchEvent(                                  
+      47 -          new PointerEvent(type, {                             
+      48 -            pointerId: 7,                                      
+      49 -            pointerType: 'touch',                              
+      50 -            isPrimary: true,                                   
+      51 -            button: 0,                                         
+      52 -            buttons: type === 'pointerup' ? 0 : 1,             
+      53 -            clientX: x,                                        
+      54 -            clientY: y,                                        
+      55 -            bubbles: true,                                     
+      56 -            cancelable: true,                                  
+      57 -          }),                                                  
+      58 -        )                                                      
+      59 -      }                                                        
+      60 -      fire('pointerdown', start.x, start.y)                    
+      61 -      for (let i = 1; i <= steps; i++) {                       
+      62 -        fire('pointermove', start.x + (dx * i) / steps, start.y
+         - + (dy * i) / steps)                                           
+      63 -      }                                                        
+      64 -      fire('pointerup', start.x + dx, start.y + dy)            
+      44 +      canvas.dispatchEvent(                                    
+      45 +        new PointerEvent(type, {                               
+      46 +          pointerId: 7,                                        
+      47 +          pointerType: 'touch',                                
+      48 +          isPrimary: true,                                     
+      49 +          button: 0,                                           
+      50 +          buttons: type === 'pointerup' ? 0 : 1,               
+      51 +          clientX: x,                                          
+      52 +          clientY: y,                                          
+      53 +          bubbles: true,                                       
+      54 +          cancelable: true,                                    
+      55 +        }),                                                    
+      56 +      )                                                        
+      57      },
+      66 -    { start, dx, dy, steps },                                  
+      58 +    { type, x, y },                                            
+      59    )
+      60  }
+      61  
+      62 +async function touchDrag(                                      
+      63 +  page: Page,                                                  
+      64 +  start: { x: number; y: number },                             
+      65 +  dx: number,                                                  
+      66 +  dy: number,                                                  
+      67 +  steps = 10,                                                  
+      68 +  onStep?: () => Promise<void>,                                
+      69 +): Promise<void> {                                             
+      70 +  await fireTouch(page, 'pointerdown', start.x, start.y)       
+      71 +  for (let i = 1; i <= steps; i++) {                           
+      72 +    await fireTouch(page, 'pointermove', start.x + (dx * i) / s
+         +teps, start.y + (dy * i) / steps)                              
+      73 +    await onStep?.()                                           
+      74 +  }                                                            
+      75 +  await fireTouch(page, 'pointerup', start.x + dx, start.y + dy
+         +)                                                              
+      76 +}                                                              
+      77 +                                                               
+      78  test('AC-4: horizontal mouse drag of 50 px changes ry', async (
+          { page }) => {
+      79    await page.goto('/')
+      80    const scene = sceneOf(page)
+
+● Update(e2e\drag.test.ts)
+  ⎿  Added 5 lines, removed 1 line
+      147    const scene = sceneOf(page)
+      148    await expect(scene).toHaveAttribute('data-cube-rx', INITIAL.
+           rx)
+      149  
+      150 -  await touchDrag(page, { x: 640, y: 1060 }, 0, -1000, 20)    
+      150 +  await touchDrag(page, { x: 640, y: 1060 }, 0, -1000, 20, asy
+          +nc () => {                                                    
+      151 +    const rx = Number(await scene.getAttribute('data-cube-rx')
+          +)                                                             
+      152 +    expect(rx).toBeGreaterThanOrEqual(-90)                    
+      153 +    expect(rx).toBeLessThanOrEqual(90)                        
+      154 +  })                                                          
+      155  
+      156    await expect(scene).toHaveAttribute('data-cube-rx', '-90.0')
+      157  })
+
+● Bash(npm run check 2>&1 | grep -E "passed|failed|✘|error|Error" ; echo
+      exit=${PIPESTATUS[0]})
+  ⎿   Test Files  2 passed (2)
+           Tests  18 passed (18)
+       ✓  15 [chromium] › e2e\scene.test.ts:28:1 › AC-13: no console errors
+     … +5 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Agent "Review T4 diff against spec" finished · 15s
+
+● Bash(cat >> docs/evidence/phase-4.md <<'EOF'…)
+  ⎿  warning: in the working copy of 'docs/evidence/phase-4.md', LF will be
+      replaced by CRLF the next time Git touches it
+     warning: in the working copy of 'src/cube/createCubeScene.ts', LF will
+     … +6 lines (ctrl+o to expand)
+
+● T4 закомічено. T5: Reset. Спершу виношу спільні e2e-хелпери (щоб не дублювати
+  у reset/AC-14), потім тести.
+
+● Write(e2e\helpers.ts)
+  ⎿  Wrote 76 lines to e2e\helpers.ts
+       1 import type { Locator, Page } from '@playwright/test'
+       2 
+       3 export const INITIAL = { rx: '25.0', ry: '-45.0', rz: '0.0' }
+       5 export function sceneOf(page: Page): Locator {
+       6   return page.locator('div[data-testid="cube-scene"]')
+       7 }
+       8 
+         ber; y: number }> {
+      10   const box = await page.locator('div[data-testid="cube-scene"] 
+         canvas').boundingBox()
+     … +72 lines (ctrl+o to expand)
+
+● Bash(n=$(grep -n "^test('AC-4" e2e/drag.test.ts | cut -d: -f1) && { printf
+      "import { test, expect } from '@playwright/test'\nimport { INITIAL,
+      canvasCentre, mouseDra…)
+  ⎿  import { test, expect } from '@playwright/test'
+     import { INITIAL, canvasCentre, mouseDrag, sceneOf, touchDrag } from '
+     ./helpers'
+     … +8 lines (ctrl+o to expand)
+
+● Тепер тести Reset (red до реалізації).
+
+● Write(e2e\reset.test.ts)
+  ⎿  Wrote 54 lines to e2e\reset.test.ts
+      1 import { test, expect } from '@playwright/test'
+      2 import { INITIAL, canvasCentre, mouseDrag, sceneOf, touchDrag } f
+        rom './helpers'
+      4 test('AC-8: reset button is visible and enabled on load', async (
+        { page }) => {
+      5   await page.goto('/')
+      6   const button = page.locator('button[data-testid="reset-button"]
+      7   await expect(button).toBeVisible()
+      8   await expect(button).toBeEnabled()
+      9 })
+     … +54 lines (ctrl+o to expand)
+
+● Bash(npx playwright test e2e/reset.test.ts e2e/drag.test.ts --reporter=list
+      2>&1 | grep -E "✓|✘|passed|failed" ; echo exit=${PIPESTATUS[0]})
+  ⎿    ✓   1 [chromium] › e2e\drag.test.ts:4:1 › AC-4: horizontal mouse dra
+     g of 50 px changes ry (1.8s)
+       ✓   5 [chromium] › e2e\drag.test.ts:16:1 › AC-5: vertical mouse drag
+     … +29 lines (ctrl+o to expand)
+  ⎿  (timeout 6m 40s)
+
+● Red підтверджено (reset-тести падають, відрефакторені drag-тести зелені).
+  Реалізую reset() і кнопку.
+
+● Update(src\cube\createCubeScene.ts)
+  ⎿  Added 2 lines
+      14  import { applyDrag, formatDegrees, INITIAL_ORIENTATION, type Or
+          ientation } from './rotation'
+      15  
+      16  export interface CubeScene {
+      17 +  /** Restores the initial orientation immediately, without ani
+         +mation (FR-5). */                                              
+      18 +  reset(): void                                                
+      19    dispose(): void
+      20  }
+      21  
+  ⎿  PostToolUse:Edit hook returned blocking error
+  ⎿  [node "$CLAUDE_PROJECT_DIR/scripts/agent-hook-check.mjs"]: [hook] npm run 
+     typecheck failed:
+
+     > rotating-cube@0.0.1 typecheck
+     > tsc --noEmit
+
+     src/cube/createCubeScene.ts(139,3): error TS2741: Property 'reset' is 
+     missing in type '{ dispose(): void; }' but required in type 'CubeScene'.
+
+● Update(src\cube\createCubeScene.ts)
+  ⎿  Added 3 lines
+      137    loop()
+      138  
+      139    return {
+      140 +    reset(): void {                                           
+      141 +      orientation = resetOrientation()                        
+      142 +    },                                                        
+      143      dispose(): void {
+      144        cancelAnimationFrame(frame)
+      145        resizeObserver.disconnect()
+  ⎿  PostToolUse:Edit hook returned blocking error
+  ⎿  [node "$CLAUDE_PROJECT_DIR/scripts/agent-hook-check.mjs"]: [hook] npm run 
+     typecheck failed:
+
+     > rotating-cube@0.0.1 typecheck
+     > tsc --noEmit
+
+     src/cube/createCubeScene.ts(141,21): error TS2552: Cannot find name 
+     'resetOrientation'. Did you mean 'orientation'?
+
+● Update(src\cube\createCubeScene.ts)
+  ⎿  Added 7 lines, removed 1 line
+      11    Scene,
+      12    WebGLRenderer,
+      13  } from 'three'
+      14 -import { applyDrag, formatDegrees, INITIAL_ORIENTATION, type Or
+         -ientation } from './rotation'                                  
+      14 +import {                                                       
+      15 +  applyDrag,                                                   
+      16 +  formatDegrees,                                               
+      17 +  INITIAL_ORIENTATION,                                         
+      18 +  resetOrientation,                                            
+      19 +  type Orientation,                                            
+      20 +} from './rotation'                                            
+      21  
+      22  export interface CubeScene {
+      23    /** Restores the initial orientation immediately, without ani
+          mation (FR-5). */
+
+● Write(src\CubeScene.tsx)
+  ⎿  Added 20 lines, removed 3 lines
+       1 -import { useEffect, useRef } from 'react'                      
+       2 -import { createCubeScene } from './cube/createCubeScene'       
+       1 +import { useEffect, useImperativeHandle, useRef, type Ref } fro
+         +m 'react'                                                      
+       2 +import { createCubeScene, type CubeScene as CubeSceneApi } from
+         + './cube/createCubeScene'                                      
+       3  
+       4 -export default function CubeScene() {                          
+       4 +export interface CubeSceneHandle {                             
+       5 +  reset(): void                                                
+       6 +}                                                              
+       7 +                                                               
+       8 +interface CubeSceneProps {                                     
+       9 +  ref?: Ref<CubeSceneHandle>                                   
+      10 +}                                                              
+      11 +                                                               
+      12 +export default function CubeScene({ ref }: CubeSceneProps) {   
+      13    const wrapperRef = useRef<HTMLDivElement>(null)
+      14 +  const sceneRef = useRef<CubeSceneApi | null>(null)           
+      15  
+      16 +  useImperativeHandle(ref, () => ({                            
+      17 +    reset(): void {                                            
+      18 +      sceneRef.current?.reset()                                
+      19 +    },                                                         
+      20 +  }), [])                                                      
+      21 +                                                               
+      22    useEffect(() => {
+      23      const wrapper = wrapperRef.current
+      24      if (!wrapper) return
+      25      const cubeScene = createCubeScene(wrapper)
+      26 +    sceneRef.current = cubeScene                               
+      27      return () => {
+      28        cubeScene.dispose()
+      29 +      sceneRef.current = null                                  
+      30      }
+      31    }, [])
+      32  
+
+● Write(src\App.tsx)
+  ⎿  Added 17 lines, removed 2 lines
+       1 -import CubeScene from './CubeScene'                            
+       1 +import { useRef } from 'react'                                 
+       2 +import CubeScene, { type CubeSceneHandle } from './CubeScene'  
+       3  
+       4  export default function App() {
+       4 -  return <CubeScene />                                         
+       5 +  const sceneRef = useRef<CubeSceneHandle>(null)               
+       6 +                                                               
+       7 +  return (                                                     
+       8 +    <>                                                         
+       9 +      <CubeScene ref={sceneRef} />                             
+      10 +      <button                                                  
+      11 +        type="button"                                          
+      12 +        className="reset-button"                               
+      13 +        data-testid="reset-button"                             
+      14 +        onClick={() => sceneRef.current?.reset()}              
+      15 +      >                                                        
+      16 +        Reset                                                  
+      17 +      </button>                                                
+      18 +    </>                                                        
+      19 +  )                                                            
+      20  }
+
+● Bash(cat >> src/index.css <<'EOF'…)
+  ⎿   Test Files  2 passed (2)
+           Tests  18 passed (18)
+       ✓  18 [chromium] › e2e\scene.test.ts:28:1 › AC-13: no console errors
+     … +5 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● check зелений (38 e2e). Спершу reviewer, потім evidence і коміт.
+
+● spec-reviewer(Review T5 diff against spec)
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Чекаю на рев'ю T5.
+✻ Brewed for 5m 35s · done 2:04 PM
+
+› Message from spec-reviewer
+  No violations found.
+
+  I checked these against FR-5, AC-8, AC-9, the testability contract and the
+  CLAUDE.md rules:
+  - **Mesh, not camera:** `reset()` only sets the `orientation` state, and
+  `render()` applies it to `cube.rotation`. There is no OrbitControls import.
+  - **FR-5:** reset is immediate, with no animation. The button is visible, and
+  `data-testid="reset-button"` is on a `<button>`.
+  - **AC-8 and AC-9:** the e2e tests cover both. Test names carry AC IDs, and
+  assertions use auto-retrying `expect`.
+  - **English only:** all changed files are in English, and there is no
+  `@ts-ignore`, `eslint-disable` or `any`.
+
+  I couldn't run git here, so I couldn't diff `e2e/drag.test.ts` against its
+  previous version. In the current file the tests are all present, uncommented
+  and unskipped: AC-4, AC-5, AC-6, AC-7 and AC-12 (mouse and touch). Their
+  assertions are intact, and the shared helpers in `e2e/helpers.ts` look
+  equivalent in behaviour. I could not confirm the file kept the same set of
+  tests and assertions as before.
+
+● Reviewer не міг порівняти drag.test.ts з попередньою версією — перевіряю сам
+  через git.
+
+● Bash(echo "before:"; git show HEAD:e2e/drag.test.ts | grep -E
+      "^test\(|expect\(" | sort | uniq -c | sort -rn | head -30 > "$TEMP/b.txt";
+      git show HEAD:e2e/drag.test.…)
+  ⎿  before:
+     6
+     after:
+     … +2 lines (ctrl+o to expand)
+
+● Agent "Review T5 diff against spec" finished · 22s
+
+● Підтверджено: 6 тестів до і після, assertions ідентичні. Evidence і коміт T5.
+
+● Bash(cat >> docs/evidence/phase-4.md <<'EOF'…)
+  ⎿  warning: in the working copy of 'docs/evidence/phase-4.md', LF will be
+      replaced by CRLF the next time Git touches it
+     warning: in the working copy of 'e2e/drag.test.ts', LF will be replace
+     … +12 lines (ctrl+o to expand)
+
+● Т5 закомічено. Переходжу до Т6 — тесту AC-14; оскільки тест має реально
+  перевіряти pointer capture, після виходу на кнопку продовжу рух усередині неї
+  і вимагатиму подальшої зміни ry. · summary
+
+● Write(e2e\capture.test.ts)
+  ⎿  Wrote 30 lines to e2e\capture.test.ts
+       1 import { test, expect } from '@playwright/test'
+       2 import { INITIAL, canvasCentre, sceneOf } from './helpers'
+       4 test('AC-14: drag over reset button keeps rotating and does not 
+         reset', async ({ page }) => {
+       5   await page.goto('/')
+       7   const button = page.locator('button[data-testid="reset-button"
+         ]')
+       8   await expect(scene).toHaveAttribute('data-cube-ry', INITIAL.ry
+       9 
+      10   const box = await button.boundingBox()
+     … +28 lines (ctrl+o to expand)
+
+● Bash(npx playwright test e2e/capture.test.ts --reporter=list 2>&1 | grep -E
+      "✓|✘|passed|failed|Error" ; echo exit=${PIPESTATUS[0]})
+  ⎿    ✓  1 [chromium] › e2e\capture.test.ts:4:1 › AC-14: drag over reset b
+     utton keeps rotating and does not reset (1.0s)
+       ✓  2 [firefox] › e2e\capture.test.ts:4:1 › AC-14: drag over reset bu
+     … +3 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● AC-14 зелений «на вході» (очікувано: capture вже є з T4). Тепер мутація M1:
+  вимикаю setPointerCapture — тест має впасти.
+
+● Update(src\cube\createCubeScene.ts)
+  ⎿  Added 1 line, removed 1 line
+      39   */
+      40  function capturePointer(element: Element, pointerId: number): v
+          oid {
+      41    try {
+      42 -    element.setPointerCapture(pointerId)                       
+      42 +    if (pointerId < 0) element.setPointerCapture(pointerId)    
+      43    } catch (error) {
+      44      if (!(error instanceof DOMException && error.name === 'NotF
+          oundError')) throw error
+      45    }
+
+● Bash(npx playwright test e2e/capture.test.ts --reporter=list 2>&1 | grep -E
+      "✓|✘|passed|failed|Error" ; echo exit=${PIPESTATUS[0]})
+  ⎿    ✘  2 [chromium] › e2e\capture.test.ts:4:1 › AC-14: drag over reset b
+     utton keeps rotating and does not reset (6.0s)
+       ✘  1 [firefox] › e2e\capture.test.ts:4:1 › AC-14: drag over reset bu
+     … +9 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● M1 зловлено в обох браузерах. Відкочую і роблю M2 (прибрати touch-action →
+  AC-15).
+
+● Update(src\cube\createCubeScene.ts)
+  ⎿  Added 1 line, removed 1 line
+      39   */
+      40  function capturePointer(element: Element, pointerId: number): v
+          oid {
+      41    try {
+      42 -    if (pointerId < 0) element.setPointerCapture(pointerId)    
+      42 +    element.setPointerCapture(pointerId)                       
+      43    } catch (error) {
+      44      if (!(error instanceof DOMException && error.name === 'NotF
+          oundError')) throw error
+      45    }
+
+● Update(src\index.css)
+  ⎿  Added 1 line, removed 1 line
+      17    display: block;
+      18    width: 100%;
+      19    height: 100%;
+      20 -  touch-action: none;                                          
+      20 +  touch-action: auto;                                          
+      21  }
+      22  
+      23  .reset-button {
+
+● Bash(npx playwright test e2e/scene.test.ts -g "AC-15" --reporter=list 2>&1 |
+      grep -E "✓|✘|passed|failed|Expected|Received" ; echo
+      exit=${PIPESTATUS[0]})
+  ⎿    ✘  1 [chromium] › e2e\scene.test.ts:46:1 › AC-15: canvas computed to
+     uch-action is none (917ms)
+       ✘  2 [firefox] › e2e\scene.test.ts:46:1 › AC-15: canvas computed tou
+     … +7 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● M2 зловлено. Відкочую і M3: прибрати clamp (clampX → identity) — мають впасти
+  і unit, і e2e AC-12.
+
+● Update(src\index.css)
+  ⎿  Added 1 line, removed 1 line
+      17    display: block;
+      18    width: 100%;
+      19    height: 100%;
+      20 -  touch-action: auto;                                          
+      20 +  touch-action: none;                                          
+      21  }
+      22  
+      23  .reset-button {
+
+● Update(src\cube\rotation.ts)
+  ⎿  Added 1 line, removed 1 line
+      13  
+      14  /** Clamps X rotation to the closed range [-90, 90]. */
+      15  export function clampX(degrees: number): number {
+      16 -  return Math.min(MAX_X, Math.max(-MAX_X, degrees))            
+      16 +  return degrees                                               
+      17  }
+      18  
+      19  /** Normalises Y rotation to the half-open range (-180, 180]. *
+          /
+  ⎿  PostToolUse:Edit hook returned blocking error
+  ⎿  [node "$CLAUDE_PROJECT_DIR/scripts/agent-hook-check.mjs"]: [hook] npm run 
+     typecheck failed:
+
+     > rotating-cube@0.0.1 typecheck
+     > tsc --noEmit
+
+     src/cube/rotation.ts(12,7): error TS6133: 'MAX_X' is declared but its value
+     is never read.
+
+     [hook] npm run lint failed:
+
+     > rotating-cube@0.0.1 lint
+     > eslint . --max-warnings 0
+
+
+     C:\Users\IrynaPolchaninova\Projects\rotating-cube\src\cube\rotation.ts
+       12:7  error  'MAX_X' is assigned a value but never used  
+     @typescript-eslint/no-unused-vars
+
+     ✖ 1 problem (1 error, 0 warnings)
+
+● Bash(echo UNIT; npx vitest run 2>&1 | grep -E "FAIL|Tests " | head; echo E2E;
+      npx playwright test e2e/drag.test.ts -g "AC-12" --reporter=list 2>&1 |
+      grep -E "✓|✘|pas…)
+  ⎿  UNIT
+     ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+      FAIL  src/cube/rotation.test.ts > applyDrag > AC-12: a very large ver
+     … +14 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● M3 зловлено (2 unit + 4 e2e; хук також відреагував на мутацію). Відкочую.
+
+● Update(src\cube\rotation.ts)
+  ⎿  Added 1 line, removed 1 line
+      13  
+      14  /** Clamps X rotation to the closed range [-90, 90]. */
+      15  export function clampX(degrees: number): number {
+      16 -  return degrees                                               
+      16 +  return Math.min(MAX_X, Math.max(-MAX_X, degrees))            
+      17  }
+      18  
+      19  /** Normalises Y rotation to the half-open range (-180, 180]. *
+          /
+
+● Bash(git status --short && git diff --stat -- src && echo "--- src diff above
+      should be empty ---" && npm run check 2>&1 | grep -E
+      "passed|failed|✘|error|Error"; ech…)
+  ⎿  ?? e2e/capture.test.ts
+     --- src diff above should be empty ---
+      Test Files  2 passed (2)
+     … +7 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+● Мутації відкочено: у src/ порожній diff, лише новий e2e/capture.test.ts; check
+  зелений (40 e2e). Reviewer:
+
+● spec-reviewer(Review T6 diff against spec)
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Чекаю на рев'ю T6.
+
+✻ Sautéed for 3m 43s · done 2:08 PM
+
+› Message from spec-reviewer
+  No violations found.
+
+● Bash(cat >> docs/evidence/phase-4.md <<'EOF'…)
+  ⎿  warning: in the working copy of 'docs/evidence/phase-4.md', LF will be
+      replaced by CRLF the next time Git touches it
+     warning: in the working copy of 'e2e/capture.test.ts', LF will be repl
+     … +3 lines (ctrl+o to expand)
+
+● Agent "Review T6 diff against spec" finished · 12s
+
+● T6 закомічено. T7: фінальний check на чистому дереві та spec-reviewer на
+  сукупний diff Phase 4.
+
+● spec-reviewer(Review cumulative Phase 4 diff)
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Bash(git status --short && npm run check 2>&1 | grep -E "Tests
+      |passed|failed|✘|error|Error"; echo exit=${PIPESTATUS[0]})
+  ⎿   Test Files  2 passed (2)
+           Tests  18 passed (18)
+       ✓  18 [chromium] › e2e\scene.test.ts:28:1 › AC-13: no console errors
+     … +5 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+› Message from spec-reviewer
+  No violations found.
+
+  Checked end to end:
+  - Rotation is applied to the cube mesh (`cube.rotation.set` in render). The
+  camera is only repositioned in `resize`, never from user input. There is no
+  OrbitControls import in the source, and the ESLint rule in `eslint.config.js`
+  covers all four required patterns (NFR-8).
+  - Y normalisation, X clamp and Z always 0 all hold, because every pointer move
+  goes through `applyDrag`. Reset returns a fresh copy of the initial
+  orientation.
+  - AC-1 to AC-15 each have at least one E2E test whose name starts with the AC
+  ID (`scene.test.ts`, `resize.test.ts`, `drag.test.ts`, `reset.test.ts`,
+  `capture.test.ts`). `FR-6` is an extra test and is fine.
+  - Unit tests cover all five rows of the §7.1 table. Delta-to-degrees is
+  covered under AC-4 to AC-7, proportionality under AC-4 and AC-5, clamp under
+  AC-12, normalisation under AC-4, and reset under AC-9.
+  - No tests are skipped, weakened or commented out. I found no `@ts-ignore`,
+  `eslint-disable` or `any`. All files are in English.
+
+  ACs I consider only weakly covered:
+  - **AC-6 and AC-7 (touch):** `helpers.ts` fires synthetic `PointerEvent`s.
+  `capturePointer` in `createCubeScene.ts` swallows `NotFoundError`, so real
+  pointer capture is never exercised for touch. This is allowed by spec §3, and
+  real-device touch is a manual check.
+  - **AC-12:** `drag.test.ts:50-83` has no test where the pointer is below the
+  clamp and comes back, so reversing out of the clamp is not tested end to end.
+  Clamp boundaries are only unit-tested.
+  - **Y normalisation end to end:** no E2E or integration test drags far enough
+  for `ry` to wrap past ±180. It is covered only by the `normaliseY` unit tests.
+  The `applyDrag` tests never combine a large `dx` with wrap-around, so the
+  `applyDrag` to `normaliseY` wiring is untested (`rotation.test.ts:40-84`).
+  - **Z always 0 end to end:** `rz` is asserted unchanged only after the AC-4
+  and AC-5 mouse drags (`drag.test.ts:13,25`), not after touch drags or the
+  AC-12 drags.
+  - **AC-13:** it only observes console and page errors during load, so it can't
+  catch errors raised later, for example during a drag. That matches the spec
+  wording.
+  - **AC-14:** the test is sound, but it can't separate "pointer capture worked"
+  from "the canvas still received the moves by chance". It does check that `ry`
+  keeps changing while the pointer is over the button, which is the right
+  signal.
+  - **`formatDegrees`:** a value such as -179.96 would display as "-180.0",
+  outside (-180, 180]. At 0.5 deg/px with integer pixel deltas this can't happen
+  in practice, so I'm noting it as a latent edge case, not a violation.
+
+● Agent "Review cumulative Phase 4 diff" finished · 29s
+
+● Ревʼю не виявило порушень, але є слабкі місця — закриваю два з них
+  unit-тестами (wiring applyDrag→normaliseY та вихід із clamp), решту фіксую як
+  відомі обмеження. · summary
+
+● Update(src\cube\rotation.test.ts)
+  ⎿  Added 11 lines
+      76      expect(applyDrag(ORIGIN, 0, -2000).rx).toBe(-90)
+      77    })
+      78  
+      79 +  it('AC-4: a drag past 180 degrees wraps ry through normaliseY
+         +', () => {                                                     
+      80 +    expect(applyDrag({ rx: 0, ry: 170, rz: 0 }, 40, 0).ry).toBe
+         +(-170)                                                         
+      81 +    expect(applyDrag({ rx: 0, ry: -170, rz: 0 }, -40, 0).ry).to
+         +Be(170)                                                        
+      82 +  })                                                           
+      83 +                                                               
+      84 +  it('AC-12: reversing the drag leaves the clamp immediately', 
+         +() => {                                                        
+      85 +    const atLimit = applyDrag(ORIGIN, 0, 2000)                 
+      86 +    expect(atLimit.rx).toBe(90)                                
+      87 +    expect(applyDrag(atLimit, 0, -20).rx).toBe(80)             
+      88 +  })                                                           
+      89 +                                                               
+      90    it('AC-4: does not mutate the input orientation', () => {
+      91      const input = { rx: 1, ry: 2, rz: 0 }
+      92      applyDrag(input, 40, 40)
+
+● Bash(npx vitest run 2>&1 | grep -E "FAIL|Tests "; git log --format='%h %s'
+      5aa48fb..HEAD)
+  ⎿        Tests  20 passed (20)
+     6f3352b test(e2e): verify pointer capture over reset button (AC-14)
+     d66d186 feat(reset): restore initial orientation on button click (AC-8
+     … +8 lines (ctrl+o to expand)
+
+● Тепер T7-документація: evidence (підсумкова таблиця, чесно про ручні
+  перевірки) і docs/quality-gates.md.
+
+● Bash(cat >> docs/evidence/phase-4.md <<'EOF'…)
+  ⎿  no python
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line
+      546  | Pre-commit hook script | `.githooks/pre-commit` | **Implemen
+           ted** — fresh-clone activation unverified |
+      547  | GitHub Actions CI workflow | `.github/workflows/ci.yml` | **
+           Implemented** — verified 2026-10-20; no branch protection |
+      548  | MIT license | `LICENSE` | **Implemented** |
+      549 +| Application (AC-1 – AC-15) | `src/`, `e2e/`, evidence in `do
+          +cs/evidence/phase-4.md` | **Implemented** — automated checks v
+          +erified locally 2026-10-20; manual checks and CI on these comm
+          +its **not yet done** |                                        
+      550  
+      551  ---
+      552  
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line
+      589  | PostToolUse hook (§1) | Type error → exit 2 + diagnostics; f
+           ix → exit 0; lint-only error; `.md` edit runs no check; `.json
+           ` edit runs; missing `file_path` runs | **Passed** (2026-10-19
+           ) |
+      590  | Pre-commit hook (§2) | Staged type error blocks commit; late
+           r commits pass; `git ls-files --eol` LF; `git ls-files -s` `10
+           0755` | **Passed** (2026-10-19). Open: hook execution on a fre
+           sh clone **not verified**. CI shows only that `npm ci` and `pr
+           epare` complete on a clean runner (§2) |
+      591  | Permission guardrail (§5) | Each pattern probed separately; 
+           controls not blocked | **Passed** (2026-10-19). Open: known ga
+           ps listed in §5 (other global git options, `git config core.ho
+           oksPath`, hook-file edits) |
+      592 +| Application, Phase 4 | `npm run check` on a clean tree (20 u
+          +nit tests, 40 e2e in Chromium + Firefox); per-task `spec-revie
+          +wer`; mutation checks: disabling `setPointerCapture` fails AC-
+          +14, `touch-action: auto` fails AC-15, removing the X clamp fai
+          +ls AC-12 (unit and e2e) | **Passed locally** (2026-10-20), det
+          +ails in `docs/evidence/phase-4.md`. Open: manual checks of spe
+          +c §7.3 (appearance, smoothness, viewport fill, real touch devi
+          +ce, NFR-7 in real Chrome/Firefox) **not performed**; CI not ru
+          +n on these commits (not pushed); AC-6/AC-7 use simulated touch
+          + only |                                                       
+      593  | Push confirmation (§5) | `git push origin main` with nothing
+            to push; prompt expected, human declines | **Passed** (2026-1
+           0-20): prompt "Ask rule Bash(git push*) overrides auto mode" a
+           ppeared and was declined. Open: other push forms not probed |
+      594  | Stop hook (§6) | Prototype; dry-run matrix; direct runs; liv
+           e block and halt; no `--dry-run` in settings | **Passed** (202
+           6-10-19) |
+      595  | ESLint block for `scripts/*.mjs` | `--print-config` shows No
+           de globals; seeded errors fail `npm run lint` | **Passed** (20
+           26-10-19) |
+
+● Bash(npm run check 2>&1 | grep -E "Tests |passed|failed|✘|error|Error"; echo
+      exit=${PIPESTATUS[0]})
+  ⎿   Test Files  2 passed (2)
+           Tests  20 passed (20)
+       ✓  17 [chromium] › e2e\scene.test.ts:28:1 › AC-13: no console errors
+     … +5 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Два коміти: unit-тести, потім документація.
+
+● Bash(git add src/cube/rotation.test.ts && git commit -q -m "test(cube): cover
+      ry wrap-around and leaving the X clamp (AC-4, AC-12)…)
+  ⎿  warning: in the working copy of 'src/cube/rotation.test.ts', LF will b
+     e replaced by CRLF the next time Git touches it
+           Tests  20 passed (20)
+     … +8 lines (ctrl+o to expand)
+
+● Phase 4 готова локально: T0–T7 закомічено, нічого не запушено. У дереві чисто,
+  на main 9 комітів попереду origin.
+
+  Перевірено
+  - Останній npm run check пройшов: typecheck, lint, 20 unit-тестів, build, 40
+    e2e (20 у Chromium і 20 у Firefox). Після нього змінилися тільки docs/, тож
+    check не перезапускав.
+  - Усі AC-1…AC-15 мають e2e-тест із ID у назві. Unit-тести покривають таблицю
+    spec §7.1.
+  - spec-reviewer запускався після кожного завдання й на весь код фази, порушень
+    не знайшов. Дрібні знахідки (T3 і T4) я виправив.
+  - Три мутації тести зловили, після кожної я її відкотив:
+    - вимкнений setPointerCapture ламає AC-14;
+    - touch-action: auto ламає AC-15;
+    - прибраний clamp ламає AC-12 (unit і e2e).
+  - Push-guardrail з T0 спрацював: prompt з'явився, ви його відхилили, результат
+    записано в docs/quality-gates.md.
+
+  Чесні застереження
+  - Ручні перевірки зі spec §7.3 я не виконував. Лишається перевірити вигляд
+    куба, плавність, заповнення viewport, справжній touch-пристрій і
+    Chrome/Firefox (NFR-7). У docs/quality-gates.md вони позначені як
+    невиконані.
+  - AC-10 і AC-11 пройшли одразу, ще до реалізації, бо CSS уже тягне canvas за
+    viewport. Червоним був лише мій додатковий FR-6 тест на буфер малювання.
+    AC-14 теж пройшов одразу, тому я перевірив його мутацією.
+  - AC-6 і AC-7 використовують синтетичні touch-події. Для них setPointerCapture
+    обгорнуто в try/catch, який ловить лише NotFoundError, з коментарем у коді.
+    Інших чистих варіантів я не знайшов: Playwright не дає touch-drag у
+    Firefox, а гілка за isTrusted внесла б у продакшн-код логіку під тести.
+    Реальний capture перевіряє AC-14 мишею.
+  - CI на цих комітах не запускався.
+  - У T1 evidence я спершу помилково описав, які 3 тести пройшли в red-запуску.
+    Виправлення в наступному коміті.
+
+  Evidence по кожному завданню та підсумкова таблиця лежать у
+  docs/evidence/phase-4.md.
+
+  Чи можна виконати git push origin main? Без вашого підтвердження не пушу. Я б
+  після push перевірив CI.
+
+✻ Churned for 22m 52s · done 2:10 PM
+
+※ recap: Мета — реалізувати rotating cube за spec (AC-1…AC-15); завдання T0–T7 готові й закомічені локально, `npm run check` зелений, ручні перевірки ще не виконано. Наступний крок — ваше підтвердження на `git push origin main`, щоб запустити CI. (disable recaps in /config)
+
+❯ Manual checks done by me on localhost:                                        
+  - Chrome desktop: cube renders correctly, rotation is smooth, X stays         
+    within ±90°, Reset works, canvas fills the window and follows resize,       
+    no scrollbars.                                                              
+  - Chrome DevTools device emulation: touch drag rotates the cube,              
+    mobile width works.                                                         
+  - Firefox desktop: not checked.                                               
+  - Real touch device: not checked yet (corporate network blocks LAN            
+    access); planned after deployment to GitHub Pages.                          
+    Record these results in docs/quality-gates.md, commit, then push main       
+    to origin and watch CI.                                                     
+
+● Записую ваші результати (лише те, що ви перевірили) у docs/quality-gates.md та
+  evidence.
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      589  | PostToolUse hook (§1) | Type error → exit 2 + diagnostics; f
+           ix → exit 0; lint-only error; `.md` edit runs no check; `.json
+           ` edit runs; missing `file_path` runs | **Passed** (2026-10-19
+           ) |
+      590  | Pre-commit hook (§2) | Staged type error blocks commit; late
+           r commits pass; `git ls-files --eol` LF; `git ls-files -s` `10
+           0755` | **Passed** (2026-10-19). Open: hook execution on a fre
+           sh clone **not verified**. CI shows only that `npm ci` and `pr
+           epare` complete on a clean runner (§2) |
+      591  | Permission guardrail (§5) | Each pattern probed separately; 
+           controls not blocked | **Passed** (2026-10-19). Open: known ga
+           ps listed in §5 (other global git options, `git config core.ho
+           oksPath`, hook-file edits) |
+      592 -| Application, Phase 4 | `npm run check` on a clean tree (20 u
+          -nit tests, 40 e2e in Chromium + Firefox); per-task `spec-revie
+          -wer`; mutation checks: disabling `setPointerCapture` fails AC-
+          -14, `touch-action: auto` fails AC-15, removing the X clamp fai
+          -ls AC-12 (unit and e2e) | **Passed locally** (2026-10-20), det
+          -ails in `docs/evidence/phase-4.md`. Open: manual checks of spe
+          -c §7.3 (appearance, smoothness, viewport fill, real touch devi
+          -ce, NFR-7 in real Chrome/Firefox) **not performed**; CI not ru
+          -n on these commits (not pushed); AC-6/AC-7 use simulated touch
+          - only |                                                       
+      592 +| Application, Phase 4 | `npm run check` on a clean tree (20 u
+          +nit tests, 40 e2e in Chromium + Firefox); per-task `spec-revie
+          +wer`; mutation checks: disabling `setPointerCapture` fails AC-
+          +14, `touch-action: auto` fails AC-15, removing the X clamp fai
+          +ls AC-12 (unit and e2e) | **Passed locally** (2026-10-20), det
+          +ails in `docs/evidence/phase-4.md`. Manual checks of spec §7.3
+          + are in "Phase 4 manual checks" below. Open: Firefox desktop a
+          +nd a real touch device **not checked**; AC-6/AC-7 use simulate
+          +d touch only |                                                
+      593  | Push confirmation (§5) | `git push origin main` with nothing
+            to push; prompt expected, human declines | **Passed** (2026-1
+           0-20): prompt "Ask rule Bash(git push*) overrides auto mode" a
+           ppeared and was declined. Open: other push forms not probed |
+      594  | Stop hook (§6) | Prototype; dry-run matrix; direct runs; liv
+           e block and halt; no `--dry-run` in settings | **Passed** (202
+           6-10-19) |
+      595  | ESLint block for `scripts/*.mjs` | `--print-config` shows No
+           de globals; seeded errors fail `npm run lint` | **Passed** (20
+           26-10-19) |
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      546  | Pre-commit hook script | `.githooks/pre-commit` | **Implemen
+           ted** — fresh-clone activation unverified |
+      547  | GitHub Actions CI workflow | `.github/workflows/ci.yml` | **
+           Implemented** — verified 2026-10-20; no branch protection |
+      548  | MIT license | `LICENSE` | **Implemented** |
+      549 -| Application (AC-1 – AC-15) | `src/`, `e2e/`, evidence in `do
+          -cs/evidence/phase-4.md` | **Implemented** — automated checks v
+          -erified locally 2026-10-20; manual checks and CI on these comm
+          -its **not yet done** |                                        
+      549 +| Application (AC-1 – AC-15) | `src/`, `e2e/`, evidence in `do
+          +cs/evidence/phase-4.md` | **Implemented** — automated checks v
+          +erified locally 2026-10-20; manual checks partly done (Chrome 
+          +only), see "Phase 4 manual checks" |                          
+      550  
+      551  ---
+      552  
+
+● Bash(cat >> docs/quality-gates.md <<'EOF'…)
+  ⎿  warning: in the working copy of 'docs/evidence/phase-4.md', LF will be
+      replaced by CRLF the next time Git touches it
+     warning: in the working copy of 'docs/quality-gates.md', LF will be re
+     … +2 lines (ctrl+o to expand)
+
+● Закомічено. Тепер push (спрацює ask-правило — потрібне ваше підтвердження).
+
+● Bash(git push origin main 2>&1 | tail -5)
+  ⎿  To https://github.com/IraPolchanin/rotating-cube.git
+        5aa48fb..795832e  main -> main
+
+● Push пройшов (5aa48fb..795832e). Дивлюся CI.
+
+● Bash(sleep 8; gh run list --branch main --limit 1 --json
+      databaseId,status,conclusion,headSha,url)
+  ⎿  [
+       {
+         "conclusion": "",
+     … +7 lines (ctrl+o to expand)
+
+● Bash(gh run watch 39419753170 --exit-status 2>&1 | tail -15; echo
+      exit=${PIPESTATUS[0]})
+  ⎿    ✓ Run npm ci
+       ✓ Run npx playwright install --with-deps chromium firefox
+       X Run npm run check
+     … +15 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● CI впав на npm run check. Читаю лог помилки.
+
+● Bash(gh run view 39419753170 --log-failed 2>&1 | grep -vE "^\s*$" | grep -E
+      "✘|failed|passed|Error|error|Expected|Received|Timeout|›" | head -40)
+  ⎿  check   Run npm run check       2026-10-20T12:07:08.4408655Z  Test 
+     Files  2 pass
+     ed (2)
+     check   Run npm run check       2026-10-20T12:07:08.4410144Z       
+     Tests  20 pas
+     … +62 lines (ctrl+o to expand)
+
+● Виявив, що в CI падає лише Firefox через помилку element(s) not found, схоже
+  сцена не змонтувалась. Перевірю повне зведення на наявність JS/WebGL помилок. 
+  · summary
+
+● Bash(gh run view 39419753170 --log-failed 2>&1 > "$TEMP/ci.log"; grep -E
+      "^check\s+Run npm run check\s+\S+\s+  [0-9]+\) |failed$|passed|flaky|did
+      not run|skipped" "$…)
+  ⎿   Test Files  2 passed (2)
+           Tests  20 passed (20)
+       1) [firefox] › e2e/capture.test.ts:4:1 › AC-14: drag over reset butt
+     … +48 lines (ctrl+o to expand)
+
+● Весь Firefox-набір падає в CI (14+ тестів), хоча Chromium проходить і локально
+  Firefox зелений — це нагадує мій раніше «закритий» ризик 2 з WebGL у headless
+  Firefox на Linux. Перевірю це по фактах з артефакту, а не за припущеннями. 
+  · summary
+
+● Bash(D="$TEMP/ci-artifact" && rm -rf "$D" && mkdir -p "$D" && gh run download
+      39419753170 -D "$D" 2>&1 | tail -2; find "$D" -name "error-context.md" |
+      head -3; f=$(f…)
+  ⎿  C:\Users\IRYNAP~1\AppData\Local\Temp/ci-artifact/test-results/capture-
+     AC-14-drag-over-re-227c1-rotating-and-does-not-reset-firefox/error-con
+     text.md
+     … +43 lines (ctrl+o to expand)
+
+● Bash(grep -oE "^\S+\s+\S+\s+\S+\s+  [0-9]+\) \[\w+\] › [^ ]+ › [^─]*"
+      "$TEMP/ci.log" | sed 's/^[^ ]* *[^ ]* *[^ ]* *//' | sed 's/ *$//' ; echo;
+      grep -E "[0-9]+ (fail…)
+  ⎿   Test Files  2 passed (2)
+           Tests  20 passed (20)
+       19 failed
+       21 passed (1.9m)
+
+● Усі 19 провалених тестів — це Firefox (Chromium проходить 20/20), і в Firefox
+  монтується лише smoke-тест, який перевіряє тільки body. Схоже, застосунок
+  взагалі не монтується в CI-Firefox — перевірю гіпотезу про відсутність WebGL,
+  що спричиняє виняток у WebGLRenderer і знімає React-дерево, відтворивши це
+  локально з вимкненим WebGL. · summary
+
+● Bash(SP="C:/Users/IRYNAP~1/AppData/Local/Temp/claude/C--Users-IrynaPolchaninov
+      a-Projects-rotating-cube/37391221-958d-433c-9edc-5817848fe8ba/scratchpad"
+      && mkdir -p "…)
+  ⎿  cube-scene count: 0
+     root html length: 0
+     console.error: THREE.WebGLRenderer: A WebGL context could not be creat
+     … +13 lines (ctrl+o to expand)
+  ⎿  (timeout 2m)
+
+● Bash(git status --short; echo "status above (empty = clean)"; (netstat -ano
+      2>/dev/null | grep -c ":4173 .*LISTENING") )
+  ⎿  status above (empty = clean)
+     1
+
+● Сервер preview ще слухає порт 4173 — зупиняю його (це мій тимчасовий процес).
+
+● Bash(pid=$(netstat -ano | grep ":4173 .*LISTENING" | awk '{print $NF}' | head
+      -1); echo "pid=$pid"; [ -n "$pid" ] && taskkill //F //PID "$pid"; sleep 1;
+      netstat -ano…)
+  ⎿  pid=32036
+     SUCCESS: The process with PID 32036 has been terminated.
+     0
+
+● Push зроблено, але CI на main (795832e) червоний: run 39419753170
+  (https://github.com/IraPolchanin/rotating-cube/actions/runs/39419753170).
+  Нових змін чи пушів я не робив, дерево чисте.
+
+  Що сталося
+  - Результат: 19 з 40 e2e-тестів упали, 21 пройшов.
+  - Усі 19 впалих — Firefox. Chromium пройшов 20 з 20, unit-тести 20 з 20, build
+    і lint теж.
+  - З Firefox пройшов лише старий smoke-тест, який перевіряє тільки body.
+  - У впалих тестах div[data-testid="cube-scene"] просто відсутній. У CI-Firefox
+    застосунок не монтується.
+
+  Причина (гіпотеза, перевірена частково)
+  - Скоріше за все, у headless Firefox на ubuntu-latest немає WebGL. new 
+    WebGLRenderer тоді кидає виняток, і React прибирає все дерево.
+  - Це порожній #root без cube-scene, як у впалих CI-тестах.
+  - Я відтворив це локально з webgl.disabled: true. Отримав cube-scene count: 0,
+    порожній #root і THREE.WebGLRenderer: Error creating WebGL context.
+  - Що саме в CI-Firefox вимкнено WebGL, я прямо не бачив: у логах CI немає
+    консолі браузера.
+  - Моя помилка: у T2 я записав «ризик 2 (WebGL у headless Firefox) закрито».
+    Насправді це перевірено тільки на вашій Windows-машині, не на Ubuntu CI. Це
+    моє хибне формулювання в docs/evidence/phase-4.md; виправлю його разом із
+    фіксом.
+
+  Що пропоную (потрібне ваше рішення, бо кожен push потребує підтвердження):
+  1. Рекомендую: налаштувати CI-Firefox на програмний WebGL. Додати в
+     playwright.config.ts для проєкту Firefox firefoxUserPrefs
+     (webgl.force-enabled та подібні). Додати один тест, що явно перевіряє
+     наявність WebGL з чітким повідомленням, замість 19 незрозумілих падінь.
+     Можливо, потрібні кілька ітерацій у CI, бо локально Ubuntu я не відтворю.
+  2. Лише якщо п. 1 не вийде: прибрати Firefox-проєкт у CI. Це порушує NFR-5,
+     тож тільки з вашого явного оновлення spec.
+  3. Не пропоную: переносити логіку обертання й атрибути так, щоб вони працювали
+     без WebGL. Тести тоді проходили б, хоч куб не малюється.
+
+  Запустити п. 1? Для експериментів з Firefox-prefs можу використати окрему
+  гілку, щоб не червонити main. Це теж push, тож спитаю дозвіл перед ним.
+
+✻ Baked for 5m 0s · done 3:10 PM
+
+※ recap: Ми реалізували Phase 4 (обертовий куб), і код та локальні перевірки готові й запушені, але CI на main червоний, бо в Firefox на Ubuntu не працює WebGL. Далі чекаю вашого рішення, чи пробувати виправити Firefox-налаштування на окремій гілці. (disable recaps in /config)
+
+❯ Proceed with option 1. Investigate and fix the Firefox CI failure without     
+  weakening the specification or removing Firefox coverage.                     
+                                                                                
+  Do not make further changes or pushes to main.                                
+                                                                                
+  Create a separate local branch for the investigation. Do not push it without  
+  my explicit approval.                                                         
+                                                                                
+  Collect better diagnostics for the Firefox failure: capture browser console   
+  errors, page errors, and the exception thrown during React mounting.          
+  Distinguish a WebGL initialization failure from other possible causes.        
+                                                                                
+  If WebGL initialization is the cause, investigate the supported Playwright    
+  Firefox configuration for enabling WebGL or software rendering in the Ubuntu  
+  CI environment. Prefer a minimal, evidence-based configuration change.        
+                                                                                
+  Add or adjust a diagnostic test only if it improves failure reporting without 
+  masking the underlying error or allowing a missing cube to pass.              
+                                                                                
+  Run the relevant Firefox E2E tests locally and run npm run check.             
+                                                                                
+  Correct the inaccurate statement in docs/evidence/phase-4.md about WebGL      
+  verification, recording only what has actually been verified.                 
+                                                                                
+  Run the spec-reviewer and commit the fix locally.                             
+                                                                                
+  Report the changes and remaining uncertainty. Do not push any branch until I  
+  explicitly approve it.                                                        
+                                                                                
+  Do not remove Firefox coverage, weaken acceptance criteria, or make the       
+  application silently hide WebGL initialization failures.                      
+  When CI on the branch is green for both Chromium and Firefox, propose         
+  how to bring the fix into main (fast-forward) and ask me before               
+  pushing main and before deleting the branch.                                  
+
+● Починаю з доказів, а не з правок: створюю гілку й дивлюся лог кроку
+  встановлення Playwright та версію образу runner'а в тому ж CI-запуску.
+
+● Bash(git switch -c fix/firefox-ci-webgl 2>&1 | tail -1; gh run view
+      39419753170 --log 2>&1 > "$TEMP/ci-full.log"; grep -nE
+      "Image:|Version:|Included Software|Operati…)  ⎿  Switched to a new branch 'fix/firefox-ci-webgl'
+     4: Version: 20261015.610
+     11: ##[group]Operating System
+     … +47 lines (ctrl+o to expand)
+
+● Runner на ubuntu-24.04 підтримується і залежності встановлені, тож проблема не
+  в ОС. Перевірю, чи можна відтворити Ubuntu 24.04 локально через WSL/Podman
+  без пушу. · summary
+
+● Bash(wsl -l -v 2>&1 | tr -d '\0' | head; echo ---; podman --version 2>&1 |
+      head -2; podman machine list 2>&1 | head -3; echo ---; grep -nE
+      "firefox|Firefox" "$TEMP/c…)
+  ⎿    NAME                      STATE           VERSION
+     * Ubuntu                    Stopped         2
+       podman-machine-default    Stopped         2
+     … +16 lines (ctrl+o to expand)
+
+● Bash(wsl -d Ubuntu -- bash -lc 'grep PRETTY /etc/os-release; echo
+      node=$(command -v node || echo none); sudo -n true 2>&1 | head -1 && echo
+      sudo-nopasswd-ok; df -h ~…)
+  ⎿  PRETTY_NAME="Ubuntu 26.04.1 LTS"
+     node=none
+     sudo: interactive authentication is required
+     … +3 lines (ctrl+o to expand)
+  ⎿  (timeout 1m 30s)
+
+● Побачив, що WSL тут на Ubuntu 26.04 без node і з паролем для sudo — не
+  підходить, тож не торкаюся середовища. Натомість спершу розберуся з кодом
+  тесту AC-13: він зараз чекає на атрибут і падає з нічого не кажучим таймаутом,
+  приховуючи справжню помилку. · summary
+
+● Write(e2e\webgl.test.ts)
+  ⎿  Wrote 26 lines to e2e\webgl.test.ts
+       1 import { test, expect } from '@playwright/test'
+       3 // Diagnostic only: it reports whether the browser can create th
+         e WebGL2 context
+       4 // that three.js requires. It does not replace the cube tests, w
+       5 // on their own when the cube is missing.
+       6 test('FR-1: browser can create a WebGL2 context', async ({ page 
+       7   await page.goto('/')
+       8   const info = await page.evaluate(() => {
+       9     const gl = document.createElement('canvas').getContext('webg
+      10     if (!gl) return null
+     … +21 lines (ctrl+o to expand)
+
+● Update(e2e\scene.test.ts)
+  ⎿  Added 5 lines, removed 2 lines
+      34      errors.push(`pageerror: ${error.message}`)
+      35    })
+      36    await page.goto('/')
+      37 -  // Wait until the scene has rendered at least once before jud
+         -ging the console.                                              
+      37 +  await page.waitForLoadState('networkidle')                   
+      38 +  // Check the errors first: if mounting threw (for example, no
+         + WebGL), the real                                              
+      39 +  // cause is reported here instead of an opaque "element(s) no
+         +t found" timeout.                                              
+      40 +  await expect.poll(() => errors.length, { message: errors.join
+         +('\n') }).toBe(0)                                              
+      41 +  // The scene must also have rendered at least once.          
+      42    await expect(page.locator('div[data-testid="cube-scene"]')).t
+          oHaveAttribute(
+      43      'data-cube-rx',
+      44      '25.0',
+      45    )
+      42 -  await page.waitForLoadState('networkidle')                   
+      46    expect(errors).toEqual([])
+      47  })
+      48  
+
+● Прибираю зайвий expect.poll, оскільки повідомлення обчислюється зарано —
+  переходжу на пряму перевірку, бо toEqual сам покаже diff з текстами помилок. 
+  · summary
+
+● Update(e2e\scene.test.ts)
+  ⎿  Added 1 line, removed 1 line
+      37    await page.waitForLoadState('networkidle')
+      38    // Check the errors first: if mounting threw (for example, no
+           WebGL), the real
+      39    // cause is reported here instead of an opaque "element(s) no
+          t found" timeout.
+      40 -  await expect.poll(() => errors.length, { message: errors.join
+         -('\n') }).toBe(0)                                              
+      40 +  expect(errors).toEqual([])                                   
+      41    // The scene must also have rendered at least once.
+      42    await expect(page.locator('div[data-testid="cube-scene"]')).t
+          oHaveAttribute(
+      43      'data-cube-rx',
+
+● Bash(npx playwright test e2e/webgl.test.ts e2e/scene.test.ts -g "WebGL2|AC-13"
+      --reporter=list 2>&1 | grep -E "✓|✘|passed|failed|Error"; echo; echo "==
+      same, Firefox…)
+  ⎿    ✓  2 [chromium] › e2e\webgl.test.ts:6:1 › FR-1: browser can create a
+      WebGL2 context (599ms)
+       ✓  1 [chromium] › e2e\scene.test.ts:28:1 › AC-13: no console errors
+     … +9 lines (ctrl+o to expand)
+  ⎿  (timeout 3m 20s)
+
+● Зараз підтверджую, що діагностика справді гучна без WebGL: створюю окремий
+  тимчасовий конфіг у scratchpad з вимкненим WebGL у Firefox, не торкаючись
+  проєктних файлів. · summary
+
+● Bash(rm -f "$TEMP/pw-nogl.config.ts" &&
+      SP="C:/Users/IRYNAP~1/AppData/Local/Temp/claude/C--Users-IrynaPolchaninova
+      -Projects-rotating-cube/37391221-958d-433c-9edc-581…)
+  ⎿    ✘  1 [firefox-no-webgl] › e2e\webgl.test.ts:6:1 › FR-1: browser can
+     create a WebGL2 context (2.9s)
+       ✘  2 [firefox-no-webgl] › e2e\scene.test.ts:3:1 › AC-1: cube-scene w
+     … +31 lines (ctrl+o to expand)
+  ⎿  (timeout 3m 20s)
+
+● Діагностика підтвердила проблему: без WebGL падають FR-1 і AC-13 з помилками
+  THREE.WebGLRenderer…, а AC-1 досі падає без маскування. Тепер спробую Podman з
+  офіційним Playwright-образом, щоб отримати реальний доказ з Ubuntu 24.04 без
+  sudo і без змін у вашому WSL Ubuntu. · summary
+
+● Bash(npx playwright --version; podman machine start 2>&1 | tail -3; podman
+      info --format '{{.Host.OS}} {{.Host.Arch}} mem={{.Host.MemTotal}}' 2>&1 |
+      tail -1)
+  ⎿  Version 1.64.1
+     The host trusted CA certificates have been imported successfully
+     time="2026-10-20T15:17:31+03:00" level=error msg="Process exited with
+     … +3 lines (ctrl+o to expand)
+  ⎿  (timeout 4m)
+
+● Bash(timeout 550 podman pull mcr.microsoft.com/playwright:v1.64.1-noble 2>&1 |
+      tail -3; podman images --format '{{.Repository}}:{{.Tag}} {{.Size}}' |
+      head -3)
+  ⎿  Copying config sha256:9cfdc77dc3be5a94cd5da6bbfae76431a80fd05ed3e49f3f
+     6c04407efb270d71
+     Writing manifest to image destination
+     … +4 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Образ готовий. Запускаю в ньому проєкт і Firefox-тести, виконуючи npm ci
+  усередині контейнера — так максимально наближаю локальне відтворення до CI. 
+  · summary
+
+● Bash(SP="C:/Users/IRYNAP~1/AppData/Local/Temp/claude/C--Users-IrynaPolchaninov
+      a-Projects-rotating-cube/37391221-958d-433c-9edc-5817848fe8ba/scratchpad"
+      && tar --excl…)
+  ⎿  Error: Exit code 128
+     tar: Cannot connect to C: resolve failed
+
+● Bash(SP="C:/Users/IRYNAP~1/AppData/Local/Temp/claude/C--Users-IrynaPolchaninov
+      a-Projects-rotating-cube/37391221-958d-433c-9edc-5817848fe8ba/scratchpad"
+      && tar --forc…)
+  ⎿  737280
+
+     added 188 packages in 5s
+     … +51 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Відтворив збій на Ubuntu 24.04 (контейнер) — cube-scene також відсутній у
+  Firefox, тож проблема не специфічна для Windows. Тепер перевірю різні варіанти
+  налаштувань Firefox послідовно, щоб знайти мінімальний робочий. · summary
+
+● Bash(SP="C:/Users/IRYNAP~1/AppData/Local/Temp/claude/C--Users-IrynaPolchaninov
+      a-Projects-rotating-cube/37391221-958d-433c-9edc-5817848fe8ba/scratchpad"
+      && cat > "$SP…)
+  ⎿      + Received  + 14
+         +   "console: THREE.WebGLRenderer: A WebGL context could not be cr
+     eated. Reason:  WebGL creation failed:
+     … +88 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Знайшов причину: у Firefox на Ubuntu 24.04 помилка WebGL creation failed, яку
+  не вирішили 5 варіантів prefs. Мій grep зрізав деталі — витягую повний текст
+  причини. · summary
+
+● Bash(SP="C:/Users/IRYNAP~1/AppData/Local/Temp/claude/C--Users-IrynaPolchaninov
+      a-Projects-rotating-cube/37391221-958d-433c-9edc-5817848fe8ba/scratchpad"
+      && cat > "$SP…)
+  ⎿      +   "console: THREE.WebGLRenderer: A WebGL context could not be cr
+     eated. Reason:  WebGL creation failed:
+         + * AllowWebgl2:false restricts context creation on this system. (
+     … +24 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Знайшов причину: AllowWebgl2:false блокує WebGL2 через відсутність GPU, тож
+  three.js ≥ r163 не запускається. Спробую три шляхи: увімкнути
+  webgl.enable-webgl2, прапорці software/hardware рендерингу, та headed Firefox
+  під xvfb. · summary
+
+● Bash(SP="C:/Users/IRYNAP~1/AppData/Local/Temp/claude/C--Users-IrynaPolchaninov
+      a-Projects-rotating-cube/37391221-958d-433c-9edc-5817848fe8ba/scratchpad"
+      && cat > "$SP…)
+  ⎿  /usr/bin/xvfb-run
+     === VARIANT G-webgl2-only  wrap=[]
+       ✘  1 [firefox] › e2e/webgl.test.ts:6:1 › FR-1: browser can create a
+     … +14 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Знайшов мінімальний робочий варіант: headed Firefox під xvfb-run без жодних
+  prefs. Перевіряю наявність xvfb на CI-раннері та застосовую цю зміну. 
+  · summary
+
+● Bash(grep -ciE "xvfb" "$TEMP/ci-full.log"; grep -iE "xvfb" "$TEMP/ci-full.log"
+      | sed 's/^check\t[^\t]*\t[^ ]* //' | head -3; echo ---; cat
+      .github/workflows/ci.yml |…)  ⎿  5
+       xserver-common xvfb
+     Get:43 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe a
+     … +66 lines (ctrl+o to expand)
+
+● Update(playwright.config.ts)
+  ⎿  Added 8 lines, removed 1 line
+      17      },
+      18      {
+      19        name: 'firefox',
+      20 -      use: { ...devices['Desktop Firefox'] },                  
+      20 +      use: {                                                   
+      21 +        ...devices['Desktop Firefox'],                         
+      22 +        // Headless Firefox on Linux without a GPU refuses WebG
+         +L2 ("AllowWebgl2:false                                         
+      23 +        // restricts context creation on this system"), and thr
+         +ee.js needs WebGL2.                                            
+      24 +        // In CI the browser runs headed under xvfb (see .githu
+         +b/workflows/ci.yml),                                           
+      25 +        // which gets software WebGL. Elsewhere it stays headle
+         +ss.                                                            
+      26 +        headless: !process.env['CI'],                          
+      27 +      },                                                       
+      28      },
+      29    ],
+      30  })
+
+● Update(.github\workflows\ci.yml)
+  ⎿  Added 2 lines, removed 1 line
+      30  
+      31        - run: npx playwright install --with-deps chromium firefo
+          x
+      32  
+      33 -      - run: npm run check                                     
+      33 +      # Headed Firefox needs a display for WebGL; see playwrigh
+         +t.config.ts.                                                   
+      34 +      - run: xvfb-run -a npm run check                         
+      35  
+      36        - if: failure()
+      37          uses: actions/upload-artifact@v7
+
+● Bash(SP="C:/Users/IRYNAP~1/AppData/Local/Temp/claude/C--Users-IrynaPolchaninov
+      a-Projects-rotating-cube/37391221-958d-433c-9edc-5817848fe8ba/scratchpad"
+      && tar --forc…)
+  ⎿  --- full check under xvfb-run, CI=1, Ubuntu 24.04
+      Test Files  2 passed (2)
+           Tests  20 passed (20)
+     … +2 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Повний npm run check під xvfb-run в Ubuntu 24.04 пройшов успішно — 42 e2e
+  тести (21 на браузер). Далі перевіряю check локально на Windows і оновлюю
+  документацію. · summary
+
+● Bash(npm run check 2>&1 | grep -E "Tests |passed|failed|✘|error|Error"; echo
+      exit=${PIPESTATUS[0]}; grep -n "Risk 2" -A2 docs/evidence/phase-4.md; grep
+      -n "^5\. \`np…)
+  ⎿   Test Files  2 passed (2)
+           Tests  20 passed (20)
+       ✓  18 [chromium] › e2e\scene.test.ts:28:1 › AC-13: no console errors
+     … +17 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Firefox видав NS_ERROR_CONNECTION_REFUSED на page.goto в AC-10 — єдиний збій
+  проти 41 пройдених. Перевірю, що слухає на порту, і перезапущу тест, а не
+  одразу списуватиму на флейк. · summary
+
+● Bash(echo "listeners on 5173/4173:"; netstat -ano | grep -E ":(5173|4173)
+      .*LISTENING"; echo "---- rerun e2e x3"; for i in 1 2 3; do npx playwright
+      test 2>&1 | grep…)
+  ⎿  listeners on 5173/4173:
+       TCP    [::1]:5173             [::]:0                 LISTENING
+      27192
+     … +4 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Три прогони e2e-тестів поспіль дали 42/42 зелених, порт 5173 зайнятий вашим
+  dev-сервером (не чіпав), той одиничний збій з'єднання фіксую в evidence як не
+  повністю усунутий. Переходжу до правки документації. · summary
+
+● Update(docs\evidence\phase-4.md)
+  ⎿  Added 4 lines, removed 2 lines
+      57  - Check runs: 1 × `npm run check`, green (18 unit tests, build,
+           12 e2e = 6 per
+      58    browser). The build prints a non-fatal chunk-size warning (th
+          ree.js, 752 kB
+      59    minified); exit code 0, left as is.
+      60 -- Risk 2 (WebGL in headless Chromium and Firefox): resolved — c
+         -anvas, rendering and                                           
+      61 -  the no-console-error test pass in both browsers with the defa
+         -ult config.                                                    
+      60 +- Risk 2 (WebGL in headless Chromium and Firefox): verified **o
+         +nly on the Windows                                             
+      61 +  development machine** — canvas, rendering and the no-console-
+         +error test passed in                                           
+      62 +  both browsers there. This entry originally said "resolved"; t
+         +hat was wrong, because                                         
+      63 +  Linux CI was not exercised. CI later failed for Firefox (see 
+         +"CI follow-up").                                               
+      64  - spec-reviewer: 1 invocation → "No violations found."
+      65  - Human intervention: none.
+      66  - Also: corrected the T1 entry (the 3 passing tests in the T1 r
+          ed run were the two
+
+● Bash(cat >> docs/evidence/phase-4.md <<'EOF'…)
+  ⎿      branches: ["**"]
+       pull_request:
+         branches: [main]
+     … +28 lines (ctrl+o to expand)
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 18 lines, removed 1 line
+      215     `cache: npm`.
+      216  3. `npm ci`
+      217  4. `npx playwright install --with-deps chromium firefox`
+      218 -5. `npm run check`                                            
+      218 +5. `xvfb-run -a npm run check` (was plain `npm run check` unti
+          +l the Phase 4 Firefox                                         
+      219 +   fix; headed Firefox needs a display, see "Phase 4 follow-up
+          +" below).                                                     
+      220  6. On failure only: `actions/upload-artifact@v7` uploads `test
+           -results/`.
+      221  
+      222  **Artifact:** `.github/workflows/ci.yml`
+      223  
+      224 +### Phase 4 follow-up — Firefox WebGL on Linux                
+      225 +                                                              
+      226 +CI run 39419753170 on `main` (`795832e`, the first run contain
+          +ing the cube) **failed**                                      
+      227 +at e2e: 19 of 40 tests, all Firefox, because headless Firefox 
+          +on Linux without a GPU                                        
+      228 +refuses WebGL2 (`AllowWebgl2:false restricts context creation 
+          +on this system`) and                                          
+      229 +the cube could not mount. The same failure was reproduced on U
+          +buntu 24.04.5 in a                                            
+      230 +Playwright container. Of the Firefox preference sets tried, no
+          +ne enabled WebGL2 in                                          
+      231 +headless mode; headed Firefox under `xvfb-run` did. The fix is
+          + the Firefox project's                                        
+      232 +`headless: !process.env['CI']` in `playwright.config.ts` plus 
+          +the `xvfb-run -a` CI                                          
+      233 +step. Diagnostics: `e2e/webgl.test.ts` and an AC-13 that repor
+          +ts console and page                                           
+      234 +errors before waiting for the scene. Details: `docs/evidence/p
+          +hase-4.md`.                                                   
+      235 +                                                              
+      236 +**Status of the fix:** verified in the Ubuntu 24.04 container 
+          +and locally on Windows;                                       
+      237 +**not yet verified on GitHub Actions** (branch not pushed). Up
+          +date this section after                                       
+      238 +the CI run on the fix branch.                                 
+      239 +                                                              
+      240  **Not configured:** branch protection and required status chec
+           ks. CI reports a
+      241  result but does not block merges or direct pushes to `main`.
+      242  
+
+● Bash(git status --short && git diff --stat && npm run check 2>&1 | grep -E
+      "Tests |passed|failed|✘|error|Error"; echo exit=${PIPESTATUS[0]})
+  ⎿   M .github/workflows/ci.yml
+      M docs/evidence/phase-4.md
+      M docs/quality-gates.md
+     … +19 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Локальний check зелений (42/42). spec-reviewer на зміни гілки:
+
+● spec-reviewer(Review Firefox CI fix diff)
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Чекаю на рев'ю фіксу.
+
+✻ Crunched for 13m 6s · done 3:28 PM
+
+※ recap: Мета: Phase 4 куба; зараз виправляю падіння Firefox у CI на гілці fix/firefox-ci-webgl, зміни готові локально й перевірені, чекаю на spec-reviewer. Далі: закомічити фікс локально і спитати вашого дозволу на push гілки. (disable recaps in /config)
+
+› Message from spec-reviewer
+  No violations found.
+
+  My answers to your four questions:
+  1. Nothing masks a missing cube. The WebGL test only adds a failing check, and
+  no cube assertion was relaxed. The Firefox project still fails if WebGL2 is
+  unavailable.
+  2. AC-13 is stricter than before. It asserts the error list is empty before
+  the wait, then checks `data-cube-rx='25.0'`, then checks the error list again.
+  3. Firefox coverage is preserved. The project is still present in
+  `playwright.config.ts`, and it runs all tests (NFR-5). It runs headed under
+  xvfb only when `CI` is set.
+  4. The docs say only what was verified. `docs/evidence/phase-4.md` (lines
+  226-229) and `docs/quality-gates.md` (lines 236-238) both state that the fix
+  is not yet verified on GitHub Actions. They also record the Firefox
+  `NS_ERROR_CONNECTION_REFUSED` failure with its cause marked as not
+  established.
+
+  Two minor points, neither a violation:
+  - `docs/quality-gates.md:564` still says the CI workflow is "Implemented —
+  verified 2026-10-20". That verification predates this fix, so you may want to
+  qualify it until a GitHub Actions run on the fix branch passes.
+  - The headed Firefox setting keys off `CI`, so a local `CI=1` run on Windows
+  would also run Firefox headed.
+
+● Перший пункт слушний — рядок CI у §9 мав би бути уточнений. Виправляю й комічу
+  на гілці.
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Agent "Review Firefox CI fix diff" finished · 16s
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      561  | Vitest config | `vitest.config.ts` | **Implemented** |
+      562  | Playwright config + `webServer` | `playwright.config.ts` | *
+           *Implemented** |
+      563  | Pre-commit hook script | `.githooks/pre-commit` | **Implemen
+           ted** — fresh-clone activation unverified |
+      564 -| GitHub Actions CI workflow | `.github/workflows/ci.yml` | **
+          -Implemented** — verified 2026-10-20; no branch protection |   
+      564 +| GitHub Actions CI workflow | `.github/workflows/ci.yml` | **
+          +Implemented** — verified 2026-10-20 for the pre-cube suite; th
+          +e first run with the cube **failed** for Firefox (WebGL, §4 "P
+          +hase 4 follow-up"); fix not yet verified on GitHub Actions; no
+          + branch protection |                                          
+      565  | MIT license | `LICENSE` | **Implemented** |
+      566  | Application (AC-1 – AC-15) | `src/`, `e2e/`, evidence in `do
+           cs/evidence/phase-4.md` | **Implemented** — automated checks v
+           erified locally 2026-10-20; manual checks partly done (Chrome 
+           only), see "Phase 4 manual checks" |
+      567  
+
+● Bash(git add -A e2e playwright.config.ts .github docs && git commit -q -m "ci:
+      run Firefox headed under xvfb so WebGL2 is available (AC-1, AC-13)…)
+  ⎿  warning: in the working copy of '.github/workflows/ci.yml', LF will be
+      replaced by CRLF the next time Git touches it
+     warning: in the working copy of 'docs/evidence/phase-4.md', LF will be
+     … +14 lines (ctrl+o to expand)
+
+● Bash(podman machine stop 2>&1 | tail -1; cd
+      /c/Users/IrynaPolchaninova/Projects/rotating-cube && git status --short |
+      wc -l)
+  ⎿  Machine "podman-machine-default" stopped successfully
+     0
+
+● Фікс закомічено локально на гілці fix/firefox-ci-webgl (9830d88). Нічого не
+  запушено, main не чіпав. Локально все зелено, але на реальному GitHub Actions
+  фікс ще не перевірений.
+
+  Причина
+  - У CI-Firefox застосунок не монтувався, бо headless Firefox на Linux без GPU
+    забороняє WebGL2, а three.js його потребує.
+  - Точний текст помилки: WebGL creation failed: * AllowWebgl2:false restricts 
+    context creation on this system.
+  - Я відтворив це на Ubuntu 24.04 у контейнері Playwright (Podman) з тим самим
+    збоєм.
+  - Видимих помилок JS чи React у впалих тестах не було, лише ця відмова WebGL.
+
+  Що пробував
+  - Жоден набір Firefox-prefs не вмикає WebGL2 у headless-режимі: пробував
+    webgl.force-enabled, software webrender, webgl.enable-webgl2,
+    forbid-hardware та їхні комбінації.
+  - Headed Firefox під xvfb-run працює без жодних prefs.
+
+  Зміни у коміті
+  - playwright.config.ts: Firefox-проєкт має headless: !process.env['CI'], тобто
+    headed лише в CI.
+  - .github/workflows/ci.yml: xvfb-run -a npm run check.
+  - Диагностика в e2e/:
+    - e2e/webgl.test.ts — окремий тест, що явно каже, чи браузер створює WebGL2.
+    - AC-13 тепер спершу перевіряє консоль і page errors, а вже потім чекає
+      сцену. Раніше справжня помилка ховалась за таймаутом «element(s) not
+      found».
+  - Нічого не замасковано: з вимкненим WebGL падають новий тест, AC-13 і AC-1.
+    Firefox-проєкт повний, критерії не послаблені.
+  - У docs/evidence/phase-4.md виправлено хибне «ризик 2 закрито»: тоді це було
+    перевірено лише на Windows. Додано розділ про CI, а в docs/quality-gates.md
+    уточнено статус CI.
+
+  Перевірки
+  - У контейнері Ubuntu 24.04 (CI=1, xvfb-run -a npm run check) усе зелене: 20
+    unit-тестів і 42 e2e (по 21 на браузер).
+  - На Windows npm run check зелений, і ще три повні e2e-прогони дали 42 з 42.
+  - spec-reviewer: порушень немає. Його зауваження про занадто оптимістичний
+    рядок CI в quality-gates.md я виправив.
+
+  Що лишається невідомим
+  - Контейнер не ідентичний раннеру GitHub: там браузери ставить playwright 
+    install --with-deps, а npm ci у контейнері йшов з --ignore-scripts.
+    Остаточний доказ дасть лише CI на гілці.
+  - Один раз локально на Windows Firefox дав NS_ERROR_CONNECTION_REFUSED на
+    page.goto (AC-10), далі три прогони були зелені. Причину не встановив. Порт
+    5173 тримав уже запущений процес, імовірно ваш dev-сервер, і я його не
+    зупиняв.
+  - З CI=1 локально Firefox теж піде headed, що на Windows нешкідливо.
+
+  Podman-машину, яку я запускав для відтворення, зупинив; образ
+  playwright:v1.64.1-noble (2,5 GB) лишився. Ваш WSL Ubuntu не чіпав.
+
+  Пропозиція: запушити гілку fix/firefox-ci-webgl (git push origin 
+  fix/firefox-ci-webgl), щоб CI перевірив фікс. Push потребує вашого
+  підтвердження.
+
+  Якщо CI на гілці буде зелений і для Chromium, і для Firefox, запропоную
+  fast-forward main на 9830d88 через git merge --ff-only і push main. Видалення
+  гілки теж лише після вашого окремого дозволу.
+
+  Запушити гілку?
+✻ Worked for 39s · done 3:35 PM
+
+❯ Так, пуш гілку                                                                
+
+● Bash(git push -u origin fix/firefox-ci-webgl 2>&1 | tail -4)
+  ⎿  remote:
+     branch 'fix/firefox-ci-webgl' set up to track 'origin/fix/firefox-ci-w
+     ebgl'.
+     … +2 lines (ctrl+o to expand)
+
+● Bash(sleep 10; id=$(gh run list --branch fix/firefox-ci-webgl --limit 1 --json
+      databaseId --jq '.[0].databaseId'); echo run=$id; gh run watch "$id"
+      --exit-status 2>&…)
+  ⎿  run=39423788004
+       ✓ Run actions/checkout@v7
+       ✓ Run actions/setup-node@v7
+     … +15 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● CI на гілці зелений. Перевіряю в логу, що пройшли обидва браузери і скільки
+  тестів.
+
+● Bash(gh run view 39423788004 --log 2>&1 | sed 's/^check\t[^\t]*\t[^ ]* //' |
+      grep -E "[0-9]+ (passed|failed|flaky|skipped)|Tests  |FR-1:
+      browser|conclusion" | head;…)
+  ⎿   Test Files  2 passed (2)
+           Tests  20 passed (20)
+       42 passed (48.9s)
+     … +2 lines (ctrl+o to expand)
+
+● CI на гілці fix/firefox-ci-webgl зелений для Chromium і Firefox: run
+  39423788004
+  (https://github.com/IraPolchanin/rotating-cube/actions/runs/39423788004),
+  коміт 9830d88. У логу 20 unit-тестів і 42 e2e (по 21 на браузер), 0 впалих. Це
+  підтвердило фікс на реальному GitHub Actions.
+
+  main не чіпав. Гілка містить 1 коміт поверх main, тож fast-forward можливий.
+
+  Пропозиція, як внести фікс у main
+  1. git switch main
+  2. git merge --ff-only fix/firefox-ci-webgl (без merge-коміту, історія
+     лишається лінійною).
+  3. git push origin main, який потребує вашого підтвердження. Після нього я
+     простежу CI на main.
+
+  Є одна дрібна річ у документах. docs/quality-gates.md і
+  docs/evidence/phase-4.md досі пишуть, що фікс не перевірений на GitHub
+  Actions. Тепер це застаріло. Є два варіанти:
+  - А (рекомендую): окремий коміт docs: на гілці, який записує цей результат з
+    посиланням на run. Тоді на main потрапить уже точний запис. Для цього треба
+    ще один push гілки, і CI на ньому знову пройде.
+  - Б: зробити fast-forward зараз, а запис додати наступним комітом у main.
+
+  Видалення гілки (локальної й віддаленої) пропоную лише після того, як CI на
+  main позеленіє, і тільки з вашого окремого дозволу.
+
+  Який варіант обираєте (А чи Б)? І чи можна після цього пушити main?
+
+✻ Baked for 2m 9s · done 3:40 PM
+
+※ recap: Ми завершуємо Phase 4: куб готовий, а фікс Firefox у CI на гілці fix/firefox-ci-webgl підтверджено зеленим запуском. Далі чекаю вашого вибору, А чи Б, щодо запису в документах, і дозволу на fast-forward та push main.
+
+❯ Варіант А, потім fast-forward і push main                                     
+
+● Роблю варіант А: оновлюю записи про верифікацію на гілці.
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Bash(sed -n 236,239p docs/quality-gates.md; sed -n 226,230p
+      docs/evidence/phase-4.md)
+  ⎿  **Status of the fix:** verified in the Ubuntu 24.04 container and loca
+     lly on Windows;
+     **not yet verified on GitHub Actions** (branch not pushed). Update thi
+     … +10 lines (ctrl+o to expand)
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 6 lines, removed 3 lines
+      233  step. Diagnostics: `e2e/webgl.test.ts` and an AC-13 that repor
+           ts console and page
+      234  errors before waiting for the scene. Details: `docs/evidence/p
+           hase-4.md`.
+      235  
+      236 -**Status of the fix:** verified in the Ubuntu 24.04 container 
+          -and locally on Windows;                                       
+      237 -**not yet verified on GitHub Actions** (branch not pushed). Up
+          -date this section after                                       
+      238 -the CI run on the fix branch.                                 
+      236 +**Status of the fix:** verified in the Ubuntu 24.04 container 
+          +and locally on Windows,                                       
+      237 +and **on GitHub Actions** (2026-10-20): the run on branch `fix
+          +/firefox-ci-webgl`                                            
+      238 +(commit `9830d88`) passed — 20 unit tests and 42 e2e (21 per b
+          +rowser, Chromium and                                          
+      239 +Firefox), 0 failures:                                         
+      240 +https://github.com/IraPolchanin/rotating-cube/actions/runs/394
+          +23788004.                                                     
+      241 +The CI run on `main` after the fast-forward is recorded separa
+          +tely once it has finished.                                    
+      242  
+      243  **Not configured:** branch protection and required status chec
+           ks. CI reports a
+      244  result but does not block merges or direct pushes to `main`.
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      564  | Vitest config | `vitest.config.ts` | **Implemented** |
+      565  | Playwright config + `webServer` | `playwright.config.ts` | *
+           *Implemented** |
+      566  | Pre-commit hook script | `.githooks/pre-commit` | **Implemen
+           ted** — fresh-clone activation unverified |
+      567 -| GitHub Actions CI workflow | `.github/workflows/ci.yml` | **
+          -Implemented** — verified 2026-10-20 for the pre-cube suite; th
+          -e first run with the cube **failed** for Firefox (WebGL, §4 "P
+          -hase 4 follow-up"); fix not yet verified on GitHub Actions; no
+          - branch protection |                                          
+      567 +| GitHub Actions CI workflow | `.github/workflows/ci.yml` | **
+          +Implemented** — verified 2026-10-20 for the pre-cube suite; th
+          +e first run with the cube **failed** for Firefox (WebGL, §4 "P
+          +hase 4 follow-up"); fix verified on GitHub Actions on branch `
+          +fix/firefox-ci-webgl` (run 39423788004, green); no branch prot
+          +ection |                                                      
+      568  | MIT license | `LICENSE` | **Implemented** |
+      569  | Application (AC-1 – AC-15) | `src/`, `e2e/`, evidence in `do
+           cs/evidence/phase-4.md` | **Implemented** — automated checks v
+           erified locally 2026-10-20; manual checks partly done (Chrome 
+           only), see "Phase 4 manual checks" |
+      570  
+
+● Update(docs\evidence\phase-4.md)
+  ⎿  Added 8 lines, removed 4 lines
+      223  - One local run showed a single Firefox `NS_ERROR_CONNECTION_R
+           EFUSED` on `page.goto`
+      224    (AC-10) before three green reruns. Port 5173 was held by an 
+           existing process, which
+      225    Playwright reuses outside CI; the cause of that one failure 
+           is **not established**.
+      226 -- **Not yet verified:** the fix on real GitHub Actions. The co
+          -ntainer is not                                                
+      227 -  identical to the runner (container ships preinstalled deps; 
+          -the runner uses                                               
+      228 -  `playwright install --with-deps`; `npm ci` in the container 
+          -used `--ignore-scripts`).                                     
+      229 -  The branch has not been pushed; CI on it is the remaining ch
+          -eck.                                                          
+      226 +- GitHub Actions on the pushed branch (commit `9830d88`): **pa
+          +ssed** — run 39423788004,                                     
+      227 +  20 unit tests and 42 e2e (Chromium and Firefox), 0 failures.
+          + This closes the gap that                                     
+      228 +  the container was not identical to the runner (container shi
+          +ps preinstalled deps;                                         
+      229 +  the runner uses `playwright install --with-deps`; `npm ci` i
+          +n the container used                                          
+      230 +  `--ignore-scripts`). Not yet recorded here: the CI run on `m
+          +ain` after the                                                
+      231 +  fast-forward.                                               
+      232 +- Human intervention: approved the investigation (option 1), a
+          +pproved pushing the                                           
+      233 +  branch, and chose to record this result before the fast-forw
+          +ard.                                                          
+
+● Bash(git add docs && git commit -q -m "docs: record green CI run for the
+      Firefox WebGL fix…)
+  ⎿  warning: in the working copy of 'docs/evidence/phase-4.md', LF will be
+      replaced by CRLF the next time Git touches it
+     6205de4 docs: record green CI run for the Firefox WebGL fix
+     … +4 lines (ctrl+o to expand)
+
+● Гілку запушено. Чекаю CI на 6205de4, перш ніж робити fast-forward main.
+
+● Bash(sleep 10; id=$(gh run list --branch fix/firefox-ci-webgl --limit 1 --json
+      databaseId --jq '.[0].databaseId'); echo run=$id; gh run watch "$id"
+      --exit-status 2>&…)
+  ⎿  run=39424728496
+       ✓ Run npm ci
+       ✓ Run npx playwright install --with-deps chromium firefox
+     … +6 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● CI на 6205de4 зелений. Роблю fast-forward main (локально) і пушу.
+
+● Bash(git switch main 2>&1 | tail -1 && git merge --ff-only
+      fix/firefox-ci-webgl 2>&1 | tail -3; git log --oneline -3; git status
+      --short | wc -l; git push origin mai…)
+  ⎿  Switched to branch 'main'
+      playwright.config.ts     |  9 ++++++++-
+      6 files changed, 104 insertions(+), 8 deletions(-)
+     … +8 lines (ctrl+o to expand)
+
+● Bash(sleep 10; id=$(gh run list --branch main --limit 1 --json databaseId --jq
+      '.[0].databaseId'); echo run=$id; gh run watch "$id" --exit-status 2>&1 |
+      grep -E "✓ R…)
+  ⎿  run=39424971042
+       ✓ Run xvfb-run -a npm run check
+       ✓ Complete job
+     … +3 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● main на origin тепер 6205de4, і CI на ньому зелений: run 39424971042
+  (https://github.com/IraPolchanin/rotating-cube/actions/runs/39424971042). Той
+  самий коміт ще раніше пройшов CI на гілці (run 39424728496), а коміт 9830d88 з
+  фіксом пройшов у run 39423788004.
+
+  Fast-forward зробив без merge-коміту. Записи в docs/quality-gates.md і
+  docs/evidence/phase-4.md тепер кажуть, що фікс перевірений на GitHub Actions.
+  Запуск CI на main після fast-forward я ще не вніс у документи, бо це потребує
+  нового коміту й push у main. Скажіть, якщо хочете, щоб я це зробив.
+
+  Гілку fix/firefox-ci-webgl не видаляв: ні локальну, ні віддалену. Вона тепер
+  збігається з main, тож видалення нічого не втратить. Видалити обидві?
+
+  Лишається невиконаним з перевірок: Firefox desktop вручну і справжній
+  touch-пристрій (ви планували це після деплою на GitHub Pages).
+
+✻ Baked for 3m 26s · done 3:48 PM
+
+❯ Delete the branch fix/firefox-ci-webgl locally and on origin, after verifying 
+  that it matches main and all changes are preserved.                           
+                                                                                
+  Do not create a separate documentation commit for the current main CI run.    
+  Record its result and link together with the next documentation update in     
+  Phase 5.                                                                      
+                                                                                
+  Phase 4 implementation and automated CI checks are complete. Manual Firefox   
+  desktop testing and testing on a physical touch device remain outstanding and 
+  should be tracked for after deployment.                                       
+
+● Спершу перевіряю, що гілка збігається з main і нічого не втратиться.
+● Bash(git fetch origin --prune 2>&1 | tail -1; echo "main:        $(git
+      rev-parse main)"; echo "branch:      $(git rev-parse
+      fix/firefox-ci-webgl)"; echo "origin/main…)
+  ⎿  main:        6205de44f315a097fa0547070ca183385bad1f2e
+     branch:      6205de44f315a097fa0547070ca183385bad1f2e
+     origin/main: 6205de44f315a097fa0547070ca183385bad1f2e
+     … +5 lines (ctrl+o to expand)
+
+● Усі чотири посилання вказують на той самий коміт 6205de4, унікальних комітів
+  немає, дерево чисте — тож видаляю їх безпечним -d, який сам відмовить, якщо
+  щось не злито. · summary
+
+● Bash(git branch -d fix/firefox-ci-webgl 2>&1 | tail -1; git push origin
+      --delete fix/firefox-ci-webgl 2>&1 | tail -2; git fetch origin --prune
+      2>&1 | tail -1; echo "…)
+  ⎿  Deleted branch fix/firefox-ci-webgl (was 6205de4).
+     To https://github.com/IraPolchanin/rotating-cube.git
+      - [deleted]         fix/firefox-ci-webgl
+     … +3 lines (ctrl+o to expand)
+
+● Гілку fix/firefox-ci-webgl видалено локально й на origin. Перед видаленням
+  вона, main, origin/main і origin/fix/firefox-ci-webgl вказували на один коміт
+  6205de4, унікальних комітів не було, тому всі зміни збережено в main. Тепер
+  лишилися тільки main і origin/main, дерево чисте.
+
+  Окремий docs-коміт для CI-запуску main не створював. Для Phase 5 запам'ятайте:
+  запуск 39424971042
+  (https://github.com/IraPolchanin/rotating-cube/actions/runs/39424971042) на
+  6205de4 пройшов успішно, його результат і посилання треба внести в
+  docs/quality-gates.md та docs/evidence/phase-4.md разом з наступним оновленням
+  документації.
+
+  Відкритим лишається таке (після деплою на GitHub Pages):
+  - Ручна перевірка Firefox desktop (зараз Firefox покритий лише автотестами
+    Playwright).
+  - Перевірка на справжньому touch-пристрої (AC-6 і AC-7 зараз використовують
+    лише симуляцію).
+  - Варто записати це в Phase 5 як пункти для перевірки після деплою. Дрібніша
+    відкрита річ: єдиний збій NS_ERROR_CONNECTION_REFUSED у Firefox, причину
+    якого я не встановив.
+
+✻ Worked for 36s · done 3:51 PM
