@@ -80,3 +80,30 @@ Template per task:
   `Math.min(devicePixelRatio, 2)`. No other findings.
 - Human intervention: none.
 - Commit: `feat(cube): resize canvas with viewport (AC-10, AC-11)`
+
+## T4 — Mouse and touch drag (AC-4, AC-5, AC-6, AC-7, AC-12; FR-2, FR-3, FR-4)
+
+- Red run: `npx playwright test e2e/drag.test.ts` before implementation → 12 failed
+  (6 tests × 2 browsers), all `toHaveAttribute` / `not.toHaveAttribute` failures
+  because the attributes never changed; exit 1.
+- Hook events: PostToolUse blocked 4 times on TypeScript errors (`TS2304` missing
+  `capturePointer` / `applyDrag`, `TS2588` assign to const `orientation`). These were
+  transient: the implementation was applied as five separate edits, and the hook ran
+  after each before the set was complete. The final state had none.
+  No pre-commit or Stop-hook block before the commit.
+- Check runs: 2 × `npm run check`, both green (the second after the reviewer fix);
+  30 e2e tests (15 per browser).
+- Touch input: simulated with synthetic `PointerEvent` (`pointerType: "touch"`);
+  Playwright's mouse API cannot produce touch pointers. A cleaner option than
+  `try/catch` was considered: branching on `event.isTrusted` would put test-aware
+  logic in production code, CDP touch works in Chromium only, and `hasPointerCapture`
+  cannot predict whether `setPointerCapture` will throw. Kept `try/catch`, catching
+  only `DOMException` `NotFoundError` (comment in `capturePointer`).
+  Real pointer capture is **not** exercised by these touch tests; it is verified by
+  AC-14 with Playwright's mouse (T6).
+- spec-reviewer: 1 finding (low): the touch AC-12 test checked only the final value,
+  not the bound during the drag → fixed by firing each touch event in its own
+  `page.evaluate` and sampling `data-cube-rx` after every step. The `try/catch` was
+  judged justified and narrowly scoped. No other findings.
+- Human intervention: none.
+- Commit: `feat(cube): rotate cube mesh on pointer drag (AC-4, AC-5, AC-6, AC-7, AC-12)`
