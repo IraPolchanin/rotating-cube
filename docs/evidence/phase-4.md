@@ -31,9 +31,10 @@ Template per task:
 ## T1 — Pure rotation logic (AC-3 format, AC-4, AC-5, AC-6, AC-7, AC-9, AC-12, A-6)
 
 - Red run: `npx vitest run` against throwing stubs → 15 failed, 3 passed
-  (`Error: not implemented`); exit 1. The 3 passing tests were the constant checks
-  (`INITIAL_ORIENTATION`, `SENSITIVITY`) and one non-throwing path, which the stub
-  already satisfied.
+  (`Error: not implemented`); exit 1. The 3 passing tests were the two constant
+  checks (`INITIAL_ORIENTATION`, `SENSITIVITY`) and the pre-existing scaffold smoke
+  test (`vitest runs`), which the stub already satisfied. (Corrected in the T2
+  commit: the T1 commit text wrongly said "one non-throwing path".)
 - Hook events: PostToolUse blocked 2 times (after writing the stub and the test file),
   both with the same 6 `@typescript-eslint/no-unused-vars` errors for the stub's
   unused parameters. Resolved by the real implementation. No pre-commit or Stop-hook
@@ -43,3 +44,23 @@ Template per task:
 - spec-reviewer: 1 invocation → "No violations found."
 - Human intervention: none.
 - Commit: `feat(cube): add pure rotation logic (AC-4, AC-5, AC-9, AC-12)`
+
+## T2 — Scene, cube, DOM contract (AC-1, AC-2, AC-3, AC-13, AC-15)
+
+- Red run: `npx playwright test e2e/scene.test.ts` before any implementation → all
+  five new tests failed in both browsers (`element(s) not found` from
+  `toBeAttached` / `toHaveAttribute`); exit 1.
+- Hook events: PostToolUse blocked 4 times (3 `Write`, 1 `Edit`), always the same
+  `prefer-const` error on `orientation` in `createCubeScene.ts` (it becomes `let`
+  only when drag lands in T4). Fixed by making it `const`. No pre-commit or
+  Stop-hook block before the commit.
+- Check runs: 1 × `npm run check`, green (18 unit tests, build, 12 e2e = 6 per
+  browser). The build prints a non-fatal chunk-size warning (three.js, 752 kB
+  minified); exit code 0, left as is.
+- Risk 2 (WebGL in headless Chromium and Firefox): resolved — canvas, rendering and
+  the no-console-error test pass in both browsers with the default config.
+- spec-reviewer: 1 invocation → "No violations found."
+- Human intervention: none.
+- Also: corrected the T1 entry (the 3 passing tests in the T1 red run were the two
+  constant checks and the pre-existing scaffold smoke test).
+- Commit: `feat(cube): render cube scene with testability contract (AC-1, AC-2, AC-3, AC-13, AC-15)`
