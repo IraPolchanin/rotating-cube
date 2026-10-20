@@ -186,3 +186,9 @@ Template per task:
 | T5 | 8 failed, 12 passed | 1 | 2 (TS, transient) | 0 | none | `d66d186` |
 | T6 | green on arrival; 3 mutations caught | 1 | 1 (mutation side effect) | 0 | none | `6f3352b` |
 | T7 | n/a | 2 | 0 | 0 (cumulative) | none | this commit |
+
+### Manual checks (reported by the human, 2026-10-20)
+
+Recorded in `docs/quality-gates.md` §12. Chrome desktop and Chrome DevTools device
+emulation passed; Firefox desktop and a real touch device were not checked. This
+supersedes the "NOT performed" line in the T7 entry above for the Chrome items.

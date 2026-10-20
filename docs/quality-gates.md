@@ -546,7 +546,7 @@ When any check fails, the agent must:
 | Pre-commit hook script | `.githooks/pre-commit` | **Implemented** — fresh-clone activation unverified |
 | GitHub Actions CI workflow | `.github/workflows/ci.yml` | **Implemented** — verified 2026-10-20; no branch protection |
 | MIT license | `LICENSE` | **Implemented** |
-| Application (AC-1 – AC-15) | `src/`, `e2e/`, evidence in `docs/evidence/phase-4.md` | **Implemented** — automated checks verified locally 2026-10-20; manual checks and CI on these commits **not yet done** |
+| Application (AC-1 – AC-15) | `src/`, `e2e/`, evidence in `docs/evidence/phase-4.md` | **Implemented** — automated checks verified locally 2026-10-20; manual checks partly done (Chrome only), see "Phase 4 manual checks" |
 
 ---
 
@@ -589,9 +589,30 @@ named in the first column). Open items:
 | PostToolUse hook (§1) | Type error → exit 2 + diagnostics; fix → exit 0; lint-only error; `.md` edit runs no check; `.json` edit runs; missing `file_path` runs | **Passed** (2026-10-19) |
 | Pre-commit hook (§2) | Staged type error blocks commit; later commits pass; `git ls-files --eol` LF; `git ls-files -s` `100755` | **Passed** (2026-10-19). Open: hook execution on a fresh clone **not verified**. CI shows only that `npm ci` and `prepare` complete on a clean runner (§2) |
 | Permission guardrail (§5) | Each pattern probed separately; controls not blocked | **Passed** (2026-10-19). Open: known gaps listed in §5 (other global git options, `git config core.hooksPath`, hook-file edits) |
-| Application, Phase 4 | `npm run check` on a clean tree (20 unit tests, 40 e2e in Chromium + Firefox); per-task `spec-reviewer`; mutation checks: disabling `setPointerCapture` fails AC-14, `touch-action: auto` fails AC-15, removing the X clamp fails AC-12 (unit and e2e) | **Passed locally** (2026-10-20), details in `docs/evidence/phase-4.md`. Open: manual checks of spec §7.3 (appearance, smoothness, viewport fill, real touch device, NFR-7 in real Chrome/Firefox) **not performed**; CI not run on these commits (not pushed); AC-6/AC-7 use simulated touch only |
+| Application, Phase 4 | `npm run check` on a clean tree (20 unit tests, 40 e2e in Chromium + Firefox); per-task `spec-reviewer`; mutation checks: disabling `setPointerCapture` fails AC-14, `touch-action: auto` fails AC-15, removing the X clamp fails AC-12 (unit and e2e) | **Passed locally** (2026-10-20), details in `docs/evidence/phase-4.md`. Manual checks of spec §7.3 are in "Phase 4 manual checks" below. Open: Firefox desktop and a real touch device **not checked**; AC-6/AC-7 use simulated touch only |
 | Push confirmation (§5) | `git push origin main` with nothing to push; prompt expected, human declines | **Passed** (2026-10-20): prompt "Ask rule Bash(git push*) overrides auto mode" appeared and was declined. Open: other push forms not probed |
 | Stop hook (§6) | Prototype; dry-run matrix; direct runs; live block and halt; no `--dry-run` in settings | **Passed** (2026-10-19) |
 | ESLint block for `scripts/*.mjs` | `--print-config` shows Node globals; seeded errors fail `npm run lint` | **Passed** (2026-10-19) |
 | spec-reviewer (§7) | Clean diff clean; camera rotation / OrbitControls flagged; edit attempt impossible; agent visible | **Passed** (2026-10-19, Claude Code 2.1.303). Criterion 1: clean `src/` diff (`App.tsx`, `main.tsx`, `vite-env.d.ts`) → `No violations found.` Criterion 2: temporary `src/__probe__.tsx` (OrbitControls import/re-export, `camera.rotation.y`) → flagged as NFR-8 ×2 and spec §7.5; file removed afterwards. Criterion 3: asked to edit a file, the agent reported only `Read`/`Grep`/`Glob` and the file stayed unchanged. Criterion 4: agent invocable in the session. Earlier invisibility: agents directory was created in the first session (may explain the restart); `claude update` was run later and the agent became available — causal link **not established** |
 | CI (§4) | Green baseline on `main`; deliberate e2e-only failure on a temporary branch; `git revert` restores green; temporary branch deleted | **Passed** (2026-10-20, three runs listed in §4). Open: `pull_request` trigger not exercised; no branch protection |
+
+---
+
+## 12. Phase 4 manual checks
+
+Spec §7.3 checks, performed by the human on `localhost` (dev server), reported on
+2026-10-20. The agent did not perform or observe these; they are recorded as reported.
+
+| Check | Environment | Result |
+|-------|-------------|--------|
+| Cube renders correctly (FR-1) | Chrome desktop | **Passed** |
+| Rotation is smooth (FR-2) | Chrome desktop | **Passed** |
+| X rotation stays within ±90° (AC-12) | Chrome desktop | **Passed** |
+| Reset works (FR-5) | Chrome desktop | **Passed** |
+| Canvas fills the window, follows resize, no scrollbars (FR-6) | Chrome desktop | **Passed** |
+| Touch drag rotates the cube; mobile width works (FR-3) | Chrome DevTools device emulation | **Passed** (emulated touch, not a physical device) |
+| Same checks | Firefox desktop | **Not checked** |
+| Physical touch device (FR-3) | Real device | **Not checked** — the corporate network blocks LAN access; planned after deployment to GitHub Pages |
+
+NFR-7 (latest stable Chrome and Firefox) is therefore verified manually for Chrome
+only; Firefox is covered only by the automated Playwright run (its bundled Firefox).
