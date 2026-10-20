@@ -126,3 +126,27 @@ Template per task:
 - spec-reviewer: 1 invocation → "No violations found." (with the git-diff caveat above).
 - Human intervention: none.
 - Commit: `feat(reset): restore initial orientation on button click (AC-8, AC-9)`
+
+## T6 — Pointer capture over the Reset button + mutation checks (AC-14, AC-15, AC-12)
+
+- Red run: **green on arrival** — `npx playwright test e2e/capture.test.ts` passed in
+  both browsers, because pointer capture already existed from T4. The test was
+  therefore validated by deliberate mutations, each reverted afterwards:
+  - M1 — disabled `setPointerCapture` (`if (pointerId < 0) …`): AC-14 failed in
+    Chromium and Firefox (`not.toHaveAttribute` failed). The test keeps moving the
+    pointer inside the button, so it depends on capture; a version that only
+    dragged up to the button would not have failed.
+  - M2 — `touch-action: none` → `auto`: AC-15 failed in both browsers
+    (`Expected: "none"`, `Received: "auto"`).
+  - M3 — `clampX` returned its input unchanged: 2 unit tests failed (`applyDrag`
+    AC-12, `clampX` AC-12) and 4 e2e AC-12 tests failed (mouse and touch × 2
+    browsers).
+- After reverting, `git status` showed only the new `e2e/capture.test.ts` and
+  `git diff -- src` was empty, so no experiment artefacts remained.
+- Hook events: M3 triggered a PostToolUse block (`TS6133` / `no-unused-vars` for the
+  now-unused `MAX_X`) — a side effect of the mutation, not of the final code. No
+  pre-commit or Stop-hook block before the commit.
+- Check runs: 1 × `npm run check` after reverting, green (18 unit tests, 40 e2e).
+- spec-reviewer: 1 invocation → "No violations found."
+- Human intervention: none.
+- Commit: `test(e2e): verify pointer capture over reset button (AC-14)`
