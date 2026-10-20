@@ -79,12 +79,16 @@ export function createCubeScene(wrapper: HTMLElement): CubeScene {
     frame = requestAnimationFrame(loop)
   }
 
+  const resizeObserver = new ResizeObserver(resize)
+  resizeObserver.observe(wrapper)
+
   resize()
   loop()
 
   return {
     dispose(): void {
       cancelAnimationFrame(frame)
+      resizeObserver.disconnect()
       geometry.dispose()
       material.dispose()
       edgesGeometry.dispose()

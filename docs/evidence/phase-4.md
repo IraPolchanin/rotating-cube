@@ -64,3 +64,19 @@ Template per task:
 - Also: corrected the T1 entry (the 3 passing tests in the T1 red run were the two
   constant checks and the pre-existing scaffold smoke test).
 - Commit: `feat(cube): render cube scene with testability contract (AC-1, AC-2, AC-3, AC-13, AC-15)`
+
+## T3 — Resize (AC-10, AC-11, FR-6)
+
+- Red run: `npx playwright test e2e/resize.test.ts` before implementation → 4 passed,
+  2 failed. AC-10 and AC-11 were **green on arrival** in both browsers: the CSS
+  (`width: 100%` on a fixed full-viewport wrapper, from T2) already makes the canvas
+  follow the viewport. The only red tests were the extra FR-6 drawing-buffer test
+  (`canvas.width` not following the viewport) in Chromium and Firefox. AC-11 on its
+  own therefore does not prove the resize code; the FR-6 test does.
+- Hook events: none (no PostToolUse, pre-commit or Stop-hook block).
+- Check runs: 2 × `npm run check`, both green (the second after the reviewer fix).
+- spec-reviewer: 1 finding (low): the FR-6 test divided by the raw
+  `devicePixelRatio` while the renderer caps it at 2 → fixed in the test with
+  `Math.min(devicePixelRatio, 2)`. No other findings.
+- Human intervention: none.
+- Commit: `feat(cube): resize canvas with viewport (AC-10, AC-11)`
