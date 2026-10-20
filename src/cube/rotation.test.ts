@@ -76,6 +76,17 @@ describe('applyDrag', () => {
     expect(applyDrag(ORIGIN, 0, -2000).rx).toBe(-90)
   })
 
+  it('AC-4: a drag past 180 degrees wraps ry through normaliseY', () => {
+    expect(applyDrag({ rx: 0, ry: 170, rz: 0 }, 40, 0).ry).toBe(-170)
+    expect(applyDrag({ rx: 0, ry: -170, rz: 0 }, -40, 0).ry).toBe(170)
+  })
+
+  it('AC-12: reversing the drag leaves the clamp immediately', () => {
+    const atLimit = applyDrag(ORIGIN, 0, 2000)
+    expect(atLimit.rx).toBe(90)
+    expect(applyDrag(atLimit, 0, -20).rx).toBe(80)
+  })
+
   it('AC-4: does not mutate the input orientation', () => {
     const input = { rx: 1, ry: 2, rz: 0 }
     applyDrag(input, 40, 40)
