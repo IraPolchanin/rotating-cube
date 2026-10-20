@@ -150,3 +150,39 @@ Template per task:
 - spec-reviewer: 1 invocation → "No violations found."
 - Human intervention: none.
 - Commit: `test(e2e): verify pointer capture over reset button (AC-14)`
+
+## T7 — Phase close-out
+
+- Final `npm run check` on a clean tree: green (typecheck, lint, 18 unit tests,
+  build, 40 e2e = 20 per browser). After adding two unit tests below: 20 unit tests.
+- spec-reviewer on the cumulative Phase 4 code: "No violations found." It listed
+  weakly covered areas; two were closed with unit tests (`applyDrag` wiring to
+  `normaliseY`; leaving the X clamp when the drag reverses). Remaining, accepted:
+  - AC-6 / AC-7: synthetic touch only; real pointer capture for touch is not
+    exercised (spec §3; real devices are a manual check).
+  - Y wrap-around is not exercised end to end (unit-tested only).
+  - `rz` is asserted unchanged only after the AC-4 / AC-5 mouse drags.
+  - AC-13 observes the console only during load (matches the spec wording).
+  - Latent edge: `formatDegrees(-179.96)` would print `-180.0`; not reachable with
+    0.5 deg/px and integer pixel deltas.
+- Manual checks (spec §7.3): **NOT performed** by the agent. Pending for the human:
+  cube appearance (FR-1), drag smoothness (FR-2), canvas fills the viewport without
+  gaps or scrollbars (FR-6), real physical touch device (FR-3), and a run in the
+  latest stable desktop Chrome and Firefox (NFR-7; Playwright uses its own builds).
+- Not verified: CI on the Phase 4 commits (nothing pushed; a push needs the human's
+  explicit approval).
+- Human intervention in Phase 4: plan approval with two changes (T0 added; narrower
+  `setPointerCapture` handling) and declining the `git push` probe in T0.
+
+### Summary
+
+| Task | Red run | `check` runs | Hook blocks (PostToolUse) | Reviewer findings | Human intervention | Commit |
+|------|---------|--------------|---------------------------|-------------------|--------------------|--------|
+| T0 | n/a (probe) | 0 | 0 | not run | declined push prompt | `6127eec` |
+| T1 | 15 failed / 3 passed | 1 | 2 (lint, stub) | 0 | none | `c45e272` |
+| T2 | 10 failed (5 tests × 2) | 1 | 4 (`prefer-const`) | 0 | none | `f1710b3` |
+| T3 | 2 failed; AC-10/AC-11 green on arrival | 2 | 0 | 1 low, fixed | none | `08f073e` |
+| T4 | 12 failed | 2 | 4 (TS, transient) | 1 low, fixed | none | `bdd2cb9` |
+| T5 | 8 failed, 12 passed | 1 | 2 (TS, transient) | 0 | none | `d66d186` |
+| T6 | green on arrival; 3 mutations caught | 1 | 1 (mutation side effect) | 0 | none | `6f3352b` |
+| T7 | n/a | 2 | 0 | 0 (cumulative) | none | this commit |

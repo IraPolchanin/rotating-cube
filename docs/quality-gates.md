@@ -546,6 +546,7 @@ When any check fails, the agent must:
 | Pre-commit hook script | `.githooks/pre-commit` | **Implemented** — fresh-clone activation unverified |
 | GitHub Actions CI workflow | `.github/workflows/ci.yml` | **Implemented** — verified 2026-10-20; no branch protection |
 | MIT license | `LICENSE` | **Implemented** |
+| Application (AC-1 – AC-15) | `src/`, `e2e/`, evidence in `docs/evidence/phase-4.md` | **Implemented** — automated checks verified locally 2026-10-20; manual checks and CI on these commits **not yet done** |
 
 ---
 
@@ -588,6 +589,7 @@ named in the first column). Open items:
 | PostToolUse hook (§1) | Type error → exit 2 + diagnostics; fix → exit 0; lint-only error; `.md` edit runs no check; `.json` edit runs; missing `file_path` runs | **Passed** (2026-10-19) |
 | Pre-commit hook (§2) | Staged type error blocks commit; later commits pass; `git ls-files --eol` LF; `git ls-files -s` `100755` | **Passed** (2026-10-19). Open: hook execution on a fresh clone **not verified**. CI shows only that `npm ci` and `prepare` complete on a clean runner (§2) |
 | Permission guardrail (§5) | Each pattern probed separately; controls not blocked | **Passed** (2026-10-19). Open: known gaps listed in §5 (other global git options, `git config core.hooksPath`, hook-file edits) |
+| Application, Phase 4 | `npm run check` on a clean tree (20 unit tests, 40 e2e in Chromium + Firefox); per-task `spec-reviewer`; mutation checks: disabling `setPointerCapture` fails AC-14, `touch-action: auto` fails AC-15, removing the X clamp fails AC-12 (unit and e2e) | **Passed locally** (2026-10-20), details in `docs/evidence/phase-4.md`. Open: manual checks of spec §7.3 (appearance, smoothness, viewport fill, real touch device, NFR-7 in real Chrome/Firefox) **not performed**; CI not run on these commits (not pushed); AC-6/AC-7 use simulated touch only |
 | Push confirmation (§5) | `git push origin main` with nothing to push; prompt expected, human declines | **Passed** (2026-10-20): prompt "Ask rule Bash(git push*) overrides auto mode" appeared and was declined. Open: other push forms not probed |
 | Stop hook (§6) | Prototype; dry-run matrix; direct runs; live block and halt; no `--dry-run` in settings | **Passed** (2026-10-19) |
 | ESLint block for `scripts/*.mjs` | `--print-config` shows Node globals; seeded errors fail `npm run lint` | **Passed** (2026-10-19) |
