@@ -34,12 +34,15 @@ test('AC-13: no console errors or page errors on load', async ({ page }) => {
     errors.push(`pageerror: ${error.message}`)
   })
   await page.goto('/')
-  // Wait until the scene has rendered at least once before judging the console.
+  await page.waitForLoadState('networkidle')
+  // Check the errors first: if mounting threw (for example, no WebGL), the real
+  // cause is reported here instead of an opaque "element(s) not found" timeout.
+  expect(errors).toEqual([])
+  // The scene must also have rendered at least once.
   await expect(page.locator('div[data-testid="cube-scene"]')).toHaveAttribute(
     'data-cube-rx',
     '25.0',
   )
-  await page.waitForLoadState('networkidle')
   expect(errors).toEqual([])
 })
 

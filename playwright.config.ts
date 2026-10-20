@@ -17,7 +17,14 @@ export default defineConfig({
     },
     {
       name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      use: {
+        ...devices['Desktop Firefox'],
+        // Headless Firefox on Linux without a GPU refuses WebGL2 ("AllowWebgl2:false
+        // restricts context creation on this system"), and three.js needs WebGL2.
+        // In CI the browser runs headed under xvfb (see .github/workflows/ci.yml),
+        // which gets software WebGL. Elsewhere it stays headless.
+        headless: !process.env['CI'],
+      },
     },
   ],
 })

@@ -57,8 +57,10 @@ Template per task:
 - Check runs: 1 × `npm run check`, green (18 unit tests, build, 12 e2e = 6 per
   browser). The build prints a non-fatal chunk-size warning (three.js, 752 kB
   minified); exit code 0, left as is.
-- Risk 2 (WebGL in headless Chromium and Firefox): resolved — canvas, rendering and
-  the no-console-error test pass in both browsers with the default config.
+- Risk 2 (WebGL in headless Chromium and Firefox): verified **only on the Windows
+  development machine** — canvas, rendering and the no-console-error test passed in
+  both browsers there. This entry originally said "resolved"; that was wrong, because
+  Linux CI was not exercised. CI later failed for Firefox (see "CI follow-up").
 - spec-reviewer: 1 invocation → "No violations found."
 - Human intervention: none.
 - Also: corrected the T1 entry (the 3 passing tests in the T1 red run were the two
@@ -192,3 +194,36 @@ Template per task:
 Recorded in `docs/quality-gates.md` §12. Chrome desktop and Chrome DevTools device
 emulation passed; Firefox desktop and a real touch device were not checked. This
 supersedes the "NOT performed" line in the T7 entry above for the Chrome items.
+
+## CI follow-up — Firefox WebGL failure on Linux (branch `fix/firefox-ci-webgl`)
+
+- Failure: CI run 39419753170 on `main` (`795832e`) failed `npm run check` at e2e:
+  19 of 40 tests failed, all in Firefox; Chromium 20/20. In the failing tests
+  `div[data-testid="cube-scene"]` did not exist, because mounting threw.
+- Diagnostics added (not masking): `e2e/webgl.test.ts` (reports whether the browser
+  can create a WebGL2 context, with an explicit message) and AC-13 now asserts the
+  collected console/page errors **before** waiting for the scene, so the real error
+  is reported instead of an "element(s) not found" timeout. The cube tests are
+  unchanged and still fail on their own when the cube is missing; verified with
+  Firefox WebGL disabled (`webgl.disabled`), where the new test, AC-13 and AC-1 fail.
+- Reproduced locally on Ubuntu 24.04.5 (Podman, `mcr.microsoft.com/playwright:v1.64.1-noble`,
+  `CI=1`): same failure. Exact reason from three.js:
+  `WebGL creation failed: * AllowWebgl2:false restricts context creation on this system.`
+  So the cause is WebGL initialisation (three.js needs WebGL2), not a React or code bug.
+- Tried in that container (webgl test only, Firefox): default; `webgl.force-enabled`;
+  + `gfx.webrender.software`; + `layers.acceleration.disabled`; + `webgl.enable-webgl2`
+  + `security.sandbox.content.level: 0`; `webgl.enable-webgl2` alone; `webgl.force-enabled`
+  + `forbid-hardware` + `disable-angle` → all **failed**. Headed Firefox under
+  `xvfb-run` (with and without `webgl.force-enabled`) → **passed**.
+- Fix (minimal, no prefs): Firefox project `headless: !process.env['CI']` in
+  `playwright.config.ts`, and CI runs `xvfb-run -a npm run check`.
+- Verified in the container (Ubuntu 24.04, `CI=1`, `xvfb-run -a npm run check`):
+  typecheck, lint, 20 unit tests, build, 42 e2e (21 per browser) all green. Locally on
+  Windows: `npm run check` and three further `npx playwright test` runs (42/42).
+- One local run showed a single Firefox `NS_ERROR_CONNECTION_REFUSED` on `page.goto`
+  (AC-10) before three green reruns. Port 5173 was held by an existing process, which
+  Playwright reuses outside CI; the cause of that one failure is **not established**.
+- **Not yet verified:** the fix on real GitHub Actions. The container is not
+  identical to the runner (container ships preinstalled deps; the runner uses
+  `playwright install --with-deps`; `npm ci` in the container used `--ignore-scripts`).
+  The branch has not been pushed; CI on it is the remaining check.

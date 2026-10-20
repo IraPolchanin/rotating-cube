@@ -30,7 +30,8 @@ jobs:
 
       - run: npx playwright install --with-deps chromium firefox
 
-      - run: npm run check
+      # Headed Firefox needs a display for WebGL; see playwright.config.ts.
+      - run: xvfb-run -a npm run check
 
       - if: failure()
         uses: actions/upload-artifact@v7

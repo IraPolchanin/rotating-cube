@@ -215,10 +215,27 @@ on:
    `cache: npm`.
 3. `npm ci`
 4. `npx playwright install --with-deps chromium firefox`
-5. `npm run check`
+5. `xvfb-run -a npm run check` (was plain `npm run check` until the Phase 4 Firefox
+   fix; headed Firefox needs a display, see "Phase 4 follow-up" below).
 6. On failure only: `actions/upload-artifact@v7` uploads `test-results/`.
 
 **Artifact:** `.github/workflows/ci.yml`
+
+### Phase 4 follow-up — Firefox WebGL on Linux
+
+CI run 39419753170 on `main` (`795832e`, the first run containing the cube) **failed**
+at e2e: 19 of 40 tests, all Firefox, because headless Firefox on Linux without a GPU
+refuses WebGL2 (`AllowWebgl2:false restricts context creation on this system`) and
+the cube could not mount. The same failure was reproduced on Ubuntu 24.04.5 in a
+Playwright container. Of the Firefox preference sets tried, none enabled WebGL2 in
+headless mode; headed Firefox under `xvfb-run` did. The fix is the Firefox project's
+`headless: !process.env['CI']` in `playwright.config.ts` plus the `xvfb-run -a` CI
+step. Diagnostics: `e2e/webgl.test.ts` and an AC-13 that reports console and page
+errors before waiting for the scene. Details: `docs/evidence/phase-4.md`.
+
+**Status of the fix:** verified in the Ubuntu 24.04 container and locally on Windows;
+**not yet verified on GitHub Actions** (branch not pushed). Update this section after
+the CI run on the fix branch.
 
 **Not configured:** branch protection and required status checks. CI reports a
 result but does not block merges or direct pushes to `main`.
@@ -544,7 +561,7 @@ When any check fails, the agent must:
 | Vitest config | `vitest.config.ts` | **Implemented** |
 | Playwright config + `webServer` | `playwright.config.ts` | **Implemented** |
 | Pre-commit hook script | `.githooks/pre-commit` | **Implemented** — fresh-clone activation unverified |
-| GitHub Actions CI workflow | `.github/workflows/ci.yml` | **Implemented** — verified 2026-10-20; no branch protection |
+| GitHub Actions CI workflow | `.github/workflows/ci.yml` | **Implemented** — verified 2026-10-20 for the pre-cube suite; the first run with the cube **failed** for Firefox (WebGL, §4 "Phase 4 follow-up"); fix not yet verified on GitHub Actions; no branch protection |
 | MIT license | `LICENSE` | **Implemented** |
 | Application (AC-1 – AC-15) | `src/`, `e2e/`, evidence in `docs/evidence/phase-4.md` | **Implemented** — automated checks verified locally 2026-10-20; manual checks partly done (Chrome only), see "Phase 4 manual checks" |
 
