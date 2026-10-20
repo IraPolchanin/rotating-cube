@@ -163,6 +163,14 @@ verified only in the working copy (`npm run prepare` → `core.hooksPath=.githoo
 → commit blocked). Optional manual check: `git clone`, `npm ci`, then attempt a
 commit containing a TypeScript error.
 
+**CI evidence (2026-10-20):** the CI run on `main` (§4) executed `npm ci` on a clean
+`ubuntu-latest` runner, which also runs the `prepare` script
+(`git config core.hooksPath .githooks`); both completed successfully. This confirms
+only that `npm ci` and `prepare` do not fail on a clean runner. It does **not**
+verify that the pre-commit hook itself runs on a fresh clone: CI performs no commit,
+and the hook's effect (`core.hooksPath` set, a commit with a TypeScript error
+blocked) was not checked there. Fresh-clone hook execution remains **not verified**.
+
 ---
 
 ## 3. Full Gate — Before Reporting a Task Complete
@@ -182,12 +190,14 @@ invoked once on the diff after `npm run check` passes.
 
 ## 4. CI — GitHub Actions
 
-**Status: PLANNED** — no `.github/` directory or workflow files exist yet.
+**Status: Implemented** — `.github/workflows/ci.yml` is on `main` in the public
+repository `IraPolchanin/rotating-cube`; verified 2026-10-20 (see "Verification"
+below).
 
 **Scope:** runs the full `npm run check` suite on every push to any branch and on
 every pull request targeting `main`.
 
-**Planned trigger:**
+**Trigger:**
 
 ```yaml
 on:
@@ -197,16 +207,49 @@ on:
     branches: [main]
 ```
 
-**Planned steps:**
+**Job `check`** (`ubuntu-latest`, `timeout-minutes: 20`, `permissions: contents: read`,
+`concurrency` cancels superseded runs of the same ref):
 
-1. Checkout repository.
-2. Set up Node.js 22 (matches `.nvmrc`).
+1. `actions/checkout@v7`.
+2. `actions/setup-node@v7` with `node-version-file: .nvmrc` (Node 22) and
+   `cache: npm`.
 3. `npm ci`
-4. `npx playwright install --with-deps` (installs Chromium and Firefox).
+4. `npx playwright install --with-deps chromium firefox`
 5. `npm run check`
+6. On failure only: `actions/upload-artifact@v7` uploads `test-results/`.
 
-**Runner:** `ubuntu-latest`  
-**Planned artifact:** `.github/workflows/ci.yml`
+**Artifact:** `.github/workflows/ci.yml`
+
+**Not configured:** branch protection and required status checks. CI reports a
+result but does not block merges or direct pushes to `main`.
+
+### Verification
+
+1. Green baseline: CI on `main` passes.
+2. Deliberate failure: a temporary branch `ci/verify-failure` with an inverted
+   assertion in `e2e/smoke.test.ts` (`toBeVisible()` → `toBeHidden()`). The change
+   passes `typecheck`, `lint`, `test` and `build` locally and the pre-commit hook
+   (which excludes e2e), and fails only `e2e`.
+3. Restore: `git revert` of that commit (no history rewrite); CI passes again.
+4. Cleanup: the local and remote `ci/verify-failure` branches were deleted.
+
+**Results (2026-10-20):**
+
+| Run | Ref | Result | URL |
+|-----|-----|--------|-----|
+| Baseline | `main` (`2805805`) | **Passed** (job `check`, 1m5s) | https://github.com/IraPolchanin/rotating-cube/actions/runs/39400495789 |
+| Deliberate failure | `ci/verify-failure` (`5864fa0`) | **Failed** at `npm run check` (e2e, `expect(locator).toBeHidden() failed` in Chromium and Firefox); `test-results` artifact uploaded | https://github.com/IraPolchanin/rotating-cube/actions/runs/39402098647 |
+| Restore | `ci/verify-failure` (`90e2e7d`, revert) | **Passed** | https://github.com/IraPolchanin/rotating-cube/actions/runs/39403260460 |
+
+Locally, the same temporary change failed only the e2e step. The `pull_request`
+trigger was **not** exercised (optional PR check skipped); only `push` runs were
+observed.
+
+**Notes:**
+
+- GitHub annotated the runs: the `ubuntu-latest` label began migrating to Ubuntu 26
+  on 2026-10-19. The runs above passed regardless; the runner image is not pinned.
+- Action versions are pinned to major tags, not commit SHAs.
 
 ---
 
@@ -479,7 +522,8 @@ When any check fails, the agent must:
 | Vitest config | `vitest.config.ts` | **Implemented** |
 | Playwright config + `webServer` | `playwright.config.ts` | **Implemented** |
 | Pre-commit hook script | `.githooks/pre-commit` | **Implemented** — fresh-clone activation unverified |
-| GitHub Actions CI workflow | `.github/workflows/ci.yml` | **Planned** |
+| GitHub Actions CI workflow | `.github/workflows/ci.yml` | **Implemented** — verified 2026-10-20; no branch protection |
+| MIT license | `LICENSE` | **Implemented** |
 
 ---
 
@@ -499,6 +543,16 @@ When any check fails, the agent must:
 | Stop hook dry-run | `--dry-run` CLI flag for manual testing only; no env var; never used by the configured hook |
 | spec-reviewer invocation | Standing authorization in `CLAUDE.md` for this subagent only, for tasks changing `src/` or `e2e/` |
 | Guardrail patterns | Seven deny patterns (§5): five `git commit` forms plus `git -c *` and `git -C *`; each verified separately |
+| Repository | Public `IraPolchanin/rotating-cube`, default branch `main`; created and pushed only after separate explicit confirmations |
+| Commit email | The corporate commit email stays in the public history; history was not rewritten (decision of the repository owner) |
+| Session transcripts | `docs/sessions/*.txt` stay public as evidence that the source code was agent-written |
+| CI job | Single job `check` running `npm run check`, so local and CI gates are identical |
+| CI browsers | `playwright install --with-deps chromium firefox` (NFR-5 requires only these two; WebKit is skipped) |
+| CI Node version | `node-version-file: .nvmrc`, one source of truth |
+| CI action versions | `checkout@v7`, `setup-node@v7`, `upload-artifact@v7` (latest majors on 2026-10-20, verified from the official `actions/*` releases); major tags, not SHAs |
+| CI failure experiment | Done on a throwaway branch with an e2e-only failure (the pre-commit hook blocks type, lint and unit failures and `--no-verify` is denied); branch deleted afterwards |
+| Branch protection | Not enabled; required status checks are a possible later step |
+| License | MIT, added before publication; README is a separate later task |
 
 ---
 
@@ -507,12 +561,12 @@ When any check fails, the agent must:
 Status of the practical verification of each mechanism (details in the section
 named in the first column). Open items:
 
-| Item | Verification | Result (2026-10-19) |
+| Item | Verification | Result |
 |------|--------------|---------------------|
-| PostToolUse hook (§1) | Type error → exit 2 + diagnostics; fix → exit 0; lint-only error; `.md` edit runs no check; `.json` edit runs; missing `file_path` runs | **Passed** |
-| Pre-commit hook (§2) | Staged type error blocks commit; later commits pass; `git ls-files --eol` LF; `git ls-files -s` `100755` | **Passed.** Open: activation on a fresh clone (`npm ci` → `prepare`) **not verified** |
-| Permission guardrail (§5) | Each pattern probed separately; controls not blocked | **Passed.** Open: known gaps listed in §5 (other global git options, `git config core.hooksPath`, hook-file edits) |
-| Stop hook (§6) | Prototype; dry-run matrix; direct runs; live block and halt; no `--dry-run` in settings | **Passed** |
-| ESLint block for `scripts/*.mjs` | `--print-config` shows Node globals; seeded errors fail `npm run lint` | **Passed** |
-| spec-reviewer (§7) | Clean diff clean; camera rotation / OrbitControls flagged; edit attempt impossible; agent visible | **Passed** (Claude Code 2.1.303). Criterion 1: clean `src/` diff (`App.tsx`, `main.tsx`, `vite-env.d.ts`) → `No violations found.` Criterion 2: temporary `src/__probe__.tsx` (OrbitControls import/re-export, `camera.rotation.y`) → flagged as NFR-8 ×2 and spec §7.5; file removed afterwards. Criterion 3: asked to edit a file, the agent reported only `Read`/`Grep`/`Glob` and the file stayed unchanged. Criterion 4: agent invocable in the session. Earlier invisibility: agents directory was created in the first session (may explain the restart); `claude update` was run later and the agent became available — causal link **not established** |
-| CI (§4) | — | Out of scope for Phase 2 (Phase 3) |
+| PostToolUse hook (§1) | Type error → exit 2 + diagnostics; fix → exit 0; lint-only error; `.md` edit runs no check; `.json` edit runs; missing `file_path` runs | **Passed** (2026-10-19) |
+| Pre-commit hook (§2) | Staged type error blocks commit; later commits pass; `git ls-files --eol` LF; `git ls-files -s` `100755` | **Passed** (2026-10-19). Open: hook execution on a fresh clone **not verified**. CI shows only that `npm ci` and `prepare` complete on a clean runner (§2) |
+| Permission guardrail (§5) | Each pattern probed separately; controls not blocked | **Passed** (2026-10-19). Open: known gaps listed in §5 (other global git options, `git config core.hooksPath`, hook-file edits) |
+| Stop hook (§6) | Prototype; dry-run matrix; direct runs; live block and halt; no `--dry-run` in settings | **Passed** (2026-10-19) |
+| ESLint block for `scripts/*.mjs` | `--print-config` shows Node globals; seeded errors fail `npm run lint` | **Passed** (2026-10-19) |
+| spec-reviewer (§7) | Clean diff clean; camera rotation / OrbitControls flagged; edit attempt impossible; agent visible | **Passed** (2026-10-19, Claude Code 2.1.303). Criterion 1: clean `src/` diff (`App.tsx`, `main.tsx`, `vite-env.d.ts`) → `No violations found.` Criterion 2: temporary `src/__probe__.tsx` (OrbitControls import/re-export, `camera.rotation.y`) → flagged as NFR-8 ×2 and spec §7.5; file removed afterwards. Criterion 3: asked to edit a file, the agent reported only `Read`/`Grep`/`Glob` and the file stayed unchanged. Criterion 4: agent invocable in the session. Earlier invisibility: agents directory was created in the first session (may explain the restart); `claude update` was run later and the agent became available — causal link **not established** |
+| CI (§4) | Green baseline on `main`; deliberate e2e-only failure on a temporary branch; `git revert` restores green; temporary branch deleted | **Passed** (2026-10-20, three runs listed in §4). Open: `pull_request` trigger not exercised; no branch protection |
