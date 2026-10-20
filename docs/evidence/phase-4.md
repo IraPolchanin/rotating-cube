@@ -223,7 +223,11 @@ supersedes the "NOT performed" line in the T7 entry above for the Chrome items.
 - One local run showed a single Firefox `NS_ERROR_CONNECTION_REFUSED` on `page.goto`
   (AC-10) before three green reruns. Port 5173 was held by an existing process, which
   Playwright reuses outside CI; the cause of that one failure is **not established**.
-- **Not yet verified:** the fix on real GitHub Actions. The container is not
-  identical to the runner (container ships preinstalled deps; the runner uses
-  `playwright install --with-deps`; `npm ci` in the container used `--ignore-scripts`).
-  The branch has not been pushed; CI on it is the remaining check.
+- GitHub Actions on the pushed branch (commit `9830d88`): **passed** — run 39423788004,
+  20 unit tests and 42 e2e (Chromium and Firefox), 0 failures. This closes the gap that
+  the container was not identical to the runner (container ships preinstalled deps;
+  the runner uses `playwright install --with-deps`; `npm ci` in the container used
+  `--ignore-scripts`). Not yet recorded here: the CI run on `main` after the
+  fast-forward.
+- Human intervention: approved the investigation (option 1), approved pushing the
+  branch, and chose to record this result before the fast-forward.

@@ -233,9 +233,12 @@ headless mode; headed Firefox under `xvfb-run` did. The fix is the Firefox proje
 step. Diagnostics: `e2e/webgl.test.ts` and an AC-13 that reports console and page
 errors before waiting for the scene. Details: `docs/evidence/phase-4.md`.
 
-**Status of the fix:** verified in the Ubuntu 24.04 container and locally on Windows;
-**not yet verified on GitHub Actions** (branch not pushed). Update this section after
-the CI run on the fix branch.
+**Status of the fix:** verified in the Ubuntu 24.04 container and locally on Windows,
+and **on GitHub Actions** (2026-10-20): the run on branch `fix/firefox-ci-webgl`
+(commit `9830d88`) passed — 20 unit tests and 42 e2e (21 per browser, Chromium and
+Firefox), 0 failures:
+https://github.com/IraPolchanin/rotating-cube/actions/runs/39423788004.
+The CI run on `main` after the fast-forward is recorded separately once it has finished.
 
 **Not configured:** branch protection and required status checks. CI reports a
 result but does not block merges or direct pushes to `main`.
@@ -561,7 +564,7 @@ When any check fails, the agent must:
 | Vitest config | `vitest.config.ts` | **Implemented** |
 | Playwright config + `webServer` | `playwright.config.ts` | **Implemented** |
 | Pre-commit hook script | `.githooks/pre-commit` | **Implemented** — fresh-clone activation unverified |
-| GitHub Actions CI workflow | `.github/workflows/ci.yml` | **Implemented** — verified 2026-10-20 for the pre-cube suite; the first run with the cube **failed** for Firefox (WebGL, §4 "Phase 4 follow-up"); fix not yet verified on GitHub Actions; no branch protection |
+| GitHub Actions CI workflow | `.github/workflows/ci.yml` | **Implemented** — verified 2026-10-20 for the pre-cube suite; the first run with the cube **failed** for Firefox (WebGL, §4 "Phase 4 follow-up"); fix verified on GitHub Actions on branch `fix/firefox-ci-webgl` (run 39423788004, green); no branch protection |
 | MIT license | `LICENSE` | **Implemented** |
 | Application (AC-1 – AC-15) | `src/`, `e2e/`, evidence in `docs/evidence/phase-4.md` | **Implemented** — automated checks verified locally 2026-10-20; manual checks partly done (Chrome only), see "Phase 4 manual checks" |
 
