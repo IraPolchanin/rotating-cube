@@ -323,6 +323,27 @@ probe named after a pattern is a command that only that pattern can match.
 Note: the `--amend` probe was a mistake in hindsight, since a missed block would have
 rewritten history; later probes used `--dry-run` or read-only commands only.
 
+### Push confirmation rule (added in Phase 4, T0)
+
+An `ask` rule makes every `git push` require explicit human confirmation, even in
+auto mode:
+
+```json
+{
+  "permissions": {
+    "ask": ["Bash(git push*)"]
+  }
+}
+```
+
+**Verification (2026-10-20):** with nothing to push, the agent ran
+`git push origin main`. The permission prompt appeared (text shown to the human:
+"Ask rule Bash(git push*) overrides auto mode"); the human declined it and the
+command did not run. Only this one form was probed; other push forms (for example
+`git push` through a global option such as `git --no-pager push`) were **not**
+probed and, by the same pattern analysis as the known gaps below, are not
+necessarily covered. As with the deny rules, the rule binds the agent only.
+
 ### Known gaps
 
 - Other global options before `commit` are **not blocked**; probed and confirmed:
@@ -514,6 +535,7 @@ When any check fails, the agent must:
 | PostToolUse hook script | `scripts/agent-hook-check.mjs` + `scripts/hook-utils.mjs` | **Implemented** |
 | Stop hook script | `scripts/agent-stop-check.mjs` | **Implemented** |
 | PostToolUse + Stop hooks + permission guardrail | `.claude/settings.json` | **Implemented** |
+| `git push` confirmation (`ask` rule) | `.claude/settings.json` | **Implemented** — verified 2026-10-20 (one form probed) |
 | spec-reviewer subagent | `.claude/agents/spec-reviewer.md` | **Implemented** |
 | LF line endings for hooks and scripts | `.gitattributes` | **Implemented** |
 | ESLint block for `scripts/*.mjs` | `eslint.config.js` | **Implemented** |
@@ -566,6 +588,7 @@ named in the first column). Open items:
 | PostToolUse hook (§1) | Type error → exit 2 + diagnostics; fix → exit 0; lint-only error; `.md` edit runs no check; `.json` edit runs; missing `file_path` runs | **Passed** (2026-10-19) |
 | Pre-commit hook (§2) | Staged type error blocks commit; later commits pass; `git ls-files --eol` LF; `git ls-files -s` `100755` | **Passed** (2026-10-19). Open: hook execution on a fresh clone **not verified**. CI shows only that `npm ci` and `prepare` complete on a clean runner (§2) |
 | Permission guardrail (§5) | Each pattern probed separately; controls not blocked | **Passed** (2026-10-19). Open: known gaps listed in §5 (other global git options, `git config core.hooksPath`, hook-file edits) |
+| Push confirmation (§5) | `git push origin main` with nothing to push; prompt expected, human declines | **Passed** (2026-10-20): prompt "Ask rule Bash(git push*) overrides auto mode" appeared and was declined. Open: other push forms not probed |
 | Stop hook (§6) | Prototype; dry-run matrix; direct runs; live block and halt; no `--dry-run` in settings | **Passed** (2026-10-19) |
 | ESLint block for `scripts/*.mjs` | `--print-config` shows Node globals; seeded errors fail `npm run lint` | **Passed** (2026-10-19) |
 | spec-reviewer (§7) | Clean diff clean; camera rotation / OrbitControls flagged; edit attempt impossible; agent visible | **Passed** (2026-10-19, Claude Code 2.1.303). Criterion 1: clean `src/` diff (`App.tsx`, `main.tsx`, `vite-env.d.ts`) → `No violations found.` Criterion 2: temporary `src/__probe__.tsx` (OrbitControls import/re-export, `camera.rotation.y`) → flagged as NFR-8 ×2 and spec §7.5; file removed afterwards. Criterion 3: asked to edit a file, the agent reported only `Read`/`Grep`/`Glob` and the file stayed unchanged. Criterion 4: agent invocable in the session. Earlier invisibility: agents directory was created in the first session (may explain the restart); `claude update` was run later and the agent became available — causal link **not established** |
