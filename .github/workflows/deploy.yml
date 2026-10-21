@@ -1,0 +1,95 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium firefox
+
+      # The full gate must pass before anything is deployed (NFR-9).
+      # Headed Firefox needs a display for WebGL; see playwright.config.ts.
+      - run: xvfb-run -a npm run check
+
+      # dist/ is the output of the vite build run by npm run check.
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: test-results/
+          if-no-files-found: ignore
+
+  deploy:
+    name: deploy
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Elevated permissions are scoped to this job only.
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
+
+  verify-deployed:
+    name: verify-deployed
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium firefox
+
+      # AC-16: the live cube renders in Chromium and Firefox. The setup waits, with a
+      # bounded number of attempts, for Pages propagation. Firefox runs headed under
+      # xvfb as in CI.
+      - run: xvfb-run -a npm run e2e:deployed
+        env:
+          DEPLOYED_URL: ${{ needs.deploy.outputs.page_url }}
+
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: deployed-test-results
+          path: test-results/
+          if-no-files-found: ignore
