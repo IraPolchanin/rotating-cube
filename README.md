@@ -92,7 +92,7 @@ Stated in full in [docs/quality-gates.md](docs/quality-gates.md); the main ones:
 
 ## How it was built
 
-Built with Claude Code in six sessions; the transcripts are in
+Built with Claude Code in seven sessions; the transcripts are in
 [docs/sessions/](docs/sessions/). The model was Sonnet 4.6 in session 1 and Sonnet 5.5
 afterwards. Claude Code versions changed during the project because of auto-updates.
 
@@ -104,6 +104,7 @@ afterwards. Claude Code versions changed during the project because of auto-upda
 | 4 | **Phase 3**: repository publication and the CI workflow, with a deliberate failure and revert | [session 4](docs/sessions/2026-10-20-session-4.txt) |
 | 5 | **Phase 4**: the cube, unit and e2e tests, Firefox WebGL fix in CI | [session 5](docs/sessions/2026-10-20-session-5.txt) |
 | 6 | **Phase 5**: spec v1.1, GitHub Pages deployment, post-deploy check | [session 6](docs/sessions/2026-10-21-session-6.txt) |
+| 7 | README for evaluators | [session 7](docs/sessions/2026-10-21-session-7.txt) |
 
 ## License
 
