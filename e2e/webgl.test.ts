@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test'
 // that three.js requires. It does not replace the cube tests, which still fail
 // on their own when the cube is missing.
 test('FR-1: browser can create a WebGL2 context', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   const info = await page.evaluate(() => {
     const gl = document.createElement('canvas').getContext('webgl2')
     if (!gl) return null

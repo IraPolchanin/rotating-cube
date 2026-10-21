@@ -12,14 +12,14 @@ async function canvasWidthDelta(page: Page): Promise<number> {
 
 test('AC-10: canvas width matches innerWidth at 1280x720', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 })
-  await page.goto('/')
+  await page.goto('./')
   await expect(page.locator('div[data-testid="cube-scene"] canvas')).toBeAttached()
   await expect.poll(() => canvasWidthDelta(page)).toBeLessThanOrEqual(TOLERANCE_PX)
 })
 
 test('AC-11: canvas width follows viewport after resize to 375x667', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 })
-  await page.goto('/')
+  await page.goto('./')
   await expect(page.locator('div[data-testid="cube-scene"] canvas')).toBeAttached()
 
   await page.setViewportSize({ width: 375, height: 667 })
@@ -32,7 +32,7 @@ test('FR-6: drawing buffer is resized with the viewport, not only the CSS box', 
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 720 })
-  await page.goto('/')
+  await page.goto('./')
   await expect(page.locator('div[data-testid="cube-scene"] canvas')).toBeAttached()
 
   await page.setViewportSize({ width: 375, height: 667 })

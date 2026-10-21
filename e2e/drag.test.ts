@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { INITIAL, canvasCentre, mouseDrag, sceneOf, touchDrag } from './helpers'
 
 test('AC-4: horizontal mouse drag of 50 px changes ry', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   const scene = sceneOf(page)
   await expect(scene).toHaveAttribute('data-cube-ry', INITIAL.ry)
 
@@ -14,7 +14,7 @@ test('AC-4: horizontal mouse drag of 50 px changes ry', async ({ page }) => {
 })
 
 test('AC-5: vertical mouse drag of 50 px changes rx', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   const scene = sceneOf(page)
   await expect(scene).toHaveAttribute('data-cube-rx', INITIAL.rx)
 
@@ -26,7 +26,7 @@ test('AC-5: vertical mouse drag of 50 px changes rx', async ({ page }) => {
 })
 
 test('AC-6: horizontal touch drag of 50 px changes ry', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   const scene = sceneOf(page)
   await expect(scene).toHaveAttribute('data-cube-ry', INITIAL.ry)
 
@@ -37,7 +37,7 @@ test('AC-6: horizontal touch drag of 50 px changes ry', async ({ page }) => {
 })
 
 test('AC-7: vertical touch drag of 50 px changes rx', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   const scene = sceneOf(page)
   await expect(scene).toHaveAttribute('data-cube-rx', INITIAL.rx)
 
@@ -49,7 +49,7 @@ test('AC-7: vertical touch drag of 50 px changes rx', async ({ page }) => {
 
 test('AC-12: 1000 px vertical mouse drag never leaves [-90, 90]', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 1100 })
-  await page.goto('/')
+  await page.goto('./')
   const scene = sceneOf(page)
   await expect(scene).toHaveAttribute('data-cube-rx', INITIAL.rx)
 
@@ -69,7 +69,7 @@ test('AC-12: 1000 px vertical mouse drag never leaves [-90, 90]', async ({ page 
 
 test('AC-12: 1000 px upward touch drag never leaves [-90, 90]', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 1100 })
-  await page.goto('/')
+  await page.goto('./')
   const scene = sceneOf(page)
   await expect(scene).toHaveAttribute('data-cube-rx', INITIAL.rx)
 

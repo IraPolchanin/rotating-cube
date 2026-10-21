@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { INITIAL, canvasCentre, sceneOf } from './helpers'
 
 test('AC-14: drag over reset button keeps rotating and does not reset', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   const scene = sceneOf(page)
   const button = page.locator('button[data-testid="reset-button"]')
   await expect(scene).toHaveAttribute('data-cube-ry', INITIAL.ry)
