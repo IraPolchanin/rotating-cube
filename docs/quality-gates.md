@@ -19,6 +19,7 @@ Script commands are defined in `docs/spec.md §7.4`.
 | `build`     | NFR-6                                                | Moderate |
 | `e2e`       | AC-1 through AC-15, Chromium + Firefox               | Slow     |
 | `check`     | All of the above in sequence                         | Slow     |
+| `e2e:deployed` | AC-16 against the public URL (not part of `check`; run by the Deploy workflow) | Moderate |
 
 ---
 
@@ -238,7 +239,13 @@ and **on GitHub Actions** (2026-10-20): the run on branch `fix/firefox-ci-webgl`
 (commit `9830d88`) passed — 20 unit tests and 42 e2e (21 per browser, Chromium and
 Firefox), 0 failures:
 https://github.com/IraPolchanin/rotating-cube/actions/runs/39423788004.
-The CI run on `main` after the fast-forward is recorded separately once it has finished.
+After the fast-forward, CI on `main` was green twice (verified with `gh run view`,
+both `push` events on `main`, conclusion `success`):
+
+| Run | Ref | Result | URL |
+|-----|-----|--------|-----|
+| After the Firefox fix | `main` (`6205de4`) | **Passed** | https://github.com/IraPolchanin/rotating-cube/actions/runs/39424971042 |
+| Latest before Phase 5 | `main` (`35ddb49`) | **Passed** | https://github.com/IraPolchanin/rotating-cube/actions/runs/39425976757 |
 
 **Not configured:** branch protection and required status checks. CI reports a
 result but does not block merges or direct pushes to `main`.
@@ -270,6 +277,71 @@ observed.
 - GitHub annotated the runs: the `ubuntu-latest` label began migrating to Ubuntu 26
   on 2026-10-19. The runs above passed regardless; the runner image is not pinned.
 - Action versions are pinned to major tags, not commit SHAs.
+
+### Deployment — GitHub Pages (Phase 5)
+
+**Status: Implemented** — `.github/workflows/deploy.yml` is on `main`; verified on
+GitHub Actions 2026-10-21 (spec v1.1: NFR-9, AC-16, §7.6). Public URL:
+https://irapolchanin.github.io/rotating-cube/ (Pages source: GitHub Actions,
+`build_type: workflow`, enabled by the human).
+
+**Trigger:** `push` to `main` and `workflow_dispatch`; `permissions: contents: read`
+at workflow level; `concurrency` group `pages`, `cancel-in-progress: false`.
+
+**Jobs:**
+
+1. `build` — checkout, Node from `.nvmrc`, `npm ci`, Playwright browsers,
+   `xvfb-run -a npm run check`, then `actions/upload-pages-artifact@v5` with
+   `path: dist` (the unmodified `vite build` output). A red commit never reaches
+   `deploy`.
+2. `deploy` — `needs: build`, environment `github-pages`, `actions/deploy-pages@v5`.
+   `pages: write` and `id-token: write` are granted to this job only.
+3. `verify-deployed` — `needs: deploy`, `xvfb-run -a npm run e2e:deployed` with
+   `DEPLOYED_URL` taken from the `deploy` job output.
+
+**Supporting changes:** `vite.config.ts` has `base: './'`, so the build works from the
+Pages project sub-path. The e2e tests navigate with `page.goto('./')`. That is
+mechanical, with no assertion changes (21 lines), and it resolves correctly only
+when the base URL ends with `/`. `playwright.deployed.config.ts` normalises
+`DEPLOYED_URL` to end with `/`, selects exactly `AC-1`, `AC-13` and `FR-1` (the
+colon in the `grep` keeps `AC-1` from matching `AC-10` to `AC-15`), has `retries: 0`
+and no `webServer`. `playwright.deployed.setup.ts` waits for HTTP 200, at most 10
+attempts 15 s apart. `actions/configure-pages` is deliberately not used: its output
+is not needed with a relative base, and it would require `pages: write` in `build`.
+
+**Artifacts:** `.github/workflows/deploy.yml`, `playwright.deployed.config.ts`,
+`playwright.deployed.setup.ts`, script `e2e:deployed` in `package.json`.
+
+**Results (2026-10-21):**
+
+| Run | Ref | Result | URL |
+|-----|-----|--------|-----|
+| Deploy | `main` (`f3d99a6`), `push` | **Passed**: `build` (full `npm run check`), `deploy`, `verify-deployed` (6 tests passed: AC-1, AC-13, FR-1 in Chromium and Firefox, on the live URL). The URL answered HTTP 200 | https://github.com/IraPolchanin/rotating-cube/actions/runs/39580385881 |
+| CI | `main` (`f3d99a6`), `push` | **Passed** | https://github.com/IraPolchanin/rotating-cube/actions/runs/39580385701 |
+| Deliberate failure, Deploy | `tmp/deliberate-failure` (`7b01a74`), `workflow_dispatch` | **Failed** as intended: `build` failed at `npm run check` (e2e, `Expected: 2, Received: 1`, Chromium and Firefox); `deploy` and `verify-deployed` **skipped** | https://github.com/IraPolchanin/rotating-cube/actions/runs/39585105380 |
+| Deliberate failure, CI | `tmp/deliberate-failure` (`7b01a74`), `push` | **Failed** as intended | https://github.com/IraPolchanin/rotating-cube/actions/runs/39585098478 |
+
+**Deliberate-failure check:** a temporary branch with a single failing e2e test
+(`NFR-9: deliberate failure…`). It was an e2e test so that the pre-commit hook, which
+excludes e2e, let the commit through without `--no-verify`. The workflow was started
+with `workflow_dispatch` on that branch. The `github-pages` deployment list still
+showed only the `main` deployment (`f3d99a6`) afterwards. The environment's
+protection rules were not changed and not bypassed: `deploy` was skipped by
+`needs: build` before the environment was evaluated. The remote and local temporary
+branches were deleted afterwards, and `main` was not touched.
+
+**Not verified / open:**
+
+- The Pages-propagation wait was not exercised: the site answered on the first
+  attempt, and the failure path of the wait (limit reached) was not run.
+- Whether the `github-pages` environment would itself reject a non-`main` ref was not
+  tested, because `build` failed first.
+- Every push to `main` runs `ci.yml` and `deploy.yml`, so `npm run check` runs twice
+  per push. Not addressed in Phase 5.
+- No branch protection; the same annotation about the `ubuntu-latest` migration to
+  Ubuntu 26 appeared on the deploy runs. The runner image is not pinned.
+- `upload-pages-artifact@v5` and `deploy-pages@v5` are major tags (the latest majors on
+  2026-10-21 per `gh api …/releases/latest`), not commit SHAs.
 
 ---
 
@@ -565,8 +637,10 @@ When any check fails, the agent must:
 | Playwright config + `webServer` | `playwright.config.ts` | **Implemented** |
 | Pre-commit hook script | `.githooks/pre-commit` | **Implemented** — fresh-clone activation unverified |
 | GitHub Actions CI workflow | `.github/workflows/ci.yml` | **Implemented** — verified 2026-10-20 for the pre-cube suite; the first run with the cube **failed** for Firefox (WebGL, §4 "Phase 4 follow-up"); fix verified on GitHub Actions on branch `fix/firefox-ci-webgl` (run 39423788004, green); no branch protection |
+| GitHub Pages deploy workflow | `.github/workflows/deploy.yml` | **Implemented** — verified 2026-10-21 (run 39580385881, green, public URL live); deliberate failure blocked deployment (run 39585105380); see §4 "Deployment" |
+| Post-deploy verification (AC-16) | `playwright.deployed.config.ts`, `playwright.deployed.setup.ts`, script `e2e:deployed` | **Implemented** — verified 2026-10-21 locally on a sub-path and in `verify-deployed` (6 tests passed) |
 | MIT license | `LICENSE` | **Implemented** |
-| Application (AC-1 – AC-15) | `src/`, `e2e/`, evidence in `docs/evidence/phase-4.md` | **Implemented** — automated checks verified locally 2026-10-20; manual checks partly done (Chrome only), see "Phase 4 manual checks" |
+| Application (AC-1 – AC-16) | `src/`, `e2e/`, evidence in `docs/evidence/phase-4.md` | **Implemented** — automated checks verified locally 2026-10-20 and in CI; deployed 2026-10-21; manual checks completed 2026-10-21 (Chrome desktop on localhost; Firefox desktop and an iPhone on the public URL), see §12 |
 
 ---
 
@@ -595,6 +669,11 @@ When any check fails, the agent must:
 | CI action versions | `checkout@v7`, `setup-node@v7`, `upload-artifact@v7` (latest majors on 2026-10-20, verified from the official `actions/*` releases); major tags, not SHAs |
 | CI failure experiment | Done on a throwaway branch with an e2e-only failure (the pre-commit hook blocks type, lint and unit failures and `--no-verify` is denied); branch deleted afterwards |
 | Branch protection | Not enabled; required status checks are a possible later step |
+| Pages source | GitHub Actions (`build_type: workflow`), enabled by the human in repository settings |
+| Pages base path | `base: './'` in `vite.config.ts`; e2e navigation `page.goto('./')`; deployed base URL normalised to end with `/` |
+| Pages deploy trigger | `push` to `main` plus `workflow_dispatch`; `deploy` runs only after `build` runs the full `npm run check` |
+| Pages permissions | `contents: read` for the workflow; `pages: write` and `id-token: write` only on the `deploy` job; `actions/configure-pages` not used |
+| Post-deploy check | Existing tests AC-1, AC-13, FR-1 reused unchanged against the live URL in Chromium and Firefox; `retries: 0`; bounded 10 × 15 s wait for HTTP 200 |
 | License | MIT, added before publication; README is a separate later task |
 
 ---
@@ -609,12 +688,13 @@ named in the first column). Open items:
 | PostToolUse hook (§1) | Type error → exit 2 + diagnostics; fix → exit 0; lint-only error; `.md` edit runs no check; `.json` edit runs; missing `file_path` runs | **Passed** (2026-10-19) |
 | Pre-commit hook (§2) | Staged type error blocks commit; later commits pass; `git ls-files --eol` LF; `git ls-files -s` `100755` | **Passed** (2026-10-19). Open: hook execution on a fresh clone **not verified**. CI shows only that `npm ci` and `prepare` complete on a clean runner (§2) |
 | Permission guardrail (§5) | Each pattern probed separately; controls not blocked | **Passed** (2026-10-19). Open: known gaps listed in §5 (other global git options, `git config core.hooksPath`, hook-file edits) |
-| Application, Phase 4 | `npm run check` on a clean tree (20 unit tests, 40 e2e in Chromium + Firefox); per-task `spec-reviewer`; mutation checks: disabling `setPointerCapture` fails AC-14, `touch-action: auto` fails AC-15, removing the X clamp fails AC-12 (unit and e2e) | **Passed locally** (2026-10-20), details in `docs/evidence/phase-4.md`. Manual checks of spec §7.3 are in "Phase 4 manual checks" below. Open: Firefox desktop and a real touch device **not checked**; AC-6/AC-7 use simulated touch only |
+| Application, Phase 4 | `npm run check` on a clean tree (20 unit tests, 40 e2e in Chromium + Firefox); per-task `spec-reviewer`; mutation checks: disabling `setPointerCapture` fails AC-14, `touch-action: auto` fails AC-15, removing the X clamp fails AC-12 (unit and e2e) | **Passed locally** (2026-10-20), details in `docs/evidence/phase-4.md`. Manual checks of spec §7.3 are in "Phase 4 manual checks" below. The previously open manual checks (Firefox desktop, a real touch device) were **closed on 2026-10-21** on the public URL, as reported by the human (§12). Remaining note: AC-6/AC-7 in the automated suite still use simulated touch |
 | Push confirmation (§5) | `git push origin main` with nothing to push; prompt expected, human declines | **Passed** (2026-10-20): prompt "Ask rule Bash(git push*) overrides auto mode" appeared and was declined. Open: other push forms not probed |
 | Stop hook (§6) | Prototype; dry-run matrix; direct runs; live block and halt; no `--dry-run` in settings | **Passed** (2026-10-19) |
 | ESLint block for `scripts/*.mjs` | `--print-config` shows Node globals; seeded errors fail `npm run lint` | **Passed** (2026-10-19) |
 | spec-reviewer (§7) | Clean diff clean; camera rotation / OrbitControls flagged; edit attempt impossible; agent visible | **Passed** (2026-10-19, Claude Code 2.1.303). Criterion 1: clean `src/` diff (`App.tsx`, `main.tsx`, `vite-env.d.ts`) → `No violations found.` Criterion 2: temporary `src/__probe__.tsx` (OrbitControls import/re-export, `camera.rotation.y`) → flagged as NFR-8 ×2 and spec §7.5; file removed afterwards. Criterion 3: asked to edit a file, the agent reported only `Read`/`Grep`/`Glob` and the file stayed unchanged. Criterion 4: agent invocable in the session. Earlier invisibility: agents directory was created in the first session (may explain the restart); `claude update` was run later and the agent became available — causal link **not established** |
 | CI (§4) | Green baseline on `main`; deliberate e2e-only failure on a temporary branch; `git revert` restores green; temporary branch deleted | **Passed** (2026-10-20, three runs listed in §4). Open: `pull_request` trigger not exercised; no branch protection |
+| Deployment (§4) | Green `Deploy` on `main`; public URL live; `verify-deployed` runs AC-1, AC-13, FR-1 in Chromium and Firefox on it; deliberate failure on a temporary branch via `workflow_dispatch` must fail `build` and skip `deploy`; temporary branch deleted | **Passed** (2026-10-21, runs 39580385881 and 39585105380 in §4). Open: propagation-wait failure path and the environment's own ref rule not exercised; `check` runs twice per push to `main` |
 
 ---
 
@@ -631,8 +711,33 @@ Spec §7.3 checks, performed by the human on `localhost` (dev server), reported 
 | Reset works (FR-5) | Chrome desktop | **Passed** |
 | Canvas fills the window, follows resize, no scrollbars (FR-6) | Chrome desktop | **Passed** |
 | Touch drag rotates the cube; mobile width works (FR-3) | Chrome DevTools device emulation | **Passed** (emulated touch, not a physical device) |
-| Same checks | Firefox desktop | **Not checked** |
-| Physical touch device (FR-3) | Real device | **Not checked** — the corporate network blocks LAN access; planned after deployment to GitHub Pages |
+| Same checks | Firefox desktop | **Passed** on 2026-10-21 on the public URL (see below) |
+| Physical touch device (FR-3) | Real device | **Passed** on 2026-10-21 on the public URL (see below). It was blocked before because the corporate network blocks LAN access, so it waited for the deployment |
 
-NFR-7 (latest stable Chrome and Firefox) is therefore verified manually for Chrome
-only; Firefox is covered only by the automated Playwright run (its bundled Firefox).
+### Checks on the public URL (2026-10-21)
+
+Performed by the human on https://irapolchanin.github.io/rotating-cube/ and reported
+on 2026-10-21 as all passed. The agent did not perform or observe these; they are
+recorded as reported. The deployed build was commit `f3d99a6` (Deploy run
+39580385881).
+
+| Check | Environment | Result |
+|-------|-------------|--------|
+| Cube renders correctly (FR-1) | Firefox desktop | **Passed** |
+| Faces are distinguishable by lighting (FR-1) | Firefox desktop | **Passed** |
+| Rotation is smooth (FR-2) | Firefox desktop | **Passed** |
+| X rotation stays within ±90° (AC-12) | Firefox desktop | **Passed** |
+| Reset works (FR-5) | Firefox desktop | **Passed** |
+| Canvas fills the window and follows resize (FR-6) | Firefox desktop | **Passed** |
+| Touch drag rotates the cube horizontally and vertically (FR-3) | iPhone, Chrome for iOS (WebKit engine) | **Passed** |
+| X rotation stays within ±90° (AC-12) | iPhone, Chrome for iOS (WebKit engine) | **Passed** |
+| Reset works (FR-5) | iPhone, Chrome for iOS (WebKit engine) | **Passed** |
+| Page fills the screen without scrolling (FR-6) | iPhone, Chrome for iOS (WebKit engine) | **Passed** |
+
+NFR-7 (latest stable Chrome and Firefox) is now verified manually for Chrome desktop
+(2026-10-20, localhost) and Firefox desktop (2026-10-21, public URL), and by the
+automated Playwright runs of Chromium and Firefox, including AC-16 against the live
+URL. Chrome on iOS uses Apple's WebKit engine, not Chrome's own engine, so the iPhone
+check covers FR-3 on a real touch device but is not a check of Chrome's engine. The
+iPhone model and iOS version were not recorded. Safari and other browsers remain out
+of scope (spec §6).
