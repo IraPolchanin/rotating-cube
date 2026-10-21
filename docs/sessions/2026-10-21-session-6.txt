@@ -1,0 +1,1904 @@
+ ▐▛███▛█   Claude Code v2.1.304
+▝▜██████▀  Sonnet 5.5 · Claude Pro
+ ▝▝   ▝▝   ~\Projects\rotating-cube
+
+
+❯ Plan Phase 5: deploy the app to GitHub Pages so it has a public URL.          
+  Deployment is not in docs/spec.md yet, so the plan must start with a          
+  spec update to v1.1 for my approval. Follow the Phase Workflow in             
+  CLAUDE.md. Plan only.                                                         
+                                                                                
+  Record in the next documentation update the green CI runs on main after       
+  the Firefox fix:                                                              
+  https://github.com/IraPolchanin/rotating-cube/actions/runs/39424971042        
+  https://github.com/IraPolchanin/rotating-cube/actions/runs/39425976757        
+                                                                                
+  After deployment, I will do the remaining manual checks (Firefox              
+  desktop and a real touch device) on the public URL.                           
+
+● Спершу вивчу репозиторій: spec, quality-gates, CI, конфіг Vite і package.json.
+  Для цього запускаю один Explore-агент, а нічого не змінюю.
+
+● Explore(Explore repo for Pages deploy)
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Explore-агент ще працює. Чекаю на його результат, щоб скласти план.
+
+✻ Brewed for 15s · done Tuesday 8:45 PM
+
+● Agent "Explore repo for Pages deploy" finished · 51s
+
+● Пишу план у файл плану.
+
+● Updated plan
+  ⎿  /plan to preview
+  ⎿  User rejected Claude's plan:
+     ╭─────────────────────────────────────────────────────────────────────────╮
+     │ Phase 5 — Deploy to GitHub Pages                                        │
+     │                                                                         │
+     │ Context                                                                 │
+     │                                                                         │
+     │ The app has no public URL. Phase 5 publishes it to GitHub Pages         │
+     │ (https://irapolchanin.github.io/rotating-cube/) so the human can run    │
+     │ the remaining                                                           │
+     │ manual checks (Firefox desktop, real touch device;                      │
+     │ docs/quality-gates.md §12) there.                                       │
+     │ Deployment is not in docs/spec.md v1.0, so the spec is updated first,   │
+     │ and nothing else starts until the human approves it.                    │
+     │                                                                         │
+     │ Findings that shape the plan:                                           │
+     │ - vite.config.ts has no base. The only absolute path is the script tag  │
+     │   in index.html, and Vite rewrites it at build time.                    │
+     │ - The only workflow is .github/workflows/ci.yml. It has contents: read, │
+     │   runs xvfb-run -a npm run check on every push, and has no deploy job.  │
+     │ - E2E tests run against the dev server (playwright.config.ts), not      │
+     │   against dist/.                                                        │
+     │ - .claude/settings.json has ask on git push*, so every push needs human │
+     │   confirmation.                                                         │
+     │ - docs/spec.md has no revision history section. §5 forbids stack        │
+     │   substitutions without a spec update.                                  │
+     │                                                                         │
+     │ Step 1 — Spec v1.1 (STOP for human approval)                            │
+     │                                                                         │
+     │ Edit docs/spec.md only after approval. The edit is small and has four   │
+     │ parts:                                                                  │
+     │ - Header: Version 1.1, Last updated 2026-10-20. Add a short "Revision   │
+     │   history" with v1.0 (initial) and v1.1 (deployment).                   │
+     │ - New NFR-9 (Deployment):                                               │
+     │   - The app is published to GitHub Pages from main by GitHub Actions.   │
+     │   - Deployment runs only after npm run check passes on that commit.     │
+     │   - The public URL serves the same build that vite build produces.      │
+     │ - New AC-16: the deployed URL responds 200 and contains                 │
+     │   div[data-testid="cube-scene"]. It is verified by a post-deploy smoke  │
+     │   step, not by npm run check.                                           │
+     │ - Supporting changes:                                                   │
+     │   - §5: add GitHub Pages and GitHub Actions as the hosting stack.       │
+     │   - §6: add custom domain, preview deployments and a CDN/cache strategy │
+     │     as out of scope.                                                    │
+     │   - §8: add the assumption that Pages is enabled with Source = "GitHub  │
+     │     Actions" and the repo visibility permits Pages.                     │
+     │   - §7.3: the Firefox and touch manual checks are run on the public     │
+     │     URL.                                                                │
+     │                                                                         │
+     │ Commit: docs(spec): add deployment requirement NFR-9 and AC-16, bump to │
+     │ v1.1                                                                    │
+     │                                                                         │
+     │ Step 2 — Vite base path                                                 │
+     │                                                                         │
+     │ - Set base: './' in vite.config.ts.                                     │
+     │ - Relative base chosen over /rotating-cube/ for two reasons:            │
+     │   - it works under any project path;                                    │
+     │   - the dev server and the existing Playwright baseURL stay unchanged.  │
+     │ - Verify:                                                               │
+     │   - npm run build, then inspect dist/index.html for relative asset      │
+     │     URLs.                                                               │
+     │   - Serve dist/ under a sub-path locally and confirm it loads. Use npx  │
+     │     vite preview with --base, or a static server in the scratchpad.     │
+     │ - Commit: build: use relative base for GitHub Pages                     │
+     │                                                                         │
+     │ Step 3 — Deploy workflow                                                │
+     │                                                                         │
+     │ Create .github/workflows/deploy.yml. The existing ci.yml is left        │
+     │ unchanged and keeps contents: read.                                     │
+     │ - Trigger: push to main only, plus workflow_dispatch.                   │
+     │ - Top-level permissions: contents: read.                                │
+     │ - Concurrency: group pages, cancel-in-progress: false.                  │
+     │ - Job build:                                                            │
+     │   - Same setup as ci.yml (checkout, setup-node with .nvmrc, npm ci,     │
+     │     Playwright browsers).                                               │
+     │   - Run xvfb-run -a npm run check, so a broken commit is never          │
+     │     deployed.                                                           │
+     │   - actions/configure-pages, then actions/upload-pages-artifact with    │
+     │     path: dist.                                                         │
+     │ - Job deploy:                                                           │
+     │   - needs: build, environment: github-pages.                            │
+     │   - Job-level permissions: pages: write, id-token: write. These are     │
+     │     scoped to this job only.                                            │
+     │   - actions/deploy-pages.                                               │
+     │ - Smoke step after deploy (AC-16): a bounded curl retry loop against    │
+     │   ${{ steps.deployment.outputs.page_url }} that checks HTTP 200 and     │
+     │   data-testid="cube-scene". The scene div is created by React, so it is │
+     │   not in the static HTML. If so, use a Playwright run against the URL   │
+     │   instead: playwright.deployed.config.ts with baseURL from an env var,  │
+     │   reusing e2e/smoke.test.ts, and an e2e:deployed script that is not     │
+     │   part of check. I will check which is needed when I implement.         │
+     │ - Pin action versions the same way ci.yml does.                         │
+     │                                                                         │
+     │ Human prerequisite, done on GitHub and not by me: Settings → Pages →    │
+     │ Source: "GitHub Actions". The deploy fails until this is set.           │
+     │                                                                         │
+     │ Commit: ci: deploy to GitHub Pages after check passes (NFR-9, AC-16)    │
+     │                                                                         │
+     │ Step 4 — Verify the mechanism (Phase Workflow)                          │
+     │                                                                         │
+     │ - Local verification first: npm run check must be green. Run            │
+     │   spec-reviewer once on the diff, as CLAUDE.md requires when src/ or    │
+     │   e2e/ changed. This only applies if Step 3 touched e2e/.               │
+     │ - Push (needs human confirmation):                                      │
+     │   - Push to main.                                                       │
+     │   - Confirm ci.yml and deploy.yml are both green with gh run list / gh  │
+     │     run watch.                                                          │
+     │   - Confirm the public URL loads in a browser and the console is clean. │
+     │ - Deliberate failure (the deploy gate must block a red commit):         │
+     │   a. Push a temporary branch containing a failing test.                 │
+     │   b. deploy.yml only runs on main, so the gate cannot be proven this    │
+     │      way.                                                               │
+     │   c. Instead, run the failing commit through workflow_dispatch on that  │
+     │      branch. Use ref=<branch> and expect build to fail and deploy to be │
+     │      skipped. If the environment rule github-pages rejects non-main     │
+     │      refs, record that as the protection and skip this test.            │
+     │   d. Delete the temporary branch and revert any experiment, leaving no  │
+     │      artifacts in the working tree.                                     │
+     │                                                                         │
+     │ Step 5 — Documentation update (after verification only)                 │
+     │                                                                         │
+     │ Update docs/quality-gates.md:                                           │
+     │ - Record the two green CI runs on main after the Firefox fix. Add them  │
+     │   to the §4 Results table (Run / Ref / Result / URL), following the     │
+     │   existing format, and resolve the sentence "The CI run on main after   │
+     │   the fast-forward is recorded separately once it has finished":        │
+     │   - https://github.com/IraPolchanin/rotating-cube/actions/runs/39424971 │
+     │     042                                                                 │
+     │   - https://github.com/IraPolchanin/rotating-cube/actions/runs/39425976 │
+     │     757                                                                 │
+     │   - I will check each run's commit SHA and result with gh run view      │
+     │     before recording, so the Ref and Result columns come from the runs  │
+     │     and not from my assumptions.                                        │
+     │ - New deployment subsection: add it under §4 with a status line, and    │
+     │   add a row to §9 and §11, set only after Step 4 is verified.           │
+     │ - §12: note that the Firefox and touch checks are now to be done on the │
+     │   public URL. They stay "Not checked" until the human reports results.  │
+     │                                                                         │
+     │ Commit: docs: record green main CI runs and Pages deployment (NFR-9,    │
+     │ AC-16). Add the session transcript,                                     │
+     │ docs/sessions/2026-10-20-session-6.txt or the next date, in a separate  │
+     │ commit, following the existing convention.                              │
+     │                                                                         │
+     │ Out of scope for this phase                                             │
+     │                                                                         │
+     │ - The manual Firefox desktop and real-touch-device checks. The human    │
+     │   does them on the public URL.                                          │
+     │ - Branch protection and required checks (still not configured).         │
+     │ - Custom domain.                                                        │
+     │                                                                         │
+     │ Verification summary                                                    │
+     │                                                                         │
+     │ - npm run check green locally and in CI.                                │
+     │ - dist/ works from a sub-path.                                          │
+     │ - deploy.yml run is green on main.                                      │
+     │ - The public URL loads the cube, the console is clean, and AC-16 smoke  │
+     │   passes.                                                               │
+     │ - git status is clean, with no experiment artifacts.                    │
+     ╰─────────────────────────────────────────────────────────────────────────╯
+
+● Дякую, це схвалення з уточненнями. Вношу їх у план і ще раз подаю його на
+  затвердження.
+
+● Updated plan
+  ⎿  /plan to preview
+
+● Updated plan
+  ⎿  /plan to preview
+
+● Updated plan
+  ⎿  /plan to preview
+
+● User approved Claude's plan
+  ⎿  Plan saved to: 
+     ~\.claude\plans\pasted-content-id-41d9-plan-phase-validated-owl.md · /plan 
+     to edit
+     Phase 5 — Deploy to GitHub Pages
+
+     Context
+
+     The app has no public URL. Phase 5 publishes it to GitHub Pages
+     (https://irapolchanin.github.io/rotating-cube/) so the human can run the
+     remaining
+     manual checks (Firefox desktop, real touch device; docs/quality-gates.md
+     §12) there.
+     Deployment is not in docs/spec.md v1.0, so the spec is updated first, and
+     nothing else starts until the human approves it.
+
+     Findings that shape the plan:
+     - vite.config.ts has no base. The only absolute path is the script tag in
+       index.html, and Vite rewrites it at build time.
+     - The only workflow is .github/workflows/ci.yml. It has contents: read,
+       runs xvfb-run -a npm run check on every push, and has no deploy job.
+     - E2E tests run against the dev server (playwright.config.ts), not against
+       dist/.
+     - .claude/settings.json has ask on git push*, so every push needs human
+       confirmation.
+     - docs/spec.md has no revision history section. §5 forbids stack
+       substitutions without a spec update.
+
+     Human clarifications (binding)
+
+     1. Approving this plan does not approve the spec text. In Step 1 I show the
+        exact docs/spec.md diff and wait for explicit approval before
+        committing it.
+     2. AC-16 must prove the live cube renders. It runs AC-1, AC-13 and the
+        WebGL test against the public URL in Chromium and Firefox, under
+        xvfb-run as in CI, with a bounded retry for Pages propagation. A curl
+        check is not enough.
+     3. I tell the human exactly when to enable Pages (Settings → Pages →
+        Source: GitHub Actions). The human does it themselves. I do not do it.
+     4. Before recording the two CI runs, I verify their commit SHAs and
+        conclusions with gh run view.
+
+     Step 1 — Spec v1.1 (STOP: show diff, wait for human approval of the text)
+
+     Draft the docs/spec.md edit, show the exact diff, and do not commit until
+     the human approves it. The edit is small and has four parts:
+     - Header: Version 1.1, Last updated 2026-10-20. Add a short "Revision
+       history" with v1.0 (initial) and v1.1 (deployment).
+     - New NFR-9 (Deployment):
+       - The app is published to GitHub Pages from main by GitHub Actions.
+       - Deployment runs only after npm run check passes on that commit.
+       - The public URL serves the same build that vite build produces.
+     - New AC-16: the deployed URL responds 200 and contains
+       div[data-testid="cube-scene"]. It is verified by a post-deploy smoke
+       step, not by npm run check.
+     - Supporting changes:
+       - §5: add GitHub Pages and GitHub Actions as the hosting stack.
+       - §6: add custom domain, preview deployments and a CDN/cache strategy as
+         out of scope.
+       - §8: add the assumption that Pages is enabled with Source = "GitHub
+         Actions" and the repo visibility permits Pages.
+       - §7.3: the Firefox and touch manual checks are run on the public URL.
+
+     Commit: docs(spec): add deployment requirement NFR-9 and AC-16, bump to 
+     v1.1
+
+     Step 2 — Vite base path
+
+     - Set base: './' in vite.config.ts.
+     - Relative base chosen over /rotating-cube/ for two reasons:
+       - it works under any project path;
+       - the dev server and the existing Playwright baseURL stay unchanged.
+     - Verify:
+       - npm run build, then inspect dist/index.html for relative asset URLs.
+       - Serve dist/ under a sub-path locally and confirm it loads. Use npx vite
+         preview with --base, or a static server in the scratchpad.
+     - Commit: build: use relative base for GitHub Pages
+
+     Step 3 — Deploy workflow
+
+     Create .github/workflows/deploy.yml. The existing ci.yml is left unchanged
+     and keeps contents: read.
+     - Trigger: push to main only, plus workflow_dispatch.
+     - Top-level permissions: contents: read.
+     - Concurrency: group pages, cancel-in-progress: false.
+     - Job build:
+       - Same setup as ci.yml (checkout, setup-node with .nvmrc, npm ci,
+         Playwright browsers).
+       - Run xvfb-run -a npm run check, so a broken commit is never deployed.
+       - actions/configure-pages, then actions/upload-pages-artifact with path: 
+         dist.
+     - Job deploy:
+       - needs: build, environment: github-pages.
+       - Job-level permissions: pages: write, id-token: write. These are scoped
+         to this job only.
+       - actions/deploy-pages.
+     - Post-deploy verification (AC-16), job verify-deployed, needs: deploy:
+       - playwright.deployed.config.ts: baseURL from the env var DEPLOYED_URL
+         (set to ${{ needs.deploy.outputs.page_url }}), no webServer, and the
+         same chromium and firefox projects as playwright.config.ts (Firefox
+         headed in CI).
+       - It runs the existing tests for AC-1, AC-13 and the WebGL test against
+         the public URL. I will identify the exact files in e2e/ (scene.test.ts,
+         webgl.test.ts, smoke.test.ts) and reuse them, with no copies and no
+         weakened assertions.
+       - A new script e2e:deployed is not part of npm run check.
+       - CI runs it as xvfb-run -a npm run e2e:deployed, after npx playwright 
+         install --with-deps chromium firefox.
+       - Bounded retry for Pages propagation: a small wait loop before the test
+         run, for example up to 10 attempts at 15 s intervals, until the URL
+         returns 200. It fails the job when the limit is reached. Test retries
+         are not used to hide failures.
+     - Pin action versions the same way ci.yml does.
+
+     Human prerequisite, done by the human on GitHub: Settings → Pages → Source:
+     "GitHub Actions". When: after Step 3 is committed locally and before the
+     first push of deploy.yml to main (Step 4). I will stop and tell the human
+     at that point, because the first deploy fails without it. I never enable it
+     myself.
+
+     Commit: ci: deploy to GitHub Pages after check passes (NFR-9, AC-16)
+
+     Step 4 — Verify the mechanism (Phase Workflow)
+
+     - Local verification first: npm run check must be green. Run spec-reviewer
+       once on the diff, as CLAUDE.md requires when src/ or e2e/ changed. This
+       only applies if Step 3 touched e2e/.
+     - Push (needs human confirmation):
+       - Push to main.
+       - Confirm ci.yml and deploy.yml are both green with gh run list / gh run 
+         watch.
+       - Confirm the public URL loads in a browser and the console is clean.
+     - Deliberate failure (the deploy gate must block a red commit):
+       a. Push a temporary branch containing a failing test.
+       b. deploy.yml only runs on main, so the gate cannot be proven this way.
+       c. Instead, run the failing commit through workflow_dispatch on that
+          branch. Use ref=<branch> and expect build to fail and deploy to be
+          skipped. If the environment rule github-pages rejects non-main refs,
+          record that as the protection and skip this test.
+       d. Delete the temporary branch and revert any experiment, leaving no
+          artifacts in the working tree.
+
+     Step 5 — Documentation update (after verification only)
+
+     Update docs/quality-gates.md:
+     - Record the two green CI runs on main after the Firefox fix. Add them to
+       the §4 Results table (Run / Ref / Result / URL), following the existing
+       format, and resolve the sentence "The CI run on main after the
+       fast-forward is recorded separately once it has finished":
+       - https://github.com/IraPolchanin/rotating-cube/actions/runs/39424971042
+       - https://github.com/IraPolchanin/rotating-cube/actions/runs/39425976757
+       - I will check each run's commit SHA and result with gh run view before
+         recording, so the Ref and Result columns come from the runs and not
+         from my assumptions.
+     - New deployment subsection: add it under §4 with a status line, and add a
+       row to §9 and §11, set only after Step 4 is verified.
+     - §12: note that the Firefox and touch checks are now to be done on the
+       public URL. They stay "Not checked" until the human reports results.
+
+     Commit: docs: record green main CI runs and Pages deployment (NFR-9, 
+     AC-16). Add the session transcript, docs/sessions/2026-10-20-session-6.txt
+     or the next date, in a separate commit, following the existing convention.
+
+     Out of scope for this phase
+
+     - The manual Firefox desktop and real-touch-device checks. The human does
+       them on the public URL.
+     - Branch protection and required checks (still not configured).
+     - Custom domain.
+
+     Verification summary
+
+     - npm run check green locally and in CI.
+     - dist/ works from a sub-path.
+     - deploy.yml run is green on main.
+     - The public URL loads the cube, the console is clean, and AC-16 smoke
+       passes.
+     - git status is clean, with no experiment artifacts.
+
+● Починаю Крок 1: читаю docs/spec.md, щоб підготувати точний diff. Файл поки не
+  змінюю — чернетку збережу в scratchpad, а правку внесу лише після вашого
+  схвалення. · summary
+
+  Read 1 file (ctrl+o to expand)
+
+● Спека не має секції deployment. Копіюю її в scratchpad, правлю копію й покажу
+  unified diff. docs/spec.md лишається недоторканим.
+
+● Bash(S="C:/Users/IRYNAP~1/AppData/Local/Temp/claude/C--Users-IrynaPolchaninova
+      -Projects-rotating-cube/65376945-f812-46fe-853c-0d17a60cffbb/scratchpad";
+      mkdir -p "$S/…)
+  ⎿  capture.test.ts
+     drag.test.ts
+     helpers.ts
+     … +8 lines (ctrl+o to expand)
+
+● Перед формулюванням AC-16 перевіряю, які саме тести покривають AC-1, AC-13 і
+  WebGL.
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Тести знайдено: AC-1 і AC-13 у scene.test.ts, WebGL-тест називається FR-1: 
+  browser can create a WebGL2 context. Вношу правки в draft-копію.
+
+  Made 10 scratchpad edits +61 -29 (ctrl+o to expand)
+
+● Bash(cd "C:/Users/IRYNAP~1/AppData/Local/Temp/claude/C--Users-IrynaPolchaninov
+      a-Projects-rotating-cube/65376945-f812-46fe-853c-0d17a60cffbb/scratchpad/s
+      pec-draft" &&…)
+  ⎿  warning: in the working copy of 'spec.orig.md', LF will be replaced by
+      CRLF the next time Git touches it
+     warning: in the working copy of 'spec.md', LF will be replaced by CRLF
+      the next time Git touches it
+  ⎿  Shell cwd was reset to 
+     C:\Users\IrynaPolchaninova\Projects\rotating-cube
+
+● Усі правки відхилено: Edit вимагає спершу прочитати копію. Читаю її і повторюю
+  правки.
+
+  Made 10 scratchpad edits +61 -29, read 1 file (ctrl+o to expand)
+
+● Усі 10 правок застосовано до копії. Генерую точний diff відносно поточного
+  docs/spec.md.
+● Bash(cd "C:/Users/IRYNAP~1/AppData/Local/Temp/claude/C--Users-IrynaPolchaninov
+      a-Projects-rotating-cube/65376945-f812-46fe-853c-0d17a60cffbb/scratchpad/s
+      pec-draft" &&…)
+  ⎿  Error: Permission to use Bash with command cd "C:/Users/IRYNAP~1/AppData/Lo
+     cal/Temp/claude/C--Users-IrynaPolchaninova-Projects-rotating-cube/65376945-
+     f812-46fe-853c-0d17a60cffbb/scratchpad/spec-draft" && git -c 
+     core.safecrlf=false diff --no-index --no-color spec.orig.md spec.md has 
+     been denied.
+
+● Правило deny блокує git -c *, тому це моя помилка. Повторюю без -c, звичайним
+  diff -u.
+
+● Bash(cd "C:/Users/IRYNAP~1/AppData/Local/Temp/claude/C--Users-IrynaPolchaninov
+      a-Projects-rotating-cube/65376945-f812-46fe-853c-0d17a60cffbb/scratchpad/s
+      pec-draft" &&…)
+  ⎿  --- a/docs/spec.md
+     +++ b/docs/spec.md
+     @@ -1,8 +1,13 @@
+     … +110 lines (ctrl+o to expand)
+  ⎿  Shell cwd was reset to 
+     C:\Users\IrynaPolchaninova\Projects\rotating-cube
+
+● Ось точний diff для docs/spec.md (v1.0 → v1.1). Нічого не закомічено, 
+  docs/spec.md не змінено. Draft лежить у scratchpad, повний файл diff:
+  C:\Users\IRYNAP~1\AppData\Local\Temp\claude\C--Users-IrynaPolchaninova-Project
+  s-rotating-cube\65376945-f812-46fe-853c-0d17a60cffbb\scratchpad\spec-draft\spe
+  c-v1.1.diff.
+
+  Що змінюється:
+  - Шапка: версія 1.1, дата 2026-10-20, додано «Revision history».
+  - NFR-9:
+    - публікація на GitHub Pages з main через GitHub Actions;
+    - деплой лише після зеленого npm run check;
+    - сайт це незмінений вивід vite build, і він працює з під-шляху.
+  - AC-16 (E2E, post-deploy):
+    - на публічному URL у Chromium і Firefox проходять тести AC-1, AC-13 і FR-1:
+      browser can create a WebGL2 context;
+    - тобто живий куб рендериться без помилок консолі.
+  - §5: рядок Hosting (GitHub Pages, GitHub Actions).
+  - §6: поза межами власний домен, preview-деплої та тюнінг CDN/кешу.
+  - §7.2: AC-16 повторно використовує наявні тести проти публічного URL (див.
+    §7.6).
+  - §7.3:
+    - новий рядок «Firefox desktop без помилок» (NFR-7);
+    - примітка, що ручні перевірки виконуються на публічному URL.
+  - §7.4: потрібен скрипт e2e:deployed. Він навмисно не входить у npm run check.
+  - §7.5: два нові рядки (деплой після зеленого check, AC-16).
+  - §7.6 (нова):
+    - окрема Playwright-конфігурація проти URL із змінної середовища, без
+      webServer;
+    - Chromium і Firefox під віртуальним дисплеєм у CI;
+    - наявні тести без копій і без послаблення асерцій;
+    - обмежене очікування для Pages propagation, без test retries.
+  - A-7: Pages увімкнено з Source = "GitHub Actions" (ви це робите вручну), а
+    видимість репозиторію це дозволяє.
+
+  Питання для вас:
+  1. Чи затверджуєте текст як є, чи є правки?
+  2. Чи можна однією правкою перейменувати у §7.6 «WebGL2 context test» на точну
+     назву тесту? Зараз у AC-16 стоїть FR-1, бо в тесту немає AC-ID.
+
+  Після вашого схвалення я застосую diff до docs/spec.md і закомічу: docs(spec):
+  add deployment requirement NFR-9 and AC-16, bump to v1.1. Тільки після цього
+  перейду до Step 2.
+
+✻ Sautéed for 8m 29s · done Tuesday 8:53 PM
+
+※ recap: Мета: задеплоїти застосунок на GitHub Pages, і зараз ми на Step 1, оновленні специфікації до v1.1. Чекаю вашого схвалення тексту diff для `docs/spec.md`; після цього застосую його, закомічу і перейду до Step 2. (disable recaps in /config)
+
+❯ Approved. First check that yesterday's draft is still in the scratchpad       
+  and that docs/spec.md has not changed since. Then apply the diff, using       
+  the exact test name in §7.6, and show me the final git diff of                
+  docs/spec.md before committing. After my approval, commit and continue        
+  with Step 2.                                                                  
+
+● Спершу перевіряю, що draft на місці й що docs/spec.md збігається з оригіналом,
+  на якому я його будував. Нічого не змінюю.
+
+● Bash(D="C:/Users/IRYNAP~1/AppData/Local/Temp/claude/C--Users-IrynaPolchaninova
+      -Projects-rotating-cube/65376945-f812-46fe-853c-0d17a60cffbb/scratchpad/sp
+      ec-draft"; ls…)
+  ⎿  total 40
+     drwxr-xr-x 1 AzureAD+IrynaPolchaninova 4096     0 Oct 20 20:53 .
+     drwxr-xr-x 1 AzureAD+IrynaPolchaninova 4096     0 Oct 20 20:52 ..
+     … +13 lines (ctrl+o to expand)
+
+● Чернетка готова, docs/spec.md поки збігається з оригіналом, статус git чистий.
+  Зараз додам точні назви тестів у §7.6 чернетки, а потім скопіюю її в
+  docs/spec.md. · summary
+
+  Made 1 scratchpad edit +5 -3 (ctrl+o to expand)
+
+● Bash(D="C:/Users/IRYNAP~1/AppData/Local/Temp/claude/C--Users-IrynaPolchaninova
+      -Projects-rotating-cube/65376945-f812-46fe-853c-0d17a60cffbb/scratchpad/sp
+      ec-draft"; cp…)
+  ⎿  warning: in the working copy of 'docs/spec.md', LF will be replaced by
+      CRLF the next time Git touches it
+      docs/spec.md | 40 +++++++++++++++++++++++++++++++++++++---
+     … +114 lines (ctrl+o to expand)
+
+● Правку застосовано до docs/spec.md, але не закомічено. Вище повний git diff
+  (37 додано, 3 видалено). Попередження про CRLF це звичайне налаштування git на
+  Windows, воно не впливає на diff.
+
+  - Перед застосуванням: draft був у scratchpad, а docs/spec.md був побайтово
+    ідентичний оригіналу (cmp), git status чистий, main синхронізований з
+    origin/main.
+  - Точні назви тестів у §7.6:
+    - AC-1: cube-scene wrapper is present on load
+    - AC-13: no console errors or page errors on load
+    - FR-1: browser can create a WebGL2 context
+  - Одна відмінність від учорашнього diff: змінено лише §7.6. У AC-16 і §7.2
+    лишилися описові формулювання («WebGL2 context test (FR-1)»), бо там
+    ідентифікатор вимог, а не назва тесту. Якщо хочете, підставлю точні назви й
+    туди.
+
+  Питання щодо дати: у шапці й revision history стоїть 2026-10-20, а коміт буде
+  2026-10-21. Залишити 2026-10-20 (дата підготовки) чи поставити 2026-10-21
+  (дата затвердження)? Без вашої відповіді залишаю 2026-10-20.
+
+  Чекаю вашого схвалення фінального diff. Після нього закомічу docs(spec): add 
+  deployment requirement NFR-9 and AC-16, bump to v1.1 і перейду до Step 2
+  (base: './' у vite.config.ts).
+
+✻ Worked for 26s · done 12:35 PM
+
+❯ Approved. Use 2026-10-21 in the header and in the v1.1 revision history       
+  entry, since that is the approval date. Commit and continue with              
+  Step 2.                                                                       
+
+● Змінюю дату на 2026-10-21 у шапці й у revision history, потім комічу.
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(docs\spec.md)
+  ⎿  Added 1 line, removed 1 line
+      2  
+      3  Version: 1.1  
+      4  Status: Approved  
+      5 -Last updated: 2026-10-20                                        
+      5 +Last updated: 2026-10-21                                        
+      6  
+      7  Revision history:
+      8  
+
+● Update(docs\spec.md)
+  ⎿  Added 1 line, removed 1 line
+       7  Revision history:
+       8  
+       9  - 1.0 (2026-10-19) — initial specification.
+      10 -- 1.1 (2026-10-20) — add deployment to GitHub Pages (NFR-9, AC-
+         -16, A-7).                                                      
+      10 +- 1.1 (2026-10-21) — add deployment to GitHub Pages (NFR-9, AC-
+         +16, A-7).                                                      
+      11  
+      12  ---
+      13  
+
+● Bash(git add docs/spec.md && git commit -q -m "docs(spec): add deployment
+      requirement NFR-9 and AC-16, bump to v1.1…)
+  ⎿  warning: in the working copy of 'docs/spec.md', LF will be replaced by
+      CRLF the next time Git touches it
+     > eslint . --max-warnings 0
+     … +28 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● Крок 1 завершено (коміт e18141f, pre-commit пройшов). Тепер додаю base: './' у
+  vite.config.ts, зберу проєкт і перевірю відносні шляхи в dist/index.html та
+  роботу з під-шляху — спочатку читаю конфіг. · summary
+
+  Read 1 file (ctrl+o to expand)
+
+● Update(vite.config.ts)
+  ⎿  Added 2 lines
+      2  import react from '@vitejs/plugin-react'
+      3  
+      4  export default defineConfig({
+      5 +  // Relative base so the build works from any sub-path (GitHub 
+        +Pages project site).                                            
+      6 +  base: './',                                                   
+      7    plugins: [react()],
+      8    server: {
+      9      port: 5173,
+
+● Bash(npm run build 2>&1 | tail -12; echo ---; cat dist/index.html)
+  ⎿  rendering chunks...
+     computing gzip size...
+     dist/index.html                   0.43 kB │ gzip:   0.28 kB
+     … +24 lines (ctrl+o to expand)
+
+● Шляхи в dist/index.html відносні, тож тепер перевіряю роботу під під-шляхом —
+  підіймаю мінімальний статичний сервер, що віддає dist/ під /rotating-cube/, і
+  перевіряю HTML, JS та CSS. · summary
+
+  Made 1 scratchpad edit +26 (ctrl+o to expand)
+
+● Bash(S="C:/Users/IRYNAP~1/AppData/Local/Temp/claude/C--Users-IrynaPolchaninova
+      -Projects-rotating-cube/65376945-f812-46fe-853c-0d17a60cffbb/scratchpad"
+      node "$S/serve…)
+  ⎿  listening
+     http://localhost:4173/rotating-cube/ -> 404
+     http://localhost:4173/rotating-cube/assets/index-CF3sqcm0.js -> 404
+     … +2 lines (ctrl+o to expand)
+
+● Усі 404 помилки пов’язані з тим, що Git Bash передав Node шлях у форматі
+  /c/Users/..., який Windows не розпізнає. Зараз повторю з коректним
+  Windows-шляхом. · summary
+● Bash(S="C:/Users/IRYNAP~1/AppData/Local/Temp/claude/C--Users-IrynaPolchaninova
+      -Projects-rotating-cube/65376945-f812-46fe-853c-0d17a60cffbb/scratchpad"
+      node "$S/serve…)
+  ⎿  listening
+     http://localhost:4173/rotating-cube/ -> 404
+     http://localhost:4173/rotating-cube/assets/index-CF3sqcm0.js -> 404
+     … +2 lines (ctrl+o to expand)
+
+● Знайшов причину: Git Bash автоматично конвертує /rotating-cube/ у шлях
+  всередині C:\Program Files\Git\, через що префікс не збігається. Вимикаю цю
+  конвертацію за допомогою MSYS_NO_PATHCONV=1. · summary
+
+● Bash(export MSYS_NO_PATHCONV=1
+      S="C:/Users/IRYNAP~1/AppData/Local/Temp/claude/C--Users-IrynaPolchaninova-
+      Projects-rotating-cube/65376945-f812-46fe-853c-0d17a60cffbb/…)
+  ⎿  listening
+     http://localhost:4173/rotating-cube/ -> 200
+     http://localhost:4173/rotating-cube/assets/index-CF3sqcm0.js -> 200
+     … +2 lines (ctrl+o to expand)
+
+● Підтверджено: ресурси коректно резолвляться відносно /rotating-cube/ (200), а
+  root-absolute запит дає 404. Тепер запускаю повний npm run check, оскільки
+  base впливає на конфіг dev-сервера, задіяний в e2e. · summary
+
+● Bash(npm run check 2>&1 | tail -25)
+  ⎿    ✓  15 [firefox] › e2e\resize.test.ts:13:1 › AC-10: canvas width matc
+     hes innerWidth at 1280x720 (4.0s)
+       ✓  25 [chromium] › e2e\reset.test.ts:42:1 › AC-9: a drag after reset
+     … +32 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Повний npm run check зелений: typecheck, lint, test, build, e2e (42 пройшли).
+  Комічу Step 2.
+
+● Bash(git status --short; git add vite.config.ts && git commit -q -m "build:
+      use relative base for GitHub Pages (NFR-9)…)
+  ⎿   M vite.config.ts
+     warning: in the working copy of 'vite.config.ts', LF will be replaced
+     by CRLF the next time Git touches it
+     … +10 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● Step 1 і Step 2 завершено. Нічого не запушено, дерево чисте.
+
+  Що зроблено:
+  - Step 1: спека v1.1 із датою 2026-10-21. Коміт e18141f.
+  - Step 2: base: './' у vite.config.ts. Коміт b59d443.
+  - Перевірки Step 2:
+    - dist/index.html посилається на ./assets/....
+    - Збірка під /rotating-cube/ віддає HTML, JS і CSS з кодом 200, а
+      root-absolute запит дає 404.
+    - npm run check зелений, усі п'ять перевірок, 42 e2e.
+    - Pre-commit hook пройшов для обох комітів.
+  - Обмеження: рендер із під-шляху в браузері я ще не бачив. Це підтвердить
+    e2e:deployed після деплою.
+
+  Далі Step 3: .github/workflows/deploy.yml (job build, deploy,
+  verify-deployed), playwright.deployed.config.ts і скрипт e2e:deployed. Перед
+  цим перевірю версії actions у ci.yml, щоб закріпити такі самі.
+
+  Коли вмикати Pages: це ще не потрібно. Після Step 3 я закомічу deploy.yml
+  локально і зупинюся перед першим пушем. Тоді скажу вам увімкнути Settings →
+  Pages → Source: GitHub Actions, бо без цього перший деплой впаде. Пуш потребує
+  вашого підтвердження.
+
+  Продовжувати зі Step 3?
+
+✻ Sautéed for 2m 16s · done 12:38 PM
+
+❯ Так, продовжуй зі Step 3                                                      
+
+● Step 3. Спершу читаю ci.yml, playwright.config.ts і package.json, щоб
+  повторити їхні версії actions і стиль. Потім створю
+  playwright.deployed.config.ts, скрипт e2e:deployed і deploy.yml.
+
+  Read 3 files (ctrl+o to expand)
+
+● Ключовий ризик: якщо тести викликають page.goto('/'), це може розв'язатись у
+  корінь домену замість під-шляху /rotating-cube/. Перевіряю, як саме тести
+  виконують навігацію. · summary
+
+  Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+● Знайшов проблему: усі 21 викликів page.goto('/') у e2e-тестах розв'яжуться у
+  корінь домену, а не в застосунок на GitHub Pages, тож AC-16 провалиться, а без
+  правки тестів це суперечить затвердженому §7.6 про їх «unchanged» reuse.
+  Потрібне ваше рішення, перш ніж писати конфіг. · summary
+
+● User answered Claude's questions:
+  ⎿  · Як зробити, щоб наявні e2e-тести працювали проти URL з під-шляхом 
+     /rotating-cube/? → goto('./') у всіх e2e (Recommended)
+
+● Застосовую механічну заміну на goto('./') у всіх 21 викликах навігації в e2e/;
+  відкат при потребі зроблю через git checkout, бо дерево чисте. · summary
+
+● Bash(sed -i "s#page\.goto('/')#page.goto('./')#" e2e/*.test.ts && echo "left
+      with '/':" && (grep -rn "goto('/')" e2e || echo none) && echo "now './':"
+      && grep -rc "g…)
+  ⎿  left with '/':
+     none
+     now './':
+     … +22 lines (ctrl+o to expand)
+
+❯ The change should be mechanical: keep all assertions unchanged, use a         
+  consistent navigation style across the test suite, and run the full npm run   
+  check afterward. Please update §7.6 to clarify that the existing tests and    
+  assertions are reused unchanged, while navigation is made relative, and show  
+  me the spec diff for approval.                                                
+                                                                                
+  One important detail: ./ resolves correctly under the GitHub Pages project    
+  sub-path only when the base URL ends with a trailing slash. Make sure         
+  DEPLOYED_URL is normalized to end with / in playwright.deployed.config.ts,    
+  and verify this with the local sub-path check.                                
+                                                                                
+  Do not push or deploy without my separate approval.                           
+
+● Заміна виявилась механічною й одноманітною (21 на 21, лише навігація). Далі
+  виконую повний npm run check, нормалізую DEPLOYED_URL, готую diff §7.6 на ваше
+  схвалення без правки docs/spec.md, без push і деплою — починаю з check. 
+  · summary
+
+● Bash(npm run check 2>&1 | grep -E "passed|failed|error|Error|✗" | tail -8;
+      echo "exit-pipeline-done"; git status --short)
+  ⎿   Test Files  2 passed (2)
+           Tests  20 passed (20)
+       ✓  17 [chromium] › e2e\scene.test.ts:28:1 › AC-13: no console errors
+     … +12 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Усі тести пройшли: unit 20/20, e2e 42/42. Тепер створюю конфіг для публічного
+  URL, спершу перевіряючи tsconfig.json і eslint.config.js, щоб новий файл
+  коректно потрапив під typecheck і lint, як і playwright.config.ts. · summary
+
+  Read 2 files (ctrl+o to expand)
+
+● Створю два файли: playwright.deployed.config.ts для нормалізації DEPLOYED_URL,
+  відбору трьох тестів §7.6 і без webServer, та playwright.deployed.setup.ts з
+  globalSetup, що очікує доступності сайту. Додам їх до include в tsconfig.json.
+  · summary
+
+● Write(playwright.deployed.config.ts)
+  ⎿  Wrote 39 lines to playwright.deployed.config.ts
+       1 import { defineConfig, devices } from '@playwright/test'
+       3 // Runs a subset of the existing e2e tests against the public Gi
+         tHub Pages URL
+       4 // (AC-16, spec section 7.6). The URL comes from DEPLOYED_URL; t
+       5 const raw = process.env['DEPLOYED_URL']
+       6 if (!raw) {
+         .github.io/rotating-cube/')
+       8 }
+       9 
+          Pages project
+     … +36 lines (ctrl+o to expand)
+
+● Write(playwright.deployed.setup.ts)
+  ⎿  Wrote 26 lines to playwright.deployed.setup.ts
+      1 // Waits for the deployed site to answer with HTTP 200 before the
+         tests start, to
+      2 // absorb GitHub Pages propagation delay (spec section 7.6). The 
+      3 // if the limit is reached the run fails.
+      4 const ATTEMPTS = 10
+      5 const INTERVAL_MS = 15_000
+      6 
+      8   const url = process.env['DEPLOYED_URL']
+      9   if (!url) throw new Error('DEPLOYED_URL is not set (the config 
+        normalises and sets it).')
+     … +22 lines (ctrl+o to expand)
+
+● Update(tsconfig.json)
+  ⎿  Added 1 line, removed 1 line
+      15      "noUnusedParameters": true,
+      16      "noFallthroughCasesInSwitch": true
+      17    },
+      18 -  "include": ["src", "e2e", "vite.config.ts", "vitest.config.ts
+         -", "playwright.config.ts"]                                     
+      18 +  "include": ["src", "e2e", "vite.config.ts", "vitest.config.ts
+         +", "playwright.config.ts", "playwright.deployed.config.ts", "pl
+         +aywright.deployed.setup.ts"]                                   
+      19  }
+
+● Update(package.json)
+  ⎿  Added 1 line
+      10      "test": "vitest run",
+      11      "build": "vite build",
+      12      "e2e": "playwright test",
+      13 +    "e2e:deployed": "playwright test --config playwright.deploy
+         +ed.config.ts",                                                 
+      14      "check": "npm run typecheck && npm run lint && npm run test
+           && npm run build && npm run e2e",
+      15      "prepare": "git config core.hooksPath .githooks"
+      16    },
+● Файли створено. Тепер запускаю typecheck і lint, після чого піднімаю сервер на
+  /rotating-cube/ і виконую npm run e2e:deployed з DEPLOYED_URL без кінцевого
+  слеша, щоб перевірити нормалізацію шляху та показати, чому ./ без слеша веде
+  не туди. · summary
+
+● Bash(export MSYS_NO_PATHCONV=1
+      npm run typecheck 2>&1 | tail -3 && npm run lint 2>&1 | tail -3 || exit
+      1…)
+  ⎿  > rotating-cube@0.0.1 typecheck
+     > tsc --noEmit
+     … +13 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● Помилка в тому, що Playwright застосовує grep до повного заголовка тесту, тож
+  якір ^ не працює — прибираю його, а двокрапка після ID все одно захистить від
+  плутанини AC-1 з AC-10…AC-15. · summary
+
+● Update(playwright.deployed.config.ts)
+  ⎿  Added 2 lines, removed 1 line
+      17  export default defineConfig({
+      18    testDir: './e2e',
+      19    // Exactly the tests named in spec section 7.6: AC-1, AC-13 a
+          nd FR-1 (WebGL2).
+      20 -  grep: /^(AC-1|AC-13|FR-1):/,                                 
+      20 +  // The colon keeps AC-1 from matching AC-10 to AC-15.        
+      21 +  grep: /(AC-1|AC-13|FR-1):/,                                  
+      22    // Failures must not be hidden by retries; propagation delay 
+          is handled in the setup.
+      23    retries: 0,
+      24    globalSetup: './playwright.deployed.setup.ts',
+
+● Bash(export MSYS_NO_PATHCONV=1
+      S="C:/Users/IRYNAP~1/AppData/Local/Temp/claude/C--Users-IrynaPolchaninova-
+      Projects-rotating-cube/65376945-f812-46fe-853c-0d17a60cffbb/…)
+  ⎿  listening
+
+     > rotating-cube@0.0.1 e2e:deployed
+     … +19 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+
+● Усі 6 тестів пройшли з DEPLOYED_URL без слеша, підтвердивши потрібність
+  нормалізації. Далі перевірю deploy.yml: дізнаюся актуальні версії
+  Pages-actions через gh і перевірю обробку помилки при відсутньому
+  DEPLOYED_URL. · summary
+
+● Bash(for r in actions/configure-pages actions/upload-pages-artifact
+      actions/deploy-pages; do printf '%s -> ' "$r"; gh api
+      repos/$r/releases/latest --jq .tag_name 2>&…)
+  ⎿  actions/configure-pages -> v6.0.0
+     actions/upload-pages-artifact -> v5.0.0
+     actions/deploy-pages -> v5.0.1
+     … +3 lines (ctrl+o to expand)
+
+● Знайшов останні мажорні версії: configure-pages@v6, upload-pages-artifact@v5,
+  deploy-pages@v5, беру мажорні теги як у ci.yml, і додам явну помилку, якщо
+  відсутній DEPLOYED_URL. Тепер пишу workflow. · summary
+
+● Write(.github\workflows\deploy.yml)
+  ⎿  Wrote 97 lines to .github\workflows\deploy.yml
+      1 name: Deploy
+      2 
+      3 on:
+      4   push:
+      5     branches: [main]
+      6   workflow_dispatch:
+      7 
+      8 permissions:
+      9   contents: read
+     … +90 lines (ctrl+o to expand)
+
+● Workflow готовий. Перевіряю синтаксис YAML і готую draft зміни §7.6 у
+  scratchpad (docs/spec.md не чіпаю).
+
+● Bash(python -I -c "import yaml,sys;
+      d=yaml.safe_load(open('.github/workflows/deploy.yml')); print('yaml ok;
+      jobs:', list(d['jobs']), '| job perms deploy:', d['jobs']…)
+  ⎿  yaml ok; jobs: ['build', 'deploy', 'verify-deployed'] | job perms depl
+     oy: {'pages': 'write', 'id-token': 'write'}
+     227:### 7.6 Deployment verification
+     … +17 lines (ctrl+o to expand)
+
+  Made 1 scratchpad edit +8 -4, read 1 file (ctrl+o to expand)
+
+● Bash(D="C:/Users/IRYNAP~1/AppData/Local/Temp/claude/C--Users-IrynaPolchaninova
+      -Projects-rotating-cube/65376945-f812-46fe-853c-0d17a60cffbb/scratchpad/sp
+      ec-draft2"; c…)
+  ⎿  --- a/docs/spec.md
+     +++ b/docs/spec.md
+     @@ -231,10 +231,14 @@
+     … +31 lines (ctrl+o to expand)
+
+● Усі зміни Step 3 ще не закомічені — запускаю повний npm run check для
+  фінальної перевірки перед spec-reviewer. · summary
+
+● Bash(npm run check 2>&1 | grep -E "^> rotating|passed|failed|Error|error" |
+      tail -12)
+  ⎿  > rotating-cube@0.0.1 check
+     > rotating-cube@0.0.1 typecheck
+     > rotating-cube@0.0.1 lint
+     … +10 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Усі п'ять перевірок (typecheck, lint, test, build, e2e) пройшли успішно — 42
+  тести зелені. Оскільки змінено e2e/, запускаю обов'язковий spec-reviewer для
+  цього diff'у, як вимагає CLAUDE.md. · summary
+
+● spec-reviewer(Review Step 3 diff against spec)
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● spec-reviewer ще працює. Чекаю на його результат, щоб виправити або передати
+  вам усі зауваження. Поки що нічого не комічу й не пушу.
+
+✻ Baked for 5m 3s · done 12:47 PM
+
+› Message from spec-reviewer
+  C:\Users\IrynaPolchaninova\Projects\rotating-cube\.github\workflows\deploy.yml
+  :36 — `actions/configure-pages` runs in the `build` job, which only has the
+  workflow-level `contents: read`. It calls the Pages API and may fail with 403
+  "Resource not accessible by integration". GitHub's starter workflow grants
+  `pages: write` for this step. Its output is unused, because the relative base
+  already makes the build work from a sub-path. Remove the step, or grant
+  `pages: write` to the `build` job. Granting it would widen the build job's
+  permissions, so removal is the better fix. The failure would stop deployment
+  and so fail NFR-9, but it is unverified. — NFR-9 (robustness)
+
+  No other violations found. Checks I made:
+  - **Tests (CLAUDE.md rules):** All 7 e2e files use `page.goto('./')`. Titles
+  still carry AC and FR IDs, and I found no `skip`, `fixme`, `only`,
+  `ts-ignore`, `eslint-disable` or `any`. Everything is in English.
+  - **Test assertions:** I read only `e2e/webgl.test.ts` in full, and its
+  assertions are intact. For the other six files I confirmed only that titles
+  and `goto` lines are present. I could not diff them, so I did not check
+  assertion bodies.
+  - **Local config:** `./` resolves to `http://localhost:5173/` under the local
+  config's `baseURL`, so the local run is unaffected.
+  - **Grep regex:** `/(AC-1|AC-13|FR-1):/` matches only the AC-1, AC-13 and FR-1
+  tests. The trailing colon keeps AC-1 from matching AC-10 to AC-15, and FR-6
+  does not match.
+  - **Deploy gating (NFR-9):** `deploy` needs `build`, which runs `npm run
+  check` under xvfb. The artifact is `dist`, the unmodified `vite build` output.
+  The workflow triggers on `push` to `main`. The `pages: write` and `id-token:
+  write` permissions are set at job level on `deploy` only.
+  - **Output wiring:** `needs.deploy.outputs.page_url` is wired correctly to
+  `deploy` through `steps.deployment.outputs.page_url`. The `pages` concurrency
+  group has `cancel-in-progress: false`.
+  - **Post-deploy run (AC-16):** `verify-deployed` runs `xvfb-run -a npm run
+  e2e:deployed` with Chromium and Firefox. Firefox runs headed when `CI` is set.
+  `retries` is 0 and the setup wait is bounded at 10 attempts of 15 s.
+  - **DEPLOYED_URL handling:** The config fails fast if `DEPLOYED_URL` is
+  missing. It appends a trailing slash when one is absent, and `process.env` is
+  set before `globalSetup` runs.
+  - **Config and scripts:** `e2e:deployed` is defined and is not part of
+  `check`. The `tsconfig.json` include list covers the new files. The config has
+  no `webServer`.
+
+● Зауваження spec-reviewer слушне: configure-pages у job build має лише
+  contents: read, а його вивід я не використовую, бо відносний base уже працює з
+  під-шляху. Розширювати права build не хочу, тож прибираю крок. Також сам
+  перевіряю те, чого рев'юер не зміг: що в 21 зміненому рядку e2e/ немає нічого,
+  крім навігації.
+
+● Update(.github\workflows\deploy.yml)
+  ⎿  Removed 2 lines
+      33        # Headed Firefox needs a display for WebGL; see playwrigh
+          t.config.ts.
+      34        - run: xvfb-run -a npm run check
+      35  
+      36 -      - uses: actions/configure-pages@v6                       
+      37 -                                                               
+      36        # dist/ is the output of the vite build run by npm run ch
+          eck.
+      37        - uses: actions/upload-pages-artifact@v5
+      38          with:
+
+● Bash(echo "changed lines in e2e that are NOT a goto swap:"; git --no-pager
+      diff -U0 -- e2e | grep -E '^[-+]' | grep -vE '^(\+\+\+|---)' | grep -vE
+      "^[-+]\s+await pag…)
+  ⎿  changed lines in e2e that are NOT a goto swap:
+     warning: in the working copy of 'e2e/capture.test.ts', LF will be repl
+     aced by CRLF the next time Git touches it
+     … +32 lines (ctrl+o to expand)
+
+● Agent "Review Step 3 diff against spec" finished · 26s
+
+● Step 3 готовий до коміту, але нічого не закомічено, не запушено й не 
+  задеплоєно. Спершу потрібне ваше схвалення diff для §7.6.
+
+  Diff для docs/spec.md (лише §7.6)
+
+  @@ -231,10 +231,14 @@
+   Firefox projects, under a virtual display in CI as for `npm run check`. It
+  reuses
+   the existing tests `AC-1: cube-scene wrapper is present on load`,
+   `AC-13: no console errors or page errors on load` and
+  -`FR-1: browser can create a WebGL2 context` unchanged; assertions are not
+  -weakened or duplicated. A bounded wait for the site to become reachable 
+  absorbs
+  -Pages propagation delay; if the limit is reached the run fails. Test retries 
+  are not
+  -used to hide failures.
+  +`FR-1: browser can create a WebGL2 context`. The tests and their assertions 
+  are
+  +reused unchanged and are not duplicated; only navigation is made relative
+  +(`page.goto('./')` instead of `page.goto('/')`), so the same tests work on 
+  the dev
+  +server and under the Pages project sub-path. For this to resolve correctly 
+  the base
+  +URL must end with `/`; the deployed-URL configuration normalises the supplied
+  URL to
+  +end with `/`. A bounded wait for the site to become reachable absorbs Pages
+  +propagation delay; if the limit is reached the run fails. Test retries are 
+  not used
+  +to hide failures.
+
+  Файл diff: C:\Users\IRYNAP~1\AppData\Local\Temp\claude\C--Users-IrynaPolchanin
+  ova-Projects-rotating-cube\65376945-f812-46fe-853c-0d17a60cffbb\scratchpad\spe
+  c-draft2\spec-7.6.diff. docs/spec.md не змінено.
+
+  Що готово в робочому дереві
+
+  - e2e/*.test.ts: 21 з 21 заміна goto('/') → goto('./'). Я перевірив, що
+    жодного іншого рядка не змінено, асерції цілі.
+  - playwright.deployed.config.ts:
+    - DEPLOYED_URL обов'язковий, нормалізується через URL зі слешем у кінці;
+    - відбираються рівно 3 тести (AC-1, AC-13, FR-1), retries: 0, без webServer.
+  - playwright.deployed.setup.ts: очікування HTTP 200, 10 спроб по 15 с, потім
+    помилка.
+  - package.json і tsconfig.json: скрипт e2e:deployed (поза check) і нові файли
+    в include.
+  - deploy.yml:
+    - jobs build, deploy і verify-deployed;
+    - pages: write та id-token: write лише в deploy;
+    - YAML валідний.
+
+  Перевірки
+
+  - Нормалізація: без слеша ./ вело б у http://localhost:4173/, зі слешем у
+    .../rotating-cube/. Локальний під-шлях із DEPLOYED_URL без слеша дав 6 з 6
+    тестів (3 × Chromium і Firefox).
+  - Помилки: відсутній DEPLOYED_URL падає одразу зі зрозумілою помилкою.
+  - Повний npm run check: зелений, 42 e2e. Після нього я прибрав крок з
+    deploy.yml, тож check запускати знову не треба, а YAML перевірено окремо.
+  - spec-reviewer: одне зауваження, яке я виправив. actions/configure-pages у
+    build мав лише contents: read, а його вивід не використовується. Крок
+    прибрано, права не розширював.
+
+  Чого я не перевірив
+
+  - Реальні роботу deploy.yml і verify-deployed. Це можливо лише після пушу.
+  - Негативний сценарій очікування, коли URL недоступний. Він займає 2,5
+    хвилини, тож я його не гнав.
+
+  Далі, після вашого схвалення diff
+
+  1. Застосую diff до docs/spec.md і покажу фінальний git diff.
+  2. Закомічу окремо за вашим затвердженням: docs(spec), test(e2e), ci. Для дат
+     і форми повідомлень потрібен ваш підпис під diff.
+  3. Зупинюся перед пушем. Спершу скажу вам увімкнути Settings → Pages → Source:
+     GitHub Actions, а сам пуш лише за вашим окремим підтвердженням.
+
+  Чи затверджуєте diff §7.6?
+
+✻ Cooked for 8m 7s · done 12:48 PM
+
+❯ Approved, the §7.6 diff and the commit messages as proposed. Before           
+  committing, run playwright test --config playwright.deployed.config.ts        
+  --list (with a dummy DEPLOYED_URL) and confirm it lists exactly AC-1,         
+  AC-13 and FR-1 in both browsers. Apply the diff, make the three commits,      
+  then stop and tell me when to enable Pages.                                   
+● Спершу виконую --list із фіктивним DEPLOYED_URL. Це лише перелік тестів:
+  globalSetup не запускається, мережі немає.
+
+● Bash(DEPLOYED_URL=https://example.invalid/rotating-cube npx playwright test
+      --config playwright.deployed.config.ts --list 2>&1 | tail -15)
+  ⎿  Listing tests:
+       [chromium] › scene.test.ts:3:1 › AC-1: cube-scene wrapper is present
+      on load
+     … +11 lines (ctrl+o to expand)
+
+● Список точний: рівно 6 тестів (AC-1, AC-13, FR-1 у Chromium і Firefox).
+  Перевіряю, що docs/spec.md не змінювався з моменту драфту, застосовую diff і
+  покажу фінальний git diff. · summary
+
+● Bash(D="C:/Users/IRYNAP~1/AppData/Local/Temp/claude/C--Users-IrynaPolchaninova
+      -Projects-rotating-cube/65376945-f812-46fe-853c-0d17a60cffbb/scratchpad/sp
+      ec-draft2"
+      cm…)
+  ⎿  spec unchanged since draft
+     diff --git a/docs/spec.md b/docs/spec.md
+     index 4c214f9..8a5d822 100644
+     … +20 lines (ctrl+o to expand)
+
+● Diff збігається з затвердженим — тепер роблю три окремі коміти по черзі, на
+  кожному запуститься pre-commit (typecheck, lint, test). · summary
+
+● Bash(set -e
+      git add docs/spec.md…)
+  ⎿  warning: in the working copy of 'docs/spec.md', LF will be replaced by
+      CRLF the next time Git touches it
+      Test Files  2 passed (2)
+     … +27 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Step 3 завершено: три коміти зроблено, дерево чисте. Нічого не запушено, main
+  попереду origin/main на 5 комітів.
+
+  - c4dc179 docs(spec): clarify section 7.6 test reuse with relative navigation 
+    (AC-16)
+  - 64e1388 test(e2e): navigate with relative URLs to run under a sub-path 
+    (AC-1, AC-13)
+  - f3d99a6 ci: deploy to GitHub Pages after check passes (NFR-9, AC-16)
+
+  --list показав рівно 6 тестів: AC-1, AC-13 і FR-1 у Chromium та Firefox.
+  Pre-commit пройшов у всіх трьох комітах.
+
+  Коли вмикати Pages
+
+  Зараз, до першого пушу. Це ваш крок, я його не роблю:
+
+  1. Відкрийте https://github.com/IraPolchanin/rotating-cube/settings/pages
+  2. У Build and deployment → Source виберіть GitHub Actions.
+
+  Без цього перший запуск deploy.yml на main упаде на кроці deploy. Pages на
+  безкоштовному плані потребує публічного репозиторію, тож перевірте видимість
+  (A-7 у спеці).
+
+  Далі, лише за вашим окремим підтвердженням
+
+  Step 4: git push на main, який запустить ci.yml і deploy.yml разом. Потім
+  перевірю через gh run watch, що build, deploy і verify-deployed зелені, а
+  публічний URL відкривається. Окремо спробую deliberate failure через
+  workflow_dispatch на гілці з червоним тестом.
+
+  Повідомте, коли Pages увімкнено і чи можна пушити.
+
+✻ Churned for 43s · done 12:50 PM
+
+❯ Pages увімкнено, можна пушити                                                 
+
+● Пушу main (5 комітів), потім стежу за запусками CI і Deploy.
+
+● Bash(git push origin main 2>&1 | tail -5; sleep 8; gh run list --limit 4
+      --json databaseId,workflowName,status,conclusion,headSha --jq '.[] |
+      "\(.databaseId) \(.work…)
+  ⎿  To https://github.com/IraPolchanin/rotating-cube.git
+        35ddb49..f3d99a6  main -> main
+     39580385881 Deploy in_progress  f3d99a6
+     … +3 lines (ctrl+o to expand)
+  ⎿  (timeout 2m)
+
+● Пуш пройшов (35ddb49..f3d99a6), запуски CI і Deploy тривають — попередні два
+  на main завершились успішно. Продовжую стежити за Deploy. · summary
+
+● Bash(gh run watch 39580385881 --exit-status --interval 20 2>&1 | tail -20;
+      echo "exit=$?"; gh run list --limit 2 --json
+      databaseId,workflowName,status,conclusion --j…)
+  ⎿    ✓ Complete job
+     ✓ verify-deployed in 43s (ID 119157400130)
+       ✓ Set up job
+     … +24 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Деплой і CI успішно завершилися, включно з verify-deployed. Зараз дістаю
+  адресу сайту та перевіряю, що в verify-deployed справді пройшло 6 тестів. 
+  · summary
+
+● Bash(gh api repos/IraPolchanin/rotating-cube/pages --jq '.html_url, .source,
+      .public' 2>&1 | head -4
+      echo "--- verify-deployed test output:"; gh run view 39580385881…)
+  ⎿  https://irapolchanin.github.io/rotating-cube/
+     {
+       "branch": "main",
+     … +8 lines (ctrl+o to expand)
+
+● Сайт відповідає 200, усі 6 тестів на живому URL пройшли. Поле source: main /
+  виглядає підозріло, тож перевірю build_type, щоб не наговорити зайвого. 
+  · summary
+
+● Bash(gh api repos/IraPolchanin/rotating-cube/pages --jq '{build_type, status,
+      html_url}'; git status -sb | head -3)
+  ⎿  {
+       "build_type": "workflow",
+       "html_url": "https://irapolchanin.github.io/rotating-cube/",
+     … +3 lines (ctrl+o to expand)
+
+● Деплой працює, публічний URL: https://irapolchanin.github.io/rotating-cube/
+
+  - Deploy (39580385881) і CI (39580385701): обидва success для f3d99a6.
+  - Jobs Deploy:
+    - build пройшов з повним npm run check під xvfb;
+    - deploy пройшов;
+    - verify-deployed пройшов: 6 passed (AC-1, AC-13, FR-1 у Chromium і Firefox)
+      на живому URL.
+  - Pages: build_type: workflow (джерело GitHub Actions), URL відповідає
+    HTTP 200.
+  - Репозиторій: main синхронізований з origin/main, дерево чисте.
+  - Попередження: лише анотація про міграцію ubuntu-latest на Ubuntu 26. На
+    результат не впливає, але може змінити середовище CI.
+
+  Чого я ще не зробив у Step 4:
+  - Deliberate failure: перевірка, що червоний коміт не деплоїться. Для неї
+    треба запушити тимчасову гілку з падаючим тестом і запустити Deploy через
+    workflow_dispatch на ній. Очікування: build падає, deploy пропущено. Якщо
+    правило середовища github-pages відхилить не-main ref, зафіксую це як
+    захист. Потім видалю гілку. Це новий пуш, а ви просили не пушити без
+    окремого підтвердження.
+  - Документація (Step 5): записати два зелені запуски на main (я вже бачу їх як
+    success: 39425976757 → 35ddb49, 39424971042 → 6205de4), сам деплой і
+    відмітки в docs/quality-gates.md.
+
+  Питання: чи можна запушити тимчасову гілку для deliberate failure і потім її
+  видалити? Якщо ні, перейду одразу до Step 5, а в документації зазначу, що ця
+  перевірка не виконувалась.
+
+  Ручні перевірки Firefox desktop і реального touch-пристрою тепер можна робити
+  за посиланням вище.
+
+✻ Baked for 4m 24s · done 12:57 PM
+
+※ recap: Мета фази 5 — публікація кубика на GitHub Pages, і вона вже працює: https://irapolchanin.github.io/rotating-cube/. Зараз чекаю вашої відповіді, чи можна запушити й потім видалити тимчасову гілку з падаючим тестом для перевірки деплою; без цього перейду до оновлення документації. (disable recaps in /config)
+
+❯ Yes, you may push a temporary branch for the deliberate-failure test          
+  and delete it afterward. Keep it isolated: only a temporary failing           
+  test, run Deploy via workflow_dispatch on that branch, and verify that        
+  build fails and deploy is skipped. Do not change main or bypass any           
+  GitHub environment protection. If the result is inconclusive, stop and        
+  report. Ask me before each push and before deleting the branch.               
+                                                                                
+  For Step 5, my manual checks on the public URL                                
+  https://irapolchanin.github.io/rotating-cube/:                                
+  - Firefox desktop: cube renders correctly, faces are distinguishable by       
+    lighting, rotation is smooth, X stays within ±90°, Reset works, the         
+    canvas fills the window and follows resize.                                 
+  - Real touch device: iPhone, Chrome (WebKit engine): touch drag rotates       
+    the cube horizontally and vertically, X stays within ±90°, Reset works,     
+    the page fills the screen without scrolling.                                
+    Record these in docs/quality-gates.md and close the open manual checks.     
+
+● Спочатку готую все локально, без пушу: гілка tmp/deliberate-failure від main з
+  одним навмисно падаючим e2e-тестом. main не чіпаю. e2e вибрано навмисно:
+  pre-commit запускає лише unit-тести, тож коміт пройде без --no-verify, а npm 
+  run check у workflow упаде на кроці e2e.
+
+● Bash(git checkout -q -b tmp/deliberate-failure && git branch --show-current)
+  ⎿  tmp/deliberate-failure
+
+● Write(e2e\deliberate-failure.test.ts)
+  ⎿  Wrote 7 lines to e2e\deliberate-failure.test.ts
+      1 import { test, expect } from '@playwright/test'
+      2 
+      3 // TEMPORARY: proves that the Deploy workflow does not deploy a c
+        ommit that fails
+      4 // `npm run check` (NFR-9). Lives only on tmp/deliberate-failure;
+         never merged.
+      5 test('NFR-9: deliberate failure to prove the deploy gate blocks a
+         red commit', () => {
+      6   expect(1).toBe(2)
+      7 })
+
+● Bash(git add e2e/deliberate-failure.test.ts && git commit -q -m "test(e2e):
+      temporary failing test to verify the deploy gate (NFR-9)…)
+  ⎿  Error: Exit code 128
+     warning: in the working copy of 'e2e/deliberate-failure.test.ts', LF will 
+     be replaced by CRLF the next time Git touches it
+      Test Files  2 passed (2)
+           Tests  20 passed (20)
+     7b01a74 test(e2e): temporary failing test to verify the deploy gate (NFR-9)
+     f3d99a6 ci: deploy to GitHub Pages after check passes (NFR-9, AC-16)
+     ## tmp/deliberate-failure
+     main untouched:
+     fatal: Needed a single revision
+
+● Коміт створено (7b01a74) — помилка стосувалась лише перевірки, бо git 
+  rev-parse --short не приймає два ревізії одразу. Перевіряю main окремо. 
+  · summary
+
+● Bash(echo "main: $(git rev-parse --short main)  origin/main: $(git rev-parse
+      --short origin/main)  branch: $(git branch --show-current)"; git status
+      --short | wc -l)
+  ⎿  main: f3d99a6  origin/main: f3d99a6  branch: tmp/deliberate-failure
+     0
+● Локальна підготовка готова: main і origin/main на f3d99a6, гілка
+  tmp/deliberate-failure на 7b01a74, дерево чисте. Перед наступними кроками маю
+  два питання, що уточнять подальший план. · summary
+
+● User answered Claude's questions:
+  ⎿  · Запушити тимчасову гілку tmp/deliberate-failure (коміт 7b01a74 з одним 
+     падаючим e2e-тестом)? Зауваження: push на не-main гілку запустить ci.yml, і
+     він теж очікувано впаде; deploy.yml на push спрацьовує лише для main, тож 
+     не деплоїться. → Так, запушити
+     · Ручні перевірки на публічному URL: ви їх уже виконали, і який результат 
+     записати в docs/quality-gates.md? → Усе пройшло
+
+● Отримав обидві відповіді. Тепер пушу тимчасову гілку (не торкаючись main) і
+  запускаю Deploy через workflow_dispatch саме на ній. · summary
+
+● Bash(git push -u origin tmp/deliberate-failure 2>&1 | tail -3
+      sleep 3…)
+  ⎿  branch 'tmp/deliberate-failure' set up to track 'origin/tmp/deliberate
+     -failure'.
+     To https://github.com/IraPolchanin/rotating-cube.git
+     … +4 lines (ctrl+o to expand)
+  ⎿  (timeout 2m)
+
+● Bash(gh run watch 39585105380 --interval 20 >/dev/null 2>&1; gh run view
+      39585105380 --json status,conclusion,jobs --jq '"run: \(.status)
+      \(.conclusion)", (.jobs[] |…)
+  ⎿  run: completed failure
+     job build: completed failure
+     job deploy: completed skipped
+     … +17 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● Результат чіткий: build провалився на навмисному тесті, а deploy і
+  verify-deployed пропущені. Тепер перевіряю статус CI на гілці (виглядало ще
+  незавершеним) і чи не з'явився новий деплой у середовищі github-pages. 
+  · summary
+
+● Bash(gh run watch 39585098478 --interval 15 >/dev/null 2>&1; echo "CI on
+      branch: $(gh run view 39585098478 --json conclusion --jq .conclusion)"
+      echo "--- github-page…)
+  ⎿  CI on branch: failure
+     --- github-pages deployments (newest first):
+     2026-10-21T09:54:35Z f3d99a6 ref=main
+     … +2 lines (ctrl+o to expand)
+
+● Deliberate failure дав однозначний результат:
+
+  - Deploy (39585105380, workflow_dispatch, tmp/deliberate-failure @ 7b01a74):
+    build failed, deploy skipped, verify-deployed skipped.
+  - Причина падіння: npm run check під xvfb: NFR-9: deliberate failure…,
+    Expected: 2, Received: 1, і в Chromium, і в Firefox.
+  - CI на гілці (39585098478): failure, як і очікувалося.
+  - Pages: єдиний деплой у github-pages досі f3d99a6 з ref=main (09:54). Нового
+    деплою немає.
+  - Захисти не обходилися: deploy не дійшов до середовища, бо його заблокувала
+    залежність needs: build. Правил середовища я не чіпав. main без змін
+    (f3d99a6).
+
+  Питання перед видаленням гілки: можна видалити tmp/deliberate-failure? Це
+  означає: git push origin --delete tmp/deliberate-failure, повернення на main,
+  git branch -D tmp/deliberate-failure (локальна гілка з непоєднаним комітом).
+  Записи про запуски 39585105380 і 39585098478 лишаються в Actions як докази.
+
+  Після вашої відповіді переходжу до Step 5, куди внесу docs/quality-gates.md:
+  - два зелені запуски на main (я вже бачив їх як success: 39425976757 →
+    35ddb49, 39424971042 → 6205de4; перед записом перевірю їх через gh run view,
+    як домовлялись);
+  - деплой і verify-deployed (39580385881);
+  - deliberate failure (39585105380);
+  - ваші ручні перевірки як Passed на публічному URL, з розбивкою на Firefox
+    desktop та iPhone (Chrome/WebKit).
+
+✻ Baked for 2m 49s · done 1:32 PM
+
+※ recap: Мета: Phase 5, публічний деплой кубика на GitHub Pages. Сайт уже працює, а deliberate failure це підтвердив, і тепер я чекаю вашого дозволу видалити тимчасову гілку tmp/deliberate-failure; після нього перейду до запису результатів у docs/quality-gates.md. (disable recaps in /config)
+
+❯ Так, видаляй гілку і переходь до Step 5                                       
+
+● Видаляю тимчасову гілку: спочатку віддалену, потім повертаюсь на main і
+  видаляю локальну.
+
+● Bash(git push origin --delete tmp/deliberate-failure 2>&1 | tail -2; git
+      checkout -q main && git branch -D tmp/deliberate-failure 2>&1; echo "---
+      branches:"; git bra…)
+  ⎿  To https://github.com/IraPolchanin/rotating-cube.git
+      - [deleted]         tmp/deliberate-failure
+     Deleted branch tmp/deliberate-failure (was 7b01a74).
+     … +5 lines (ctrl+o to expand)
+
+● Гілку видалено, зараз на main з чистим деревом і без тестового файлу.
+  Переходжу до Step 5: перевірю обидва запуски через gh run view, щоб отримати
+  фактичні Ref і Result, а також зберу дані про деплой. · summary
+
+● Bash(for id in 39424971042 39425976757 39580385881 39585105380; do gh run view
+      $id --json databaseId,workflowName,event,headBranch,headSha,status,conclu
+      sion,createdA…)
+  ⎿  39424971042 | CI | push | main | 6205de4 | completed/success | 2026-10
+     -20T12:47:04Z | https://github.com/IraPolchanin/rotating-cube/actions/
+     runs/39424971042
+     … +20 lines (ctrl+o to expand)
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Обидва запуски підтверджені: 39424971042 → 6205de4 та 39425976757 → 35ddb49,
+  обидва push на main, успішні. Переходжу до читання секцій §4, §9, §11 і §12 у
+  docs/quality-gates.md, які потрібно оновити. · summary
+
+  Read 1 file (ctrl+o to expand)
+
+● Зараз вношу невеликі правки в docs/quality-gates.md: у §4 замінюю формулювання
+  про запуск, що «буде записано окремо», на перевірені факти. · summary
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 7 lines, removed 1 line
+      238  (commit `9830d88`) passed — 20 unit tests and 42 e2e (21 per b
+           rowser, Chromium and
+      239  Firefox), 0 failures:
+      240  https://github.com/IraPolchanin/rotating-cube/actions/runs/394
+           23788004.
+      241 -The CI run on `main` after the fast-forward is recorded separa
+          -tely once it has finished.                                    
+      241 +After the fast-forward, CI on `main` was green twice (verified
+          + with `gh run view`,                                          
+      242 +both `push` events on `main`, conclusion `success`):          
+      243  
+      244 +| Run | Ref | Result | URL |                                  
+      245 +|-----|-----|--------|-----|                                  
+      246 +| After the Firefox fix | `main` (`6205de4`) | **Passed** | ht
+          +tps://github.com/IraPolchanin/rotating-cube/actions/runs/39424
+          +971042 |                                                      
+      247 +| Latest before Phase 5 | `main` (`35ddb49`) | **Passed** | ht
+          +tps://github.com/IraPolchanin/rotating-cube/actions/runs/39425
+          +976757 |                                                      
+      248 +                                                              
+      249  **Not configured:** branch protection and required status chec
+           ks. CI reports a
+      250  result but does not block merges or direct pushes to `main`.
+      251  
+
+  Read 1 file (ctrl+o to expand)
+
+● Додаю в таблицю перевірок рядок для e2e:deployed, а потім підсекцію про деплой
+  у §4.
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line
+      19  | `build`     | NFR-6                                          
+                | Moderate |
+      20  | `e2e`       | AC-1 through AC-15, Chromium + Firefox         
+                | Slow     |
+      21  | `check`     | All of the above in sequence                   
+                | Slow     |
+      22 +| `e2e:deployed` | AC-16 against the public URL (not part of `c
+         +heck`; run by the Deploy workflow) | Moderate |                
+      23  
+      24  ---
+      25  
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 66 lines
+      278    on 2026-10-19. The runs above passed regardless; the runner 
+           image is not pinned.
+      279  - Action versions are pinned to major tags, not commit SHAs.
+      280  
+      281 +### Deployment — GitHub Pages (Phase 5)                       
+      282 +                                                              
+      283 +**Status: Implemented** — `.github/workflows/deploy.yml` is on
+          + `main`; verified on                                          
+      284 +GitHub Actions 2026-10-21 (spec v1.1: NFR-9, AC-16, §7.6). Pub
+          +lic URL:                                                      
+      285 +https://irapolchanin.github.io/rotating-cube/ (Pages source: G
+          +itHub Actions,                                                
+      286 +`build_type: workflow`, enabled by the human).                
+      287 +                                                              
+      288 +**Trigger:** `push` to `main` and `workflow_dispatch`; `permis
+          +sions: contents: read`                                        
+      289 +at workflow level; `concurrency` group `pages`, `cancel-in-pro
+          +gress: false`.                                                
+      290 +                                                              
+      291 +**Jobs:**                                                     
+      292 +                                                              
+      293 +1. `build` — checkout, Node from `.nvmrc`, `npm ci`, Playwrigh
+          +t browsers,                                                   
+      294 +   `xvfb-run -a npm run check`, then `actions/upload-pages-art
+          +ifact@v5` with                                                
+      295 +   `path: dist` (the unmodified `vite build` output). A red co
+          +mmit never reaches                                            
+      296 +   `deploy`.                                                  
+      297 +2. `deploy` — `needs: build`, environment `github-pages`, `act
+          +ions/deploy-pages@v5`.                                        
+      298 +   `pages: write` and `id-token: write` are granted to this jo
+          +b only.                                                       
+      299 +3. `verify-deployed` — `needs: deploy`, `xvfb-run -a npm run e
+          +2e:deployed` with                                             
+      300 +   `DEPLOYED_URL` taken from the `deploy` job output.         
+      301 +                                                              
+      302 +**Supporting changes:** `vite.config.ts` has `base: './'`, so 
+          +the build works from the                                      
+      303 +Pages project sub-path. The e2e tests navigate with `page.goto
+          +('./')`. That is                                              
+      304 +mechanical, with no assertion changes (21 lines), and it resol
+          +ves correctly only                                            
+      305 +when the base URL ends with `/`. `playwright.deployed.config.t
+          +s` normalises                                                 
+      306 +`DEPLOYED_URL` to end with `/`, selects exactly `AC-1`, `AC-13
+          +` and `FR-1` (the                                             
+      307 +colon in the `grep` keeps `AC-1` from matching `AC-10` to `AC-
+          +15`), has `retries: 0`                                        
+      308 +and no `webServer`. `playwright.deployed.setup.ts` waits for H
+          +TTP 200, at most 10                                           
+      309 +attempts 15 s apart. `actions/configure-pages` is deliberately
+          + not used: its output                                         
+      310 +is not needed with a relative base, and it would require `page
+          +s: write` in `build`.                                         
+      311 +                                                              
+      312 +**Artifacts:** `.github/workflows/deploy.yml`, `playwright.dep
+          +loyed.config.ts`,                                             
+      313 +`playwright.deployed.setup.ts`, script `e2e:deployed` in `pack
+          +age.json`.                                                    
+      314 +                                                              
+      315 +**Results (2026-10-21):**                                     
+      316 +                                                              
+      317 +| Run | Ref | Result | URL |                                  
+      318 +|-----|-----|--------|-----|                                  
+      319 +| Deploy | `main` (`f3d99a6`), `push` | **Passed**: `build` (f
+          +ull `npm run check`), `deploy`, `verify-deployed` (6 tests pas
+          +sed: AC-1, AC-13, FR-1 in Chromium and Firefox, on the live UR
+          +L). The URL answered HTTP 200 | https://github.com/IraPolchani
+          +n/rotating-cube/actions/runs/39580385881 |                    
+      320 +| CI | `main` (`f3d99a6`), `push` | **Passed** | https://githu
+          +b.com/IraPolchanin/rotating-cube/actions/runs/39580385701 |   
+      321 +| Deliberate failure, Deploy | `tmp/deliberate-failure` (`7b01
+          +a74`), `workflow_dispatch` | **Failed** as intended: `build` f
+          +ailed at `npm run check` (e2e, `Expected: 2, Received: 1`, Chr
+          +omium and Firefox); `deploy` and `verify-deployed` **skipped**
+          + | https://github.com/IraPolchanin/rotating-cube/actions/runs/
+          +39585105380 |                                                 
+      322 +| Deliberate failure, CI | `tmp/deliberate-failure` (`7b01a74`
+          +), `push` | **Failed** as intended | https://github.com/IraPol
+          +chanin/rotating-cube/actions/runs/39585098478 |               
+      323 +                                                              
+      324 +**Deliberate-failure check:** a temporary branch with a single
+          + failing e2e test                                             
+      325 +(`NFR-9: deliberate failure…`). It was an e2e test so that the
+          + pre-commit hook, which                                       
+      326 +excludes e2e, let the commit through without `--no-verify`. Th
+          +e workflow was started                                        
+      327 +with `workflow_dispatch` on that branch. The `github-pages` de
+          +ployment list still                                           
+      328 +showed only the `main` deployment (`f3d99a6`) afterwards. The 
+          +environment's                                                 
+      329 +protection rules were not changed and not bypassed: `deploy` w
+          +as skipped by                                                 
+      330 +`needs: build` before the environment was evaluated. The remot
+          +e and local temporary                                         
+      331 +branches were deleted afterwards, and `main` was not touched. 
+      332 +                                                              
+      333 +**Not verified / open:**                                      
+      334 +                                                              
+      335 +- The Pages-propagation wait was not exercised: the site answe
+          +red on the first                                              
+      336 +  attempt, and the failure path of the wait (limit reached) wa
+          +s not run.                                                    
+      337 +- Whether the `github-pages` environment would itself reject a
+          + non-`main` ref was not                                       
+      338 +  tested, because `build` failed first.                       
+      339 +- Every push to `main` runs `ci.yml` and `deploy.yml`, so `npm
+          + run check` runs twice                                        
+      340 +  per push. This is accepted for now.                         
+      341 +- No branch protection; the same annotation about the `ubuntu-
+          +latest` migration to                                          
+      342 +  Ubuntu 26 appeared on the deploy runs. The runner image is n
+          +ot pinned.                                                    
+      343 +- Action versions (`configure-pages` was not used; `upload-pag
+          +es-artifact@v5`,                                              
+      344 +  `deploy-pages@v5`) are major tags, the latest majors on 2026
+          +-10-21 per                                                    
+      345 +  `gh api …/releases/latest`.                                 
+      346 +                                                              
+      347  ---
+      348  
+      349  ## 5. Agent Permission Guardrail
+
+● Я помітив, що формулювання «accepted for now» хибно передає рішення, яке ви не
+  приймали. Виправляю на більш нейтральне. · summary
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      337  - Whether the `github-pages` environment would itself reject a
+            non-`main` ref was not
+      338    tested, because `build` failed first.
+      339  - Every push to `main` runs `ci.yml` and `deploy.yml`, so `npm
+            run check` runs twice
+      340 -  per push. This is accepted for now.                         
+      340 +  per push. Not addressed in Phase 5.                         
+      341  - No branch protection; the same annotation about the `ubuntu-
+           latest` migration to
+      342    Ubuntu 26 appeared on the deploy runs. The runner image is n
+           ot pinned.
+      343  - Action versions (`configure-pages` was not used; `upload-pag
+           es-artifact@v5`,
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 2 lines, removed 3 lines
+      340    per push. Not addressed in Phase 5.
+      341  - No branch protection; the same annotation about the `ubuntu-
+           latest` migration to
+      342    Ubuntu 26 appeared on the deploy runs. The runner image is n
+           ot pinned.
+      343 -- Action versions (`configure-pages` was not used; `upload-pag
+          -es-artifact@v5`,                                              
+      344 -  `deploy-pages@v5`) are major tags, the latest majors on 2026
+          --10-21 per                                                    
+      345 -  `gh api …/releases/latest`.                                 
+      343 +- `upload-pages-artifact@v5` and `deploy-pages@v5` are major t
+          +ags (the latest majors on                                     
+      344 +  2026-10-21 per `gh api …/releases/latest`), not commit SHAs.
+      345  
+      346  ---
+      347  
+
+● Тепер §9 (статус реалізації): додаю рядки для деплою та оновлюю рядок
+  застосунку.
+● Update(docs\quality-gates.md)
+  ⎿  Added 3 lines, removed 1 line
+      637  | Playwright config + `webServer` | `playwright.config.ts` | *
+           *Implemented** |
+      638  | Pre-commit hook script | `.githooks/pre-commit` | **Implemen
+           ted** — fresh-clone activation unverified |
+      639  | GitHub Actions CI workflow | `.github/workflows/ci.yml` | **
+           Implemented** — verified 2026-10-20 for the pre-cube suite; th
+           e first run with the cube **failed** for Firefox (WebGL, §4 "P
+           hase 4 follow-up"); fix verified on GitHub Actions on branch `
+           fix/firefox-ci-webgl` (run 39423788004, green); no branch prot
+           ection |
+      640 +| GitHub Pages deploy workflow | `.github/workflows/deploy.yml
+          +` | **Implemented** — verified 2026-10-21 (run 39580385881, gr
+          +een, public URL live); deliberate failure blocked deployment (
+          +run 39585105380); see §4 "Deployment" |                       
+      641 +| Post-deploy verification (AC-16) | `playwright.deployed.conf
+          +ig.ts`, `playwright.deployed.setup.ts`, script `e2e:deployed` 
+          +| **Implemented** — verified 2026-10-21 locally on a sub-path 
+          +and in `verify-deployed` (6 tests passed) |                   
+      642  | MIT license | `LICENSE` | **Implemented** |
+      641 -| Application (AC-1 – AC-15) | `src/`, `e2e/`, evidence in `do
+          -cs/evidence/phase-4.md` | **Implemented** — automated checks v
+          -erified locally 2026-10-20; manual checks partly done (Chrome 
+          -only), see "Phase 4 manual checks" |                          
+      643 +| Application (AC-1 – AC-16) | `src/`, `e2e/`, evidence in `do
+          +cs/evidence/phase-4.md` | **Implemented** — automated checks v
+          +erified locally 2026-10-20 and in CI; deployed 2026-10-21; man
+          +ual checks completed 2026-10-21 (Chrome desktop on localhost; 
+          +Firefox desktop and an iPhone on the public URL), see §12 |   
+      644  
+      645  ---
+      646  
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 5 lines
+      669  | CI action versions | `checkout@v7`, `setup-node@v7`, `upload
+           -artifact@v7` (latest majors on 2026-10-20, verified from the 
+           official `actions/*` releases); major tags, not SHAs |
+      670  | CI failure experiment | Done on a throwaway branch with an e
+           2e-only failure (the pre-commit hook blocks type, lint and uni
+           t failures and `--no-verify` is denied); branch deleted afterw
+           ards |
+      671  | Branch protection | Not enabled; required status checks are 
+           a possible later step |
+      672 +| Pages source | GitHub Actions (`build_type: workflow`), enab
+          +led by the human in repository settings |                     
+      673 +| Pages base path | `base: './'` in `vite.config.ts`; e2e navi
+          +gation `page.goto('./')`; deployed base URL normalised to end 
+          +with `/` |                                                    
+      674 +| Pages deploy trigger | `push` to `main` plus `workflow_dispa
+          +tch`; `deploy` runs only after `build` runs the full `npm run 
+          +check` |                                                      
+      675 +| Pages permissions | `contents: read` for the workflow; `page
+          +s: write` and `id-token: write` only on the `deploy` job; `act
+          +ions/configure-pages` not used |                              
+      676 +| Post-deploy check | Existing tests AC-1, AC-13, FR-1 reused 
+          +unchanged against the live URL in Chromium and Firefox; `retri
+          +es: 0`; bounded 10 × 15 s wait for HTTP 200 |                 
+      677  | License | MIT, added before publication; README is a separat
+           e later task |
+      678  
+      679  ---
+
+● Тепер §11 (Verification Record): закриваю відкриті ручні перевірки в рядку
+  застосунку й додаю рядок про деплой.
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line, removed 1 line
+      688  | PostToolUse hook (§1) | Type error → exit 2 + diagnostics; f
+           ix → exit 0; lint-only error; `.md` edit runs no check; `.json
+           ` edit runs; missing `file_path` runs | **Passed** (2026-10-19
+           ) |
+      689  | Pre-commit hook (§2) | Staged type error blocks commit; late
+           r commits pass; `git ls-files --eol` LF; `git ls-files -s` `10
+           0755` | **Passed** (2026-10-19). Open: hook execution on a fre
+           sh clone **not verified**. CI shows only that `npm ci` and `pr
+           epare` complete on a clean runner (§2) |
+      690  | Permission guardrail (§5) | Each pattern probed separately; 
+           controls not blocked | **Passed** (2026-10-19). Open: known ga
+           ps listed in §5 (other global git options, `git config core.ho
+           oksPath`, hook-file edits) |
+      691 -| Application, Phase 4 | `npm run check` on a clean tree (20 u
+          -nit tests, 40 e2e in Chromium + Firefox); per-task `spec-revie
+          -wer`; mutation checks: disabling `setPointerCapture` fails AC-
+          -14, `touch-action: auto` fails AC-15, removing the X clamp fai
+          -ls AC-12 (unit and e2e) | **Passed locally** (2026-10-20), det
+          -ails in `docs/evidence/phase-4.md`. Manual checks of spec §7.3
+          - are in "Phase 4 manual checks" below. Open: Firefox desktop a
+          -nd a real touch device **not checked**; AC-6/AC-7 use simulate
+          -d touch only |                                                
+      691 +| Application, Phase 4 | `npm run check` on a clean tree (20 u
+          +nit tests, 40 e2e in Chromium + Firefox); per-task `spec-revie
+          +wer`; mutation checks: disabling `setPointerCapture` fails AC-
+          +14, `touch-action: auto` fails AC-15, removing the X clamp fai
+          +ls AC-12 (unit and e2e) | **Passed locally** (2026-10-20), det
+          +ails in `docs/evidence/phase-4.md`. Manual checks of spec §7.3
+          + are in "Phase 4 manual checks" below. The previously open man
+          +ual checks (Firefox desktop, a real touch device) were **close
+          +d on 2026-10-21** on the public URL, as reported by the human 
+          +(§12). Remaining note: AC-6/AC-7 in the automated suite still 
+          +use simulated touch |                                         
+      692  | Push confirmation (§5) | `git push origin main` with nothing
+            to push; prompt expected, human declines | **Passed** (2026-1
+           0-20): prompt "Ask rule Bash(git push*) overrides auto mode" a
+           ppeared and was declined. Open: other push forms not probed |
+      693  | Stop hook (§6) | Prototype; dry-run matrix; direct runs; liv
+           e block and halt; no `--dry-run` in settings | **Passed** (202
+           6-10-19) |
+      694  | ESLint block for `scripts/*.mjs` | `--print-config` shows No
+           de globals; seeded errors fail `npm run lint` | **Passed** (20
+           26-10-19) |
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 1 line
+      694  | ESLint block for `scripts/*.mjs` | `--print-config` shows No
+           de globals; seeded errors fail `npm run lint` | **Passed** (20
+           26-10-19) |
+      695  | spec-reviewer (§7) | Clean diff clean; camera rotation / Orb
+           itControls flagged; edit attempt impossible; agent visible | *
+           *Passed** (2026-10-19, Claude Code 2.1.303). Criterion 1: clea
+           n `src/` diff (`App.tsx`, `main.tsx`, `vite-env.d.ts`) → `No v
+           iolations found.` Criterion 2: temporary `src/__probe__.tsx` (
+           OrbitControls import/re-export, `camera.rotation.y`) → flagged
+            as NFR-8 ×2 and spec §7.5; file removed afterwards. Criterion
+            3: asked to edit a file, the agent reported only `Read`/`Grep
+           `/`Glob` and the file stayed unchanged. Criterion 4: agent inv
+           ocable in the session. Earlier invisibility: agents directory 
+           was created in the first session (may explain the restart); `c
+           laude update` was run later and the agent became available — c
+           ausal link **not established** |
+      696  | CI (§4) | Green baseline on `main`; deliberate e2e-only fail
+           ure on a temporary branch; `git revert` restores green; tempor
+           ary branch deleted | **Passed** (2026-10-20, three runs listed
+            in §4). Open: `pull_request` trigger not exercised; no branch
+            protection |
+      697 +| Deployment (§4) | Green `Deploy` on `main`; public URL live;
+          + `verify-deployed` runs AC-1, AC-13, FR-1 in Chromium and Fire
+          +fox on it; deliberate failure on a temporary branch via `workf
+          +low_dispatch` must fail `build` and skip `deploy`; temporary b
+          +ranch deleted | **Passed** (2026-10-21, runs 39580385881 and 3
+          +9585105380 in §4). Open: propagation-wait failure path and the
+          + environment's own ref rule not exercised; `check` runs twice 
+          +per push to `main` |                                          
+      698  
+      699  ---
+      700  
+
+● Переходжу до останнього пункту — §12 (ручні перевірки): закрию два відкриті
+  рядки й запишу ваші результати як надані вами, оскільки сам я їх не виконував
+  і не бачив. · summary
+
+● Update(docs\quality-gates.md)
+  ⎿  Added 29 lines, removed 4 lines
+      711  | Reset works (FR-5) | Chrome desktop | **Passed** |
+      712  | Canvas fills the window, follows resize, no scrollbars (FR-6
+           ) | Chrome desktop | **Passed** |
+      713  | Touch drag rotates the cube; mobile width works (FR-3) | Chr
+           ome DevTools device emulation | **Passed** (emulated touch, no
+           t a physical device) |
+      714 -| Same checks | Firefox desktop | **Not checked** |           
+      715 -| Physical touch device (FR-3) | Real device | **Not checked**
+          - — the corporate network blocks LAN access; planned after depl
+          -oyment to GitHub Pages |                                      
+      714 +| Same checks | Firefox desktop | **Passed** on 2026-10-21 on 
+          +the public URL (see below) |                                  
+      715 +| Physical touch device (FR-3) | Real device | **Passed** on 2
+          +026-10-21 on the public URL (see below). It was blocked before
+          + because the corporate network blocks LAN access, so it waited
+          + for the deployment |                                         
+      716  
+      717 -NFR-7 (latest stable Chrome and Firefox) is therefore verified
+          - manually for Chrome                                          
+      718 -only; Firefox is covered only by the automated Playwright run 
+          -(its bundled Firefox).                                        
+      717 +### Checks on the public URL (2026-10-21)                     
+      718 +                                                              
+      719 +Performed by the human on https://irapolchanin.github.io/rotat
+          +ing-cube/ and reported                                        
+      720 +on 2026-10-21 as all passed. The agent did not perform or obse
+          +rve these; they are                                           
+      721 +recorded as reported. The deployed build was commit `f3d99a6` 
+          +(Deploy run                                                   
+      722 +39580385881).                                                 
+      723 +                                                              
+      724 +| Check | Environment | Result |                              
+      725 +|-------|-------------|--------|                              
+      726 +| Cube renders correctly (FR-1) | Firefox desktop | **Passed**
+          + |                                                            
+      727 +| Faces are distinguishable by lighting (FR-1) | Firefox deskt
+          +op | **Passed** |                                             
+      728 +| Rotation is smooth (FR-2) | Firefox desktop | **Passed** |  
+      729 +| X rotation stays within ±90° (AC-12) | Firefox desktop | **P
+          +assed** |                                                     
+      730 +| Reset works (FR-5) | Firefox desktop | **Passed** |         
+      731 +| Canvas fills the window and follows resize (FR-6) | Firefox 
+          +desktop | **Passed** |                                        
+      732 +| Touch drag rotates the cube horizontally and vertically (FR-
+          +3) | iPhone, Chrome for iOS (WebKit engine) | **Passed** |    
+      733 +| X rotation stays within ±90° (AC-12) | iPhone, Chrome for iO
+          +S (WebKit engine) | **Passed** |                              
+      734 +| Reset works (FR-5) | iPhone, Chrome for iOS (WebKit engine) 
+          +| **Passed** |                                                
+      735 +| Page fills the screen without scrolling (FR-6) | iPhone, Chr
+          +ome for iOS (WebKit engine) | **Passed** |                    
+      736 +                                                              
+      737 +NFR-7 (latest stable Chrome and Firefox) is now verified manua
+          +lly for Chrome desktop                                        
+      738 +(2026-10-20, localhost) and Firefox desktop (2026-10-21, publi
+          +c URL), and by the                                            
+      739 +automated Playwright runs of Chromium and Firefox, including A
+          +C-16 against the live                                         
+      740 +URL. Chrome on iOS uses Apple's WebKit engine, not Chrome's ow
+          +n engine, so the iPhone                                       
+      741 +check covers FR-3 on a real touch device but is not a check of
+          + Chrome's engine. The                                         
+      742 +iPhone model and iOS version were not recorded. Safari and oth
+          +er browsers remain out                                        
+      743 +of scope (spec §6).                                           
+
+● Документацію оновлено. Дивлюся розмір змін і комічу локально; пуш лише за
+  вашим окремим підтвердженням.
+
+● Bash(git --no-pager diff --stat 2>/dev/null; git add docs/quality-gates.md &&
+      git commit -q -m "docs: record green main CI runs, Pages deployment and
+      manual checks (…)
+  ⎿   docs/quality-gates.md | 119 +++++++++++++++++++++++++++++++++++++++++
+     ++++++---
+      1 file changed, 112 insertions(+), 7 deletions(-)
+     … +6 lines (ctrl+o to expand)
+  ⎿  (timeout 5m)
+  ⎿  PostToolUse:Bash says: Tip: Run /ultrareview before you push to catch bugs 
+     with a cloud-based multi-agent review — 3 free reviews left.
+
+● Гілку tmp/deliberate-failure видалено, а Step 5 закомічено локально (eaba78a,
+  лише docs/quality-gates.md). main попереду origin/main на 1 коміт, нічого не
+  запушено.
+
+  Що записано в docs/quality-gates.md:
+  - §4, зелені запуски на main: 39424971042 → 6205de4 і 39425976757 → 35ddb49.
+    Обидва я перевірив через gh run view: push на main, success.
+  - §4, нова підсекція Deployment:
+    - опис jobs і прав;
+    - результати запусків: Deploy 39580385881 (зелений, 6 тестів на живому URL);
+    - deliberate failure 39585105380: build failed, deploy і verify-deployed
+      skipped.
+  - Таблиці та статуси: новий рядок e2e:deployed, статуси в §9, рішення в §10,
+    записи в §11.
+  - §12, ваші ручні перевірки:
+    - Firefox desktop і iPhone (Chrome/WebKit) записані як Passed на публічному
+      URL, 2026-10-21;
+    - у документі прямо сказано, що це записано зі ваших слів, бо я їх не
+      виконував і не бачив;
+    - обидва раніше відкриті пункти закрито.
+
+  Два застереження, які я теж записав у документ:
+  - Chrome на iOS працює на WebKit, тож перевірка на iPhone підтверджує FR-3 на
+    реальному пристрої, але не рушій Chrome. NFR-7 тепер закрито так: Chrome
+    desktop (localhost) плюс Firefox desktop (публічний URL) плюс автотести.
+    Модель iPhone і версію iOS не зафіксовано.
+  - Відкритими лишаються: шлях помилки очікування Pages, правило самого
+    середовища для не-main ref, і те, що check запускається двічі на кожен пуш у
+    main.
+
+  Не зроблено:
+  - Транскрипт сесії (docs/sessions/…) не додавав. За вашою конвенцією це
+    окремий коміт.
+  - Нічого не запушено.
+
+  Запушити eaba78a? Пуш на main запустить ci.yml і deploy.yml ще раз. Додаток не
+  зміниться, тож буде повторний деплой тієї самої збірки. Можна також спершу
+  додати транскрипт і запушити одним разом.
+
+✻ Crunched for 1m 59s · done 1:37 PM
