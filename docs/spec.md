@@ -1,8 +1,13 @@
 # Rotating Cube — Project Specification
 
-Version: 1.0  
+Version: 1.1  
 Status: Approved  
-Last updated: 2026-10-19
+Last updated: 2026-10-21
+
+Revision history:
+
+- 1.0 (2026-10-19) — initial specification.
+- 1.1 (2026-10-21) — add deployment to GitHub Pages (NFR-9, AC-16, A-7).
 
 ---
 
@@ -80,6 +85,7 @@ The cube's defined initial state is:
 | AC-13 | The application renders without JavaScript console errors on load. | E2E |
 | AC-14 | A drag that starts on the canvas and passes over the Reset button (without releasing) changes `data-cube-ry` from its initial value and does not restore the cube to its initial orientation. | E2E |
 | AC-15 | The interactive `<canvas>` element has a computed CSS `touch-action` value of `none`, verified via `getComputedStyle(canvas).touchAction`. | E2E |
+| AC-16 | Against the public GitHub Pages URL, in both Chromium and Firefox, the AC-1 and AC-13 tests and the WebGL2 context test (`FR-1`) pass, so the deployed cube scene renders without console errors. | E2E (post-deploy) |
 
 ---
 
@@ -95,6 +101,7 @@ The cube's defined initial state is:
 | NFR-6 | `vite build` completes without errors. |
 | NFR-7 | The application runs without errors in the latest stable versions of Chrome and Firefox. |
 | NFR-8 | The ESLint configuration must include a `no-restricted-imports` rule that blocks all imports of `OrbitControls` from both `three/examples/jsm/` and `three/addons/`, with or without the `.js` extension. The required patterns are: `three/examples/jsm/controls/OrbitControls`, `three/examples/jsm/controls/OrbitControls.js`, `three/addons/controls/OrbitControls`, and `three/addons/controls/OrbitControls.js`. This rule is configured as part of the initial project setup and enforced as a lint error. |
+| NFR-9 | The application is published to GitHub Pages from the `main` branch by a GitHub Actions workflow. A deployment happens only after `npm run check` passes on the commit being deployed. The published site is the unmodified `vite build` output and works from a sub-path URL. |
 
 ---
 
@@ -108,6 +115,7 @@ The cube's defined initial state is:
 | 3D rendering | Three.js (cube mesh rotation; no OrbitControls) |
 | Unit tests | Vitest |
 | E2E tests | Playwright (Chromium + Firefox projects) |
+| Hosting | GitHub Pages, deployed by GitHub Actions |
 
 No substitutions are permitted without an explicit spec update.
 
@@ -127,6 +135,7 @@ No substitutions are permitted without an explicit spec update.
 - Accessibility (ARIA, keyboard nav) beyond what React provides by default.
 - Support for browsers other than latest stable Chrome and Firefox.
 - Frame-rate or rendering-performance thresholds.
+- Custom domain, preview (per-branch or per-PR) deployments, or CDN/cache tuning.
 
 ---
 
@@ -148,7 +157,9 @@ Target: pure logic testable in isolation, without a DOM or browser.
 
 Target: full browser behaviour via the testability contract defined in §3.
 
-Covers: AC-1 through AC-15.
+Covers: AC-1 through AC-15 against the local Vite dev server. AC-16 reuses the
+AC-1, AC-13 and WebGL2 context tests against the public URL after deployment (see
+§7.6).
 
 Configuration requirements:
 - `webServer` option configured in `playwright.config.ts` so Playwright starts the
@@ -169,6 +180,10 @@ Target: subjective or perceptual qualities impractical to automate.
 | Rotation feels smooth and responsive during drag | FR-2 |
 | Canvas visually fills the viewport with no gaps or scrollbars | FR-6 |
 | Application works on a real physical touch device | FR-3 |
+| Application runs without errors in Firefox desktop | NFR-7 |
+
+Manual checks that depend on a browser or device are run on the public GitHub Pages
+URL once it exists.
 
 ### 7.4 Quality gate commands
 
@@ -188,6 +203,10 @@ The following `package.json` scripts must be defined:
 `npm run check` is the single command that runs all required quality checks in
 order. Every check must exit with code 0 for the gate to pass.
 
+The script `"e2e:deployed"` (Playwright against the public URL, see §7.6) must also
+be defined. It is deliberately not part of `npm run check`, because it needs a
+deployed site.
+
 ### 7.5 Enforcement boundary
 
 | Control | Enforced by |
@@ -202,6 +221,20 @@ order. Every check must exit with code 0 for the gate to pass.
 | Cube mesh rotates (not camera) | Agent instruction + code review |
 | Visual quality, animation smoothness | Manual browser check |
 | Real-device touch behaviour | Manual browser check |
+| Deployment only after a green `npm run check` | Deploy workflow job dependency (automated) |
+| Deployed cube scene renders | Playwright post-deploy run — AC-16 (automated) |
+
+### 7.6 Deployment verification
+
+After each deployment, a separate Playwright configuration runs against the public
+URL (supplied through an environment variable, no `webServer`) in the Chromium and
+Firefox projects, under a virtual display in CI as for `npm run check`. It reuses
+the existing tests `AC-1: cube-scene wrapper is present on load`,
+`AC-13: no console errors or page errors on load` and
+`FR-1: browser can create a WebGL2 context` unchanged; assertions are not
+weakened or duplicated. A bounded wait for the site to become reachable absorbs
+Pages propagation delay; if the limit is reached the run fails. Test retries are not
+used to hide failures.
 
 ---
 
@@ -215,6 +248,7 @@ order. Every check must exit with code 0 for the gate to pass.
 | A-4 | Drags that begin outside the canvas are ignored; once a drag starts on the canvas, pointer capture ensures it continues regardless of where the pointer moves. |
 | A-5 | `data-cube-r*` attributes are updated at least once per animation frame after each pointer event, so Playwright auto-retrying assertions will observe the updated values within their default timeout. |
 | A-6 | The rotation sensitivity (degrees per pixel) is a single configurable constant; the exact value is decided during implementation and captured in unit tests. |
+| A-7 | GitHub Pages is enabled for the repository with Source set to "GitHub Actions" (a manual step done by the human), and the repository visibility permits Pages. |
 
 ---
 
