@@ -1,0 +1,568 @@
+ ▐▛███▛█   Claude Code v2.1.306
+▝▜██████▀  Sonnet 5.5 · Claude Pro
+ ▝▝   ▝▝   ~\Projects\rotating-cube
+
+
+❯ Plan a README.md for this repository, based on the actual implementation,     
+  package.json, docs/spec.md, docs/quality-gates.md and the evidence in         
+  docs/. Do not guess features or commands. It is for evaluators of a           
+  harness-engineering assignment: include a short overview, the live URL,       
+  how to run and check it locally, and a concise explanation of the             
+  harness (specification, agent instructions, hooks, guardrails, CI,            
+  deployment, evidence) with links to the detailed docs. Mark what you          
+  verified and what needs my input. Plan only.                                  
+
+● Спершу дослідю репозиторій: структуру, package.json, специфікацію та докази.
+
+● Bash(git ls-files | grep -v '^node_modules' | head -100 && cat package.json &&
+      ls -a)
+  ⎿  .claude/agents/spec-reviewer.md
+     .claude/settings.json
+     .gitattributes
+     … +112 lines (ctrl+o to expand)
+
+  Read 2 files (ctrl+o to expand)
+
+● Bash(cat .nvmrc LICENSE | head -5; cat src/App.tsx; head -60
+      src/cube/createCubeScene.ts; head -30 docs/evidence/phase-4.md; wc -l
+      docs/evidence/phase-4.md docs/sess…)
+  ⎿  22
+     MIT License
+     … +183 lines (ctrl+o to expand)
+
+● Bash(cat playwright.config.ts; sed -n 1,40p src/cube/rotation.ts; tail -40
+      docs/evidence/phase-4.md; ls README* 2>&1; git log --oneline | wc -l; grep
+      -n "sensitiv\|D…)
+  ⎿  import { defineConfig, devices } from '@playwright/test'
+
+     export default defineConfig({
+     … +112 lines (ctrl+o to expand)
+
+● Updated plan
+  ⎿  /plan to preview
+  ⎿  User rejected Claude's plan:
+     ╭─────────────────────────────────────────────────────────────────────────╮
+     │ План: README.md для rotating-cube                                       │
+     │                                                                         │
+     │ Context                                                                 │
+     │                                                                         │
+     │ У репозиторії немає README (ls README* — порожньо). Ціль: один файл     │
+     │ README.md (англійською — правило CLAUDE.md) для оцінювачів завдання з   │
+     │ harness engineering. Лише факти з коду, package.json, docs/spec.md      │
+     │ (v1.1), docs/quality-gates.md, docs/evidence/phase-4.md,                │
+     │ .github/workflows/*, .claude/*. Жодних вигаданих можливостей чи команд. │
+     │ README не змінює spec/quality-gates.                                    │
+     │                                                                         │
+     │ Структура README (англійською) і джерела                                │
+     │                                                                         │
+     │ Позначки: ✅ перевірено читанням файлів у цій сесії · ❓ потрібне ваше  │
+     │ рішення · ⚠️ перевірити перед фіналізацією (я не запускав команди).     │
+     │                                                                         │
+     │ 1. Title + one-paragraph overview ✅ — браузерний інтерактивний 3D-куб  │
+     │    (React 19 + Three.js + Vite + TypeScript strict); обертається        │
+     │    перетягуванням миші/дотику (Pointer Events, touch-action: none,      │
+     │    pointer capture); обертається mesh, не камера, без OrbitControls;    │
+     │    кнопка Reset; canvas на весь viewport. Мета проєкту — практика       │
+     │    harness engineering, увесь код написав агент (spec §1, CLAUDE.md).   │
+     │ 2. Live demo ✅ — https://irapolchanin.github.io/rotating-cube/         │
+     │    (quality-gates §4). Додати посилання на репозиторій                  │
+     │    https://github.com/IraPolchanin/rotating-cube.                       │
+     │ 3. Run locally ✅ — Node 22 (.nvmrc), npm ci, npm run dev (Vite, порт   │
+     │    5173 за playwright.config.ts). Примітка: npm install/ci виконує      │
+     │    prepare → core.hooksPath=.githooks. Для e2e — npx playwright install │
+     │    chromium firefox (команда з ci.yml; ⚠️ уточнити, чи потрібен         │
+     │    --with-deps локально — на Windows ні).                               │
+     │ 4. Check locally ✅ — таблиця скриптів з package.json: typecheck, lint  │
+     │    (--max-warnings 0), test (Vitest), build, e2e (Playwright,           │
+     │    Chromium+Firefox), check (усі п’ять послідовно), e2e:deployed (AC-16 │
+     │    проти публічного URL, потребує DEPLOYED_URL; не входить у check).    │
+     │    Примітка: у CI Firefox запускається headed під xvfb-run (WebGL2,     │
+     │    quality-gates §4).                                                   │
+     │ 5. How the app is tested (brief) ✅ — testability contract              │
+     │    (data-testid="cube-scene", data-cube-rx/ry/rz, reset-button), 16 AC, │
+     │    unit-тести логіки обертання (src/cube/rotation.test.ts), e2e у       │
+     │    e2e/. Без скріншот-порівнянь.                                        │
+     │ 6. Harness overview — головна секція, таблиця «механізм → що робить →   │
+     │    файл → статус перевірки»:                                            │
+     │    - Specification — docs/spec.md v1.1 (FR/AC/NFR, межі, стратегія      │
+     │      верифікації; зміни лише за погодженням людини).                    │
+     │    - Agent instructions — CLAUDE.md (workflow: прочитати spec → план →  │
+     │      погодження → малі кроки → npm run check; заборони: послаблювати    │
+     │      тести/lint, @ts-ignore, --no-verify).                              │
+     │    - PostToolUse hook — scripts/agent-hook-check.mjs: typecheck+lint    │
+     │      після Edit/Write ts/tsx/js/mjs/json.                               │
+     │    - Pre-commit — .githooks/pre-commit: typecheck+lint+test. Зазначити  │
+     │      відомий пробіл: активація на свіжому клоні не перевірена.          │
+     │    - Stop hook — scripts/agent-stop-check.mjs: повний check при         │
+     │      незакомічених змінах поза docs//*.md; повторний збій зупиняє сесію │
+     │      (stopReason).                                                      │
+     │    - Permission guardrails — .claude/settings.json: 7 deny-правил       │
+     │      (--no-verify/-n, git -c, git -C) + ask для git push; відомі        │
+     │      прогалини.                                                         │
+     │    - ESLint no-restricted-imports (NFR-8) для OrbitControls —           │
+     │      eslint.config.js.                                                  │
+     │    - spec-reviewer subagent — .claude/agents/spec-reviewer.md (лише     │
+     │      Read/Grep/Glob).                                                   │
+     │    - CI — .github/workflows/ci.yml: xvfb-run -a npm run check на кожен  │
+     │      push/PR.                                                           │
+     │    - Deployment — .github/workflows/deploy.yml: build(повний check) →   │
+     │      deploy (Pages) → verify-deployed (AC-1, AC-13, FR-1 на live URL);  │
+     │      червоний коміт не деплоїться.                                      │
+     │    - Failure protocol — quality-gates §8 (одним реченням).              │
+     │ 7. Evidence ✅ — посилання: docs/evidence/phase-4.md (журнал            │
+     │    автономності, mutation-checks, Firefox WebGL інцидент),              │
+     │    docs/quality-gates.md §11 (Verification Record) і §12 (ручні         │
+     │    перевірки), docs/sessions/*.txt (6 транскриптів сесій), посилання на │
+     │    run-и Actions (зелений deploy 39580385881, навмисний збій            │
+     │    39585105380, CI збій/відновлення 39402098647 / 39403260460). Окремо  │
+     │    — короткий список «що навмисно ламали й побачили, що gate            │
+     │    спрацював».                                                          │
+     │ 8. Known limitations ✅ — прямо з quality-gates: нема branch            │
+     │    protection; fresh-clone активація pre-commit не перевірена;          │
+     │    прогалини guardrail (інші глобальні опції git, git config            │
+     │    core.hooksPath, редагування hook-файлів); pull_request тригер не     │
+     │    виконувався; check запускається двічі на push у main (ci + deploy);  │
+     │    AC-6/AC-7 e2e використовують симульований touch; Actions закріплені  │
+     │    на major-теги, не SHA; runner ubuntu-latest не закріплений; ручні    │
+     │    перевірки зі слів людини; модель/версію iPhone не записано.          │
+     │ 9. Project layout ✅ — короткий список каталогів (src/, e2e/, scripts/, │
+     │    .githooks/, .claude/, .github/workflows/, docs/).                    │
+     │ 10. License ✅ — MIT (LICENSE, Iryna Polchaninova).                     │
+     │                                                                         │
+     │ Обсяг: ~100–140 рядків, без дублювання деталей — лише посилання на      │
+     │ docs.                                                                   │
+     │                                                                         │
+     │ Потрібне ваше рішення ❓                                                │
+     │                                                                         │
+     │ - Чи згадувати в README, що репозиторій публічний із транскриптами      │
+     │   сесій і корпоративним email у git-історії (quality-gates §10 це вже   │
+     │   фіксує)? Пропозиція: лише посилання на транскрипти, без згадки email. │
+     │ - Чи вказувати версію Claude Code / модель? У транскриптах: Claude Code │
+     │   v2.1.304, Sonnet 5.5 (сесія 6); quality-gates згадує 2.1.303 для      │
+     │   spec-reviewer. Пропозиція: не вказувати, щоб не плутати.              │
+     │ - Мова: пропоную лише англійська (CLAUDE.md). Підтвердьте.              │
+     │ - Чи додавати бейдж CI (потрібен ci.yml URL; не вигадуватиму статус)?   │
+     │   Пропозиція: так, один бейдж CI, без Deploy.                           │
+     │ - Чи посилатися на конкретні run-URL у README, чи лише на quality-gates │
+     │   (менше застарівання)? Пропозиція: лише 2–3 ключові (зелений deploy,   │
+     │   навмисний збій deploy).                                               │
+     │                                                                         │
+     │ Що ще перевірити перед написанням ⚠️                                    │
+     │                                                                         │
+     │ - Актуальні кількості тестів (20 unit / 42 e2e були на Phase 4; після   │
+     │   Phase 5 не перераховував) — запустити npm run check і взяти числа,    │
+     │   або не вказувати числа.                                               │
+     │ - Що live URL відповідає (curl -I) — на момент написання.               │
+     │ - Що .gitignore виключає dist/, test-results/, node_modules/ (у корені  │
+     │   вони є).                                                              │
+     │ - npx playwright install chromium firefox локально працює (взято з      │
+     │   CI-кроку).                                                            │
+     │                                                                         │
+     │ Виконання (після погодження)                                            │
+     │                                                                         │
+     │ 1. Один коміт docs: add README for evaluators (docs-тільки зміна:       │
+     │    PostToolUse і Stop hook перевірок не запускають; pre-commit          │
+     │    запуститься; spec-reviewer не потрібен — src//e2e/ не змінюються).   │
+     │ 2. docs/spec.md не чіпаю. У quality-gates.md §10 рядок «README is a     │
+     │    separate later task» можна оновити лише після виконання — прошу      │
+     │    окремого підтвердження.                                              │
+     │ 3. Верифікація: перевірити всі відносні посилання на існування файлів;  │
+     │    звірити кожну команду в README з package.json; npm run check не      │
+     │    обов’язковий для docs, але запущу pre-commit.                        │
+     ╰─────────────────────────────────────────────────────────────────────────╯
+
+● Прийнято. Запускаю npm run check і збираю дані про сесії/моделі для README.
+
+● Bash(npm run check > "$TEMP/check.log" 2>&1; echo exit=$?; grep -E "Tests
+      |Test Files|passed|failed|flaky" "$TEMP/check.log" | tail -8)
+  ⎿  exit=0
+      Test Files  2 passed (2)
+           Tests  20 passed (20)
+       42 passed (27.8s)
+  ⎿  (timeout 10m)
+
+● Bash(cd /c/Users/IrynaPolchaninova/Projects/rotating-cube/docs/sessions && for
+      f in *.txt; do echo "== $f"; sed -n 1,3p "$f" | grep -E "Claude Code|·";
+      grep -m3 -E "…)
+  ⎿  == 2026-10-19-session-1.txt
+     ╭─── Claude Code v2.1.131 ────────────────────────────────────────────
+     ─────────╮
+     … +42 lines (ctrl+o to expand)
+
+● Bash(sed -n 1,8p 2026-10-19-session-1.txt; grep -h -m2 -E
+      "Opus|Sonnet|Haiku|Fable" *.txt | sort | uniq -c | head; sed -n 1,3p
+      2026-10-19-session-2.txt >/dev/null; g…)
+  ⎿  ╭─── Claude Code v2.1.131 ────────────────────────────────────────────
+     ─────────╮
+     │                                                    │ Tips for gettin
+     … +21 lines (ctrl+o to expand)
+
+● Write(README.md)
+  ⎿  User rejected write to README.md
+       1 # Rotating Cube
+       2 
+       3 [![CI](https://github.com/IraPolchanin/rotating-cube/actions/wor
+         kflows/ci.yml/badge.svg)](https://github.com/IraPolchanin/rotati
+         ng-cube/actions/workflows/ci.yml)
+       4 [![Deploy](https://github.com/IraPolchanin/rotating-cube/actions
+         /workflows/deploy.yml/badge.svg)](https://github.com/IraPolchani
+         n/rotating-cube/actions/workflows/deploy.yml)
+       5 
+       6 A small browser app that shows a 3D cube you rotate by dragging 
+         with a mouse or a
+       7 finger. It exists to practise **harness engineering**: all appli
+         cation source code
+       8 was written by Claude Code; the human engineer reviewed and appr
+         oved plans but did
+       9 not write or edit source files. The interesting part is therefor
+         e the harness around
+      10 the code, described below.
+     … +96 lines
+
+✻ Cogitated for 2m 0s · done 1:55 PM
+
+❯ Two corrections before committing:                                            
+  1. "How it was built": session 1 also contains Phase 1 (scaffold and          
+     quality tooling: Vite, ESLint, Vitest, Playwright, npm run check).         
+     Check each phase-to-session mapping against the transcripts and fix        
+     it; session 3 is only the spec-reviewer verification.                      
+  2. Simplify the model note: Sonnet 4.6 in session 1, Sonnet 5.5               
+     afterwards; Claude Code versions changed due to auto-updates. Remove       
+     the sentence about Opus.                                                   
+     Optional: add two evidence highlights — the mutation checks (AC-12,        
+     AC-14, AC-15) and the Firefox WebGL failure caught by CI and fixed —       
+     linking to docs/evidence/phase-4.md.                                       
+     Then show me the updated README and commit after my approval.              
+
+● Спершу звіряю відповідність фаз і сесій за транскриптами.
+
+● Bash(for f in *.txt; do echo "== $f"; grep -c -iE "scaffold" $f | sed
+      's/^/scaffold: /'; grep -c -iE "PostToolUse" $f | sed 's/^/PostToolUse:
+      /'; grep -c -iE "pre-co…)
+  ⎿  == 2026-10-19-session-1.txt
+     scaffold: 22
+     PostToolUse: 19
+     … +71 lines (ctrl+o to expand)
+
+● Bash(sed -n 234,252p 2026-10-19-session-2.txt; echo ----; sed -n 12,22p
+      2026-10-19-session-3.txt; echo ----; grep -n "^❯" 2026-10-20-session-4.txt
+      | cut -c1-150 | he…)
+  ⎿  ❯ Plan Phase 2 as described in docs/quality-gates.md: implement and ve
+     rify the
+       planned enforcement mechanisms, including the PostToolUse hook, pre-
+     … +55 lines (ctrl+o to expand)
+
+● Відповідність підтверджено транскриптами. Оновлюю план з повним текстом README
+  і виправленнями.
+
+● Updated plan
+  ⎿  /plan to preview
+
+● User approved Claude's plan
+  ⎿  Plan saved to: 
+     ~\.claude\plans\pasted-content-id-352a-plan-a-gleaming-finch.md · /plan to 
+     edit
+     План: README.md (оновлений)
+
+     Context
+
+     README відсутній. Створюю один README.md (англійською) для оцінювачів.
+     docs/spec.md і docs/quality-gates.md не змінюю. Після запису — покажу файл
+     і результати перевірки та чекатиму схвалення перед комітом.
+
+     Перевірено в цій сесії
+
+     - npm run check: exit 0; 20 unit-тестів (2 файли), 42 e2e (по 21 на
+       браузер).
+     - Live URL: HTTP/1.1 200 OK. Назви workflow: CI (ci.yml), Deploy
+       (deploy.yml) — бейджі за реальними шляхами.
+     - .gitignore виключає node_modules/, dist/, test-results/,
+       playwright-report/.
+     - Мапінг фаз до сесій (за першими промптами та ключовими словами
+       транскриптів):
+       - S1: специфікація, чернетки CLAUDE.md/quality-gates і Phase 1 (scaffold:
+         Vite, ESLint, Vitest, Playwright, npm run check; промпт «Phase 1:
+         project scaffold and quality tooling»).
+       - S2: Phase 2 — PostToolUse, pre-commit, guardrail, Stop hook, створення
+         spec-reviewer (+ загальний Phase workflow у CLAUDE.md).
+       - S3: лише перевірка видимості/верифікація spec-reviewer.
+       - S4: Phase 3 — публікація репозиторію й CI (+ навмисний збій/revert).
+       - S5: Phase 4 — куб, тести, Firefox WebGL fix.
+       - S6: Phase 5 — spec v1.1, GitHub Pages deploy.
+     - Моделі: S1 — Sonnet 4.6 (v2.1.131); S2–S6 — Sonnet 5.5
+       (v2.1.303/2.1.304).
+
+     Виконання після схвалення
+
+     1. Write README.md з тексту нижче.
+     2. Перевірка: усі відносні посилання вказують на існуючі файли/каталоги;
+        кожна команда є в package.json/ci.yml; git status — лише README.md
+        змінено.
+     3. Показати README та результати; не комітити без схвалення. Коміт: docs: 
+        add README for evaluators.
+
+     Текст README.md
+
+     # Rotating Cube
+
+     [![CI](https://github.com/IraPolchanin/rotating-cube/actions/workflows/ci.y
+     ml/badge.svg)](https://github.com/IraPolchanin/rotating-cube/actions/workfl
+     ows/ci.yml)
+     [![Deploy](https://github.com/IraPolchanin/rotating-cube/actions/workflows/
+     deploy.yml/badge.svg)](https://github.com/IraPolchanin/rotating-cube/action
+     s/workflows/deploy.yml)
+
+     A small browser app that shows a 3D cube you rotate by dragging with a
+     mouse or a
+     finger. It exists to practise **harness engineering**: all application
+     source code
+     was written by Claude Code; the human engineer reviewed and approved plans
+     but did
+     not write or edit source files. The interesting part is the harness around
+     the code,
+     described below.
+
+     **Live demo:** <https://irapolchanin.github.io/rotating-cube/>
+
+     ## The application
+
+     - React 19 + TypeScript (strict) + Three.js, built with Vite.
+     - Horizontal drag rotates the cube mesh around Y, vertical drag around X
+     (clamped to
+       ±90°). The camera never moves and `OrbitControls` is banned by a lint
+     rule.
+     - Input uses Pointer Events with pointer capture; the canvas has
+     `touch-action: none`.
+     - A **Reset** button restores the initial orientation immediately.
+     - The canvas fills the viewport and follows window resizes.
+
+     Requirements and acceptance criteria (AC-1 … AC-16):
+     [docs/spec.md](docs/spec.md).
+
+     ## Run and check locally
+
+     Requires Node.js 22 (see [.nvmrc](.nvmrc)).
+
+     ```bash
+     npm ci                                    # also sets
+     core.hooksPath=.githooks (prepare script)
+     npm run dev                               # Vite dev server on
+     http://localhost:5173
+     npx playwright install chromium firefox   # once, for the e2e tests
+     npm run check                             # full quality gate
+     ```
+
+     | Script | What it does |
+     |--------|--------------|
+     | `npm run typecheck` | `tsc --noEmit` |
+     | `npm run lint` | ESLint, zero warnings allowed |
+     | `npm test` | Vitest unit tests (rotation logic) |
+     | `npm run build` | `vite build` |
+     | `npm run e2e` | Playwright on Chromium and Firefox (starts the dev server
+     itself) |
+     | `npm run check` | The five steps above, in order |
+     | `npm run e2e:deployed` | AC-16 against the public URL; needs
+     `DEPLOYED_URL`, not part of `check` |
+
+     Last local run of `npm run check` (2026-10-21): all five steps passed, 20
+     unit tests
+     and 42 e2e tests (21 per browser).
+
+     ## The harness
+
+     Each mechanism, with its verification results and known gaps, is described
+     in
+     [docs/quality-gates.md](docs/quality-gates.md).
+
+     | Layer | What it does | Where |
+     |-------|--------------|-------|
+     | Specification | Requirements, numbered acceptance criteria, testability
+     contract (`data-testid` and `data-cube-r*` attributes), enforcement
+     boundary. Changes need human approval. | [docs/spec.md](docs/spec.md) |
+     | Agent instructions | Workflow (read spec → plan → approval → small steps
+     → `npm run check`), commit convention, prohibitions (no weakening
+     tests/lint, no `@ts-ignore`, no `--no-verify`). | [CLAUDE.md](CLAUDE.md) |
+     | After-edit hook | `typecheck` + `lint` after every agent `Edit`/`Write`
+     of code or JSON files; failures are fed back to the agent. |
+     [scripts/agent-hook-check.mjs](scripts/agent-hook-check.mjs),
+     [.claude/settings.json](.claude/settings.json) |
+     | Pre-commit hook | `typecheck` + `lint` + `test` block a failing commit. |
+     [.githooks/pre-commit](.githooks/pre-commit) |
+     | Stop hook | Runs the full `npm run check` before the agent may finish a
+     turn with uncommitted code changes; a repeated failure halts the session
+     for the human. |
+     [scripts/agent-stop-check.mjs](scripts/agent-stop-check.mjs) |
+     | Permission guardrails | The agent cannot run `git commit
+     --no-verify`/`-n`, `git -c`, `git -C`; every `git push` asks for
+     confirmation. | [.claude/settings.json](.claude/settings.json) |
+     | Lint rule | `no-restricted-imports` blocks `OrbitControls` imports
+     (NFR-8). | [eslint.config.js](eslint.config.js) |
+     | Reviewer subagent | Read-only `spec-reviewer` checks diffs against the AC
+     and CLAUDE.md rules (e.g. the mesh, not the camera, rotates). |
+     [.claude/agents/spec-reviewer.md](.claude/agents/spec-reviewer.md) |
+     | CI | `npm run check` on every push and pull request, on Ubuntu with
+     Chromium and Firefox. |
+     [.github/workflows/ci.yml](.github/workflows/ci.yml) |
+     | Deployment | On push to `main`: full `check` → deploy to GitHub Pages →
+     post-deploy e2e (AC-1, AC-13, FR-1) on the live URL. A red commit is never
+     deployed. | [.github/workflows/deploy.yml](.github/workflows/deploy.yml) |
+     | Evidence | Task-by-task log, verification record, manual-check results,
+     session transcripts. |
+     [docs/evidence/phase-4.md](docs/evidence/phase-4.md),
+     [docs/quality-gates.md](docs/quality-gates.md) §11–12,
+     [docs/sessions/](docs/sessions/) |
+
+     ### Evidence highlights
+
+     - Successful deployment (build → deploy → live-URL checks):
+       [Deploy run 39580385881](https://github.com/IraPolchanin/rotating-cube/ac
+     tions/runs/39580385881).
+     - Deliberate failure on a temporary branch: `build` failed at `npm run
+     check`, and
+       `deploy` and `verify-deployed` were skipped:
+       [Deploy run 39585105380](https://github.com/IraPolchanin/rotating-cube/ac
+     tions/runs/39585105380).
+     - Mutation checks: disabling `setPointerCapture` fails AC-14,
+     `touch-action: auto`
+       fails AC-15, removing the X clamp fails AC-12 (unit and e2e), see
+       [docs/evidence/phase-4.md](docs/evidence/phase-4.md).
+     - A real CI catch: Firefox could not create WebGL2 on the Linux runner and
+     19 e2e
+       tests failed; the cause was diagnosed and fixed (headed Firefox under
+     `xvfb-run`),
+       see "CI follow-up" in
+     [docs/evidence/phase-4.md](docs/evidence/phase-4.md).
+     - Other runs, manual checks and open items:
+     [docs/quality-gates.md](docs/quality-gates.md).
+
+     ### Known limitations
+
+     Stated in full in [docs/quality-gates.md](docs/quality-gates.md); the main
+     ones:
+
+     - No branch protection or required status checks.
+     - Pre-commit hook activation on a fresh clone is not verified.
+     - Guardrails bind the agent only and have known pattern gaps (§5).
+     - Manual browser and device checks are recorded as reported by the human.
+     - `npm run check` runs twice per push to `main` (CI and Deploy).
+
+     ## How it was built
+
+     Built with Claude Code in six sessions; the transcripts are in
+     [docs/sessions/](docs/sessions/). The model was Sonnet 4.6 in session 1 and
+     Sonnet 5.5
+     afterwards. Claude Code versions changed during the project because of
+     auto-updates.
+
+     | Session | Work | Transcript |
+     |---------|------|------------|
+     | 1 | Specification, CLAUDE.md and quality-gates drafts, **Phase 1**:
+     project scaffold and quality tooling (Vite, ESLint, Vitest, Playwright,
+     `npm run check`) | [session 1](docs/sessions/2026-10-19-session-1.txt) |
+     | 2 | **Phase 2**: after-edit, pre-commit and Stop hooks, permission
+     guardrails, `spec-reviewer` subagent; phase workflow added to CLAUDE.md |
+     [session 2](docs/sessions/2026-10-19-session-2.txt) |
+     | 3 | `spec-reviewer` verification only | [session 
+     3](docs/sessions/2026-10-19-session-3.txt) |
+     | 4 | **Phase 3**: repository publication and the CI workflow, with a
+     deliberate failure and revert | [session 
+     4](docs/sessions/2026-10-20-session-4.txt) |
+     | 5 | **Phase 4**: the cube, unit and e2e tests, Firefox WebGL fix in CI |
+     [session 5](docs/sessions/2026-10-20-session-5.txt) |
+     | 6 | **Phase 5**: spec v1.1, GitHub Pages deployment, post-deploy check |
+     [session 6](docs/sessions/2026-10-21-session-6.txt) |
+
+     ## License
+
+     [MIT](LICENSE)
+
+     Примітки
+
+     - Особисті дані (email) не згадуються; лише посилання на транскрипти.
+     - Опціонально-неперевірене: npx playwright install chromium firefox
+       локально не запускав (команда береться з ci.yml без --with-deps).
+
+● Записую README.md за затвердженим текстом.
+
+● Write(README.md)  ⎿  Wrote 110 lines to README.md
+       1 # Rotating Cube
+       3 [![CI](https://github.com/IraPolchanin/rotating-cube/actions/wor
+         ng-cube/actions/workflows/ci.yml)
+         /workflows/deploy.yml/badge.svg)](https://github.com/IraPolchani
+       5 
+       6 A small browser app that shows a 3D cube you rotate by dragging 
+       7 finger. It exists to practise **harness engineering**: all appli
+       8 was written by Claude Code; the human engineer reviewed and appr
+       9 not write or edit source files. The interesting part is the harn
+      10 des
+     … +167 lines (ctrl+o to expand)
+
+● Перевіряю відносні посилання та стан git.
+
+● Bash(cd /c/Users/IrynaPolchaninova/Projects/rotating-cube && grep -oE
+      '\]\(([^)#]+)' README.md | sed 's/](//' | grep -v '^http' | sort -u |
+      while read p; do [ -e "$p…)
+  ⎿  OK  .claude/agents/spec-reviewer.md
+     OK  .claude/settings.json
+     OK  .githooks/pre-commit
+     … +23 lines (ctrl+o to expand)
+
+● README.md написано, але не закомічено — чекаю вашого схвалення. Повний текст —
+  у файлі README.md (і в плані вище).
+
+  Що зроблено:
+  - Виправлено мапінг фаз за транскриптами. Сесія 1 — специфікація, чернетки
+    CLAUDE.md і quality-gates та Phase 1 (scaffold). Сесія 2 — Phase 2: хуки,
+    guardrails, створення spec-reviewer. Сесія 3 — лише перевірка spec-reviewer.
+    Сесія 4 — Phase 3 (публікація і CI). Сесія 5 — Phase 4 (куб). Сесія 6 —
+    Phase 5 (деплой).
+  - Примітку про моделі спрощено: Sonnet 4.6 у сесії 1, Sonnet 5.5 далі, версії
+    Claude Code змінювались через автооновлення. Речення про Opus прибрано.
+  - Додано два evidence highlights: mutation checks (AC-12, AC-14, AC-15) і
+    Firefox WebGL збій, спійманий CI, з посиланнями на docs/evidence/phase-4.md.
+
+  Результати перевірки:
+  - npm run check: exit 0, 20 unit-тестів і 42 e2e (по 21 на браузер).
+  - Усі 21 відносне посилання README вказують на існуючі файли; секція "CI
+    follow-up" є в phase-4.md.
+  - Live URL відповідає HTTP 200.
+  - git status: змінено лише README.md (новий); docs/spec.md і
+    docs/quality-gates.md не чіпали.
+
+  Не перевірено:
+  - npx playwright install chromium firefox локально не запускав (команда взята
+    з ci.yml).
+  - Бейджі CI/Deploy формуються за шляхами workflow; їхній рендер на GitHub не
+    перевіряв.
+  - Посилання на run-и Actions узято з quality-gates.md, окремо не відкривав.
+
+  Запропонований коміт: docs: add README for evaluators із рядком
+  Co-Authored-By. Підтвердьте, і я закомічу (без git push).
+
+✻ Crunched for 1m 26s · done 1:58 PM
+
+❯ Approved. Commit README.md and push main to origin.                           
+
+● Коміт README.md, потім push (push запитає підтвердження через ask-правило).
+
+● Bash(git add README.md && git commit -m "docs: add README for evaluators…)
+  ⎿  warning: in the working copy of 'README.md', LF will be replaced by CR
+     LF the next time Git touches it
+     … +25 lines (ctrl+o to expand)
+  ⎿  PostToolUse:Bash says: Tip: Run /ultrareview before you push to catch bugs 
+     with a cloud-based multi-agent review — 3 free reviews left.
+
+● Bash(git push origin main)
+  ⎿  To https://github.com/IraPolchanin/rotating-cube.git
+        b0d1ae1..1bed2b0  main -> main
+
+● Готово: коміт 1bed2b0 (docs: add README for evaluators, +110 рядків, лише
+  README.md) запушено в origin/main (b0d1ae1..1bed2b0). Pre-commit пройшов:
+  typecheck, lint, 20 unit-тестів.
+
+  Пуш вже запустив ci.yml і deploy.yml. Їхній результат я не перевіряв. Бейджі в
+  README почнуть показувати статус після завершення цих запусків.
+
+✻ Sautéed for 25s · done 2:01 PM
+
+※ recap: Ми створили README для оцінювачів проєкту rotating-cube; він закомічений і запушений у main (коміт 1bed2b0). Наступний крок: переглянути результати CI і Deploy запусків після пушу та переконатися, що обидва зелені. (disable recaps in /config)
