@@ -231,10 +231,14 @@ URL (supplied through an environment variable, no `webServer`) in the Chromium a
 Firefox projects, under a virtual display in CI as for `npm run check`. It reuses
 the existing tests `AC-1: cube-scene wrapper is present on load`,
 `AC-13: no console errors or page errors on load` and
-`FR-1: browser can create a WebGL2 context` unchanged; assertions are not
-weakened or duplicated. A bounded wait for the site to become reachable absorbs
-Pages propagation delay; if the limit is reached the run fails. Test retries are not
-used to hide failures.
+`FR-1: browser can create a WebGL2 context`. The tests and their assertions are
+reused unchanged and are not duplicated; only navigation is made relative
+(`page.goto('./')` instead of `page.goto('/')`), so the same tests work on the dev
+server and under the Pages project sub-path. For this to resolve correctly the base
+URL must end with `/`; the deployed-URL configuration normalises the supplied URL to
+end with `/`. A bounded wait for the site to become reachable absorbs Pages
+propagation delay; if the limit is reached the run fails. Test retries are not used
+to hide failures.
 
 ---
 
